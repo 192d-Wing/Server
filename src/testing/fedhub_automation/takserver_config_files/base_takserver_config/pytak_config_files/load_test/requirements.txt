@@ -1,6 +1,6 @@
 lxml==4.9.2
 protobuf==3.11.3
-pyOpenSSL==23.1.1
+pyOpenSSL==26.0.0
 PyYAML==5.1
 requests==2.26
 urllib3==1.26
