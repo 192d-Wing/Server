@@ -1,0 +1,469 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAK-RS Rust CI (option B).
+#
+# REQUIRED CHECK: `rust-ci-gate` is the ONLY check to mark required in the
+# branch ruleset for `main` (from the GitHub Actions app; POAM-2026-10-26-04
+# until a repository administrator configures it). Do not mark any other job
+# required: on a PR that touches no Rust-relevant path they are skipped.
+#
+# Shape:
+#   - runs on every pull_request with NO path filter, so the required check
+#     always reports (upstream src/** merges included);
+#   - `changes` decides whether Rust-relevant paths changed
+#     (rust/scripts/ci-changes.sh; fail-safe to rust=true);
+#   - heavy jobs run only when rust == 'true';
+#   - `workflow-lint` always runs and is never gated by the detector;
+#   - `rust-ci-gate` always runs (if: always()) and judges every result
+#     (rust/scripts/ci-gate.sh): skipped counts as pass only when `changes`
+#     succeeded with rust=false.
+#
+# FORMATTING CONVENTION (checked by rust/scripts/check-workflows.sh):
+#   job IDs are the keys indented by exactly two spaces under `jobs:`; no
+#   other line under `jobs:` is indented by exactly two spaces. The gate's
+#   `needs:` is a single-line [..] list equal to all job IDs minus
+#   `rust-ci-gate` and the two NON-REQUIRED jobs: `sbom` (best-effort,
+#   POAM-2026-10-26-01) and `annotations-strict` (NIST-013: shows a pending
+#   mapping ID on every PR without blocking it). Adding a job means adding it
+#   to that list, or make check-workflows fails. check-workflows reads the
+#   parsed YAML; the convention keeps the file readable and the QA selftest
+#   that reads the needs line simple.
+#
+# Workflow rules: every `uses:` is pinned to a 40-hex commit SHA with a
+# `# vX.Y.Z` comment; top-level permissions are contents: read and no job
+# escalates; every checkout sets persist-credentials: false; no secrets are
+# referenced; values from event payloads, inputs or needs reach shell code
+# only through `env:`.
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: CM-3 (Configuration Change Control), CM-3(2) (Testing,
+#   Validation, and Documentation of Changes), SA-10 (Developer Configuration
+#   Management), SA-11 (Developer Testing and Evaluation), SA-15 (Development
+#   Process, Standards, and Tools), CM-6 (Configuration Settings), RA-5
+#   (Vulnerability Monitoring and Scanning), SR-3 (Supply Chain Controls and
+#   Processes), SR-11 (Component Authenticity)
+
+name: rust-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # The rustup proxies install the toolchain, components and targets named in
+  # rust/rust-toolchain.toml on first use; the toolchain step logs and
+  # verifies the result.
+  RUSTUP_AUTO_INSTALL: "1"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: rust
+
+jobs:
+  # ---- Change detector (always runs) ---------------------------------------
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      rust: ${{ steps.detect.outputs.rust }}
+    steps:
+      # Trees are enough for `git diff --name-only`; only rust/scripts is
+      # materialised in the working tree.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+          filter: blob:none
+          sparse-checkout: rust/scripts
+      - name: Detect Rust-relevant changes
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          # NUL-separated, unquoted path list in a file (SEC-002): no
+          # core.quotePath C-quoting, no newline splitting, no shell copy.
+          # Any failure below yields the sentinel __all__, i.e. rust=true.
+          list="$RUNNER_TEMP/changed-paths.z"
+          all() { printf '__all__\0' >"$list"; }
+          all
+          case "$EVENT_NAME" in
+            pull_request)
+              # HEAD is the PR merge commit; its first parent is the base tip.
+              # --no-renames lists both sides of a move out of rust/.
+              git -c core.quotePath=false diff --no-renames --name-only -z HEAD^1 HEAD >"$list" || all
+              ;;
+            push)
+              if [[ "$BEFORE" =~ ^[0-9a-f]{40}$ ]] && [[ ! "$BEFORE" =~ ^0+$ ]] &&
+                git fetch --no-tags --depth=1 --filter=blob:none origin "$BEFORE"; then
+                git -c core.quotePath=false diff --no-renames --name-only -z "$BEFORE" HEAD >"$list" || all
+              fi
+              ;;
+            *)
+              all
+              ;;
+          esac
+          # sed reads all input (no early pipe close under pipefail).
+          echo "changed paths: $(tr -cd '\000' <"$list" | wc -c)"
+          tr '\000' '\n' <"$list" | sed -n '1,200s/^/changed: /p'
+          verdict=$(scripts/ci-changes.sh -z <"$list") || verdict=rust=true
+          case "$verdict" in
+            rust=true | rust=false) ;;
+            *) verdict=rust=true ;;
+          esac
+          echo "$verdict"
+          echo "$verdict" >>"$GITHUB_OUTPUT"
+
+  # ---- Workflow lint (always runs; never gated by the detector) ------------
+  workflow-lint:
+    name: workflow-lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      # sha256 of actionlint_1.7.12_linux_amd64.tar.gz: release checksums.txt
+      # and the GitHub release asset digest agree (resolved 2026-10-26).
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # fallback: none - fail rather than fall back to cargo-binstall (which
+      # would receive github.token and skip the manifest checksum).
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: zizmor@1.31.1
+          fallback: none
+      - name: Install actionlint (checksum-pinned release)
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/actionlint"
+          mkdir -p "$dir"
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$dir/$tarball" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$tarball"
+          echo "$ACTIONLINT_SHA256  $dir/$tarball" | sha256sum --check --strict
+          tar -xzf "$dir/$tarball" -C "$dir" actionlint
+          "$dir/actionlint" -version
+      - name: actionlint (rust-*.yml)
+        working-directory: .
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/actionlint/actionlint" -color .github/workflows/rust-*.yml
+      - name: zizmor (offline; rust-*.yml and dependabot.yml)
+        working-directory: .
+        run: |
+          set -euo pipefail
+          zizmor --version
+          zizmor --offline .github/workflows/rust-*.yml .github/dependabot.yml
+      # check-workflows needs Ruby (stdlib psych) for the parsed-YAML rules;
+      # the runner image ships it. Without it the check fails, never skips.
+      - name: make check-workflows check-toolchain
+        run: |
+          set -euo pipefail
+          ruby --version
+          make check-workflows check-toolchain
+
+  # ---- Heavy jobs (only when Rust-relevant paths changed) ------------------
+  fmt:
+    name: fmt
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - run: make fmt-check
+
+  lint:
+    name: lint (${{ matrix.target }})
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [native, wasm32]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: rust -> target
+          key: lint-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-bin: "false"
+      - name: Clippy
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            native)
+              make clippy
+              ;;
+            wasm32)
+              rustup target list --installed | grep -x wasm32-unknown-unknown
+              make clippy-wasm build-wasm
+              ;;
+            *)
+              echo "unknown lint target: $TARGET"
+              exit 1
+              ;;
+          esac
+
+  test:
+    name: test
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: rust -> target
+          key: test
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-bin: "false"
+      - run: make test test-doc
+
+  doc:
+    name: doc
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: rust -> target
+          key: doc
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-bin: "false"
+      - run: make doc
+
+  policy:
+    name: policy
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # Full history: check-annotations compares against the merge base.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: shellcheck@0.11.0
+          fallback: none
+      - name: make policy policy-selftest
+        env:
+          # Empty on push/merge_group/dispatch: check-annotations then only
+          # prints the mapping-block count.
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: make policy policy-selftest
+      - name: shellcheck
+        run: |
+          set -euo pipefail
+          shellcheck --version
+          shellcheck scripts/*.sh parity/harness.sh
+
+  supply-chain:
+    name: supply-chain
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-deny@0.20.2,cargo-audit@0.22.2
+          fallback: none
+      - name: cargo deny (advisories, bans, licenses, sources)
+        run: make deny
+      - name: cargo audit --deny warnings
+        run: make audit
+      - name: Native-code allow-list and advisory-ignore sync
+        run: make check-native-deps check-advisory-sync
+
+  markdown:
+    name: markdown
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: rust
+      # v25.0.0 bundles markdownlint-cli2 0.24.0, the version rust/Makefile
+      # pins. The action runs from the repository root, so the globs are
+      # given here (they mirror rust/.markdownlint-cli2.jsonc; keep both in
+      # step). Rules come from rust/.markdownlint-cli2.jsonc, which
+      # markdownlint-cli2 applies to every file under rust/. No `config:`
+      # input: a --config file's globs would be resolved from the repository
+      # root and could pick up upstream Markdown.
+      - uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
+        with:
+          globs: |
+            rust/docs/**/*.md
+            rust/ARCHITECTURE.md
+            rust/CHANGELOG.md
+            rust/CONTRIBUTING.md
+            rust/parity/**/*.md
+            !rust/target/**
+            !rust/parity/.work/**
+            !rust/parity/results/**
+
+  # ---- Strict annotation check (NOT in the gate; NIST-013) ----------------
+  # Fails while scripts/mapping-pending.txt lists an ID that the mapping
+  # does not cover yet, so the gap is visible on every PR. Never mark it
+  # required and never add it to rust-ci-gate's needs (check-workflows B3);
+  # the phase gate requires it to pass (gate.md).
+  annotations-strict:
+    name: annotations-strict
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: make check-annotations-strict
+        run: make check-annotations-strict
+
+  # ---- Best-effort SBOM (NOT in the gate) ----------------------------------
+  sbom:
+    name: sbom
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # POAM: POAM-2026-10-26-01 - best-effort until the SBOM becomes a
+    # required, signed release artifact; the only continue-on-error in CI.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-cyclonedx@0.5.9
+          fallback: none
+      - name: make sbom (CycloneDX JSON)
+        run: |
+          set -euo pipefail
+          make sbom
+          find . -name '*.cdx.json' -not -path './target/*' -print -exec sha256sum {} +
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rust-sbom
+          path: |
+            rust/**/*.cdx.json
+            !rust/target/**
+          if-no-files-found: error
+          retention-days: 90
+
+  # ---- The single required check -------------------------------------------
+  rust-ci-gate:
+    name: rust-ci-gate
+    if: always()
+    needs: [changes, workflow-lint, fmt, lint, test, doc, policy, supply-chain, markdown]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: rust/scripts
+      - name: Judge job results (rust/scripts/ci-gate.sh)
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          RUST_CHANGED: ${{ needs.changes.outputs.rust }}
+        run: scripts/ci-gate.sh

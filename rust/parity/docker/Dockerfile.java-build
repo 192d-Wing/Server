@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Builder image for the Java TAK Server reference (parity harness v0).
+# Test tooling only: never published, never shipped (not part of the TOE).
+#
+# No sources are copied in: harness.sh bind-mounts a throwaway git clone of
+# the repository at /work and runs Gradle as the non-root "builder" user.
+# BUILDER_UID/GID are set to the invoking host user so the bind mount stays
+# writable without running as root.
+
+# Required; harness.sh passes the digest-pinned value from pins.env.
+# No default on purpose: an unset value makes the build fail.
+ARG JDK_BUILD_IMAGE
+FROM ${JDK_BUILD_IMAGE}
+
+ARG BUILDER_UID=10001
+ARG BUILDER_GID=10001
+
+# git: Grgit reads the clone's .git to derive the version (src/build.gradle).
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends git; \
+    rm -rf /var/lib/apt/lists/*; \
+    groupadd --non-unique --gid "${BUILDER_GID}" builder; \
+    useradd --non-unique --uid "${BUILDER_UID}" --gid "${BUILDER_GID}" \
+        --home-dir /home/builder --create-home --shell /usr/sbin/nologin builder
+
+USER builder
+WORKDIR /work/src
+ENV GRADLE_USER_HOME=/gradle-home

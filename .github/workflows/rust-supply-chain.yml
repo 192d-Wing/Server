@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAK-RS nightly supply-chain scan. NOT a required check, and it defines no
+# job named after the required check (rust-ci.yml owns that name;
+# rust/scripts/check-workflows.sh enforces it).
+#
+# Catches new RustSec advisories, yanked crates and policy drift against an
+# unchanged Cargo.lock on `main`. PR-time checks run in rust-ci.yml.
+# Failures are notified only by GitHub's scheduled-workflow email to the
+# actor who last edited the cron (weak channel; POAM-2026-10-26-07).
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: RA-5 (Vulnerability Monitoring and Scanning), RA-5(2)
+#   (Update Vulnerabilities to Be Scanned), SI-2(2) (Automated Flaw
+#   Remediation Status), SR-3 (Supply Chain Controls and Processes), SR-4
+#   (Provenance), CM-10 (Software Usage Restrictions)
+
+name: rust-supply-chain
+
+on:
+  schedule:
+    # Nightly, off the hour (UTC).
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel: every scan leaves a result.
+concurrency:
+  group: rust-supply-chain-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTUP_AUTO_INSTALL: "1"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: rust
+
+jobs:
+  audit:
+    name: audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      # fallback: none - no cargo-binstall fallback (no token, no unverified binary).
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-audit@0.22.2
+          fallback: none
+      - name: cargo audit --deny warnings (exceptions only via .cargo/audit.toml)
+        run: make audit
+
+  deny:
+    name: deny
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-deny@0.20.2
+          fallback: none
+      - name: cargo deny check (advisories, bans, licenses, sources)
+        run: make deny
+
+  native-deps:
+    name: native-deps
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchain (rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustup --version
+          rustc --version
+          cargo --version
+          rustc --version | grep -F "rustc $want "
+      - name: Native-code allow-list and advisory-ignore sync
+        run: make check-native-deps check-advisory-sync

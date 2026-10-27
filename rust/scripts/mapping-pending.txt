@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Control IDs that first-party annotations cite but that
+# docs/compliance/NIST_800-53_MAPPING.md does not map yet (no `### <ID>`
+# block and no non-N/A row). scripts/check-annotations.sh rule (d) prints
+# these as PENDING instead of FAIL; `make check-annotations-strict` fails on
+# them. Owner: compliance-scribe (phase 5). When the block exists, the check
+# prints a note and the line below is deleted (CM-3: reviewed change).
+#
+# Format: <ID>  # where it is cited; finding
+
