@@ -564,10 +564,15 @@ cmd_build_java() {
     userns=(--userns=keep-id)
   fi
   log "running Gradle (takserver-package:buildIntegrationTesterDir); this takes a while"
+  # DISABLE_ESLINT_PLUGIN: takserver-tool-ui has no npm lockfile, so a fresh
+  # install pulls an eslint-plugin-jest without the "jest/globals" env that
+  # react-scripts 5.0.1's config uses, and `react-scripts build` fails on lint.
+  # This skips only lint in the reference UI build; the bundle is unchanged.
   "$ENGINE_BIN" run --rm ${userns[@]+"${userns[@]}"} \
     --security-opt no-new-privileges:true --cap-drop ALL \
     --volume "$clone:/work" --volume "$WORK_DIR/gradle-home:/gradle-home" \
-    --env GRADLE_USER_HOME=/gradle-home --workdir /work/src \
+    --env GRADLE_USER_HOME=/gradle-home --env DISABLE_ESLINT_PLUGIN=true \
+    --workdir /work/src \
     "$BUILDER_IMAGE" \
     ./gradlew --no-daemon --console=plain takserver-package:buildIntegrationTesterDir ||
     die "$EX_FAIL" "Gradle build failed"
