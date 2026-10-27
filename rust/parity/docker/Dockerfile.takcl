@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAKCL + Java TAK Server reference image (parity harness v0).
+# Test tooling only: never published, never shipped (not part of the TOE).
+# The Java build output copied in is a GPLv3 test fixture.
+#
+# Build context: rust/parity/.work/tester (a copy of
+# src/takserver-package/build/integrationTesterDir), see harness.sh "image".
+
+# Required; harness.sh passes the digest-pinned value from pins.env.
+ARG JRE_RUN_IMAGE
+FROM ${JRE_RUN_IMAGE}
+
+ARG SRC_SHA=unknown
+ARG TAK_VERSION=unknown
+LABEL org.opencontainers.image.title="tak-parity-java" \
+      org.opencontainers.image.description="TAKCL and Java TAK Server reference for the TAK-RS parity harness (test fixture, not for distribution)" \
+      org.opencontainers.image.revision="${SRC_SHA}" \
+      tak.version="${TAK_VERSION}"
+
+# openssl: TAKCL generates certificates with makeCert.sh (SSLHelper.java).
+# netcat-openbsd: as upstream testrunner.sh. procps: TAKCL runs "ps -aux"
+# when a server process dies (AbstractRunnableServer.java:470).
+# keytool ships with the JRE.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends openssl netcat-openbsd procps; \
+    rm -rf /var/lib/apt/lists/*; \
+    groupadd --gid 10001 takcl; \
+    useradd --uid 10001 --gid 10001 --home-dir /opt/tak --no-create-home \
+        --shell /usr/sbin/nologin takcl; \
+    install -d -o 10001 -g 10001 -m 0750 /opt/tak
+
+COPY --chown=10001:10001 . /opt/tak
+
+USER 10001:10001
+WORKDIR /opt/tak
+
+# As upstream testrunner.sh. TEST_RESULTS must NOT exist in the model dir
+# (RunnableServerManager.java:156), so it is not created here.
+RUN set -eux; \
+    test -f utils/takcl.jar; \
+    cp CoreConfig.example.xml CoreConfig.xml; \
+    cp TAKIgniteConfig.example.xml TAKIgniteConfig.xml; \
+    test ! -e TEST_RESULTS
+
+HEALTHCHECK NONE
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-jar", "/opt/tak/utils/takcl.jar"]

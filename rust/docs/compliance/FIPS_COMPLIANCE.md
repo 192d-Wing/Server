@@ -1,0 +1,177 @@
+# FIPS Cryptographic Standards Compliance
+
+**Document Version:** 0.2
+**Date:** 2026-10-26
+**TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
+**Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
+**Status:** Skeleton (Phase 0). No cryptography is implemented; every standard is Planned.
+**Run:** `20261026-210255-phase0-foundations`
+
+## Document Control
+
+### Pinned references
+
+| Reference | Value |
+|-----------|-------|
+| Control catalog | NIST SP 800-53 Rev. 5, **Release 5.2.0** (SC-13, SC-8, IA-7) |
+| Baselines | NIST SP 800-53B, Release 5.2.0; target **Moderate** (assumed, not confirmed; [ROADMAP.md](../../ROADMAP.md) §6 Q5) |
+| Overlay | CNSSI 1253 (TBD) |
+| STIG | DISA ASD STIG, release TBD |
+| Module standard | FIPS 140-3 |
+
+### Scope
+
+Phase 0: development environment only. Phase 0 contains **no crypto code and
+no crypto dependency**. This document records the decided provider, the build
+pins already in place, and what Phase 2 (`tak-crypto`) must deliver.
+
+### Vocabulary
+
+Implementation status: **Implemented**, **Partially Implemented**,
+**Planned**, **Alternative Implementation**, **Not Applicable**, plus the
+overlay **Risk Accepted (POAM-…)**. See
+[NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) §Vocabulary.
+
+## Cryptographic Module
+
+Decision D5 ([ROADMAP.md](../../ROADMAP.md) §2): rustls with an
+**aws-lc-rs `fips`** `CryptoProvider` is the single crypto provider for all of
+TAK-RS. There is no provider-agnostic seam.
+
+| Item | Value |
+|------|-------|
+| Provider | rustls `CryptoProvider` from `aws-lc-rs` with the `fips` feature |
+| FIPS module crate | `aws-lc-fips-sys` (AWS-LC-FIPS), reachable only through `aws-lc-rs` |
+| FIPS boundary | `aws-lc-fips-sys` **only** |
+| Module version | TBD (Phase 2); see [Known issues](#known-issues-for-phase-2) |
+| CMVP certificate | TBD (Phase 2) |
+| Operating environments claimed | **Linux x86_64 and aarch64, static build only** |
+| Not claimed | macOS and Windows (AWS-LC builds the FIPS module as a shared library there; development and tests only); `wasm32-unknown-unknown` (crypto is excluded from the wasm graph) |
+| Status | Planned (Phase 2) |
+
+### Non-FIPS code in the graph
+
+From Phase 2, the rustls 0.23 `fips` feature also builds the non-FIPS AWS-LC
+library (`aws-lc-sys`). It is linked but not selected when `fips` is on. It is
+**outside the FIPS boundary and out of scope** for every FIPS claim in this
+document. It is allowed only through `aws-lc-rs`, only on Linux, and never on
+wasm32 (POAM-2026-10-26-08).
+
+### Build pins (in place, inert, not exercised by any gate)
+
+Set in [.cargo/config.toml](../../.cargo/config.toml) with `force = true`.
+They are inert until a crate depends on `aws-lc-rs` (Phase 2), so no Phase 0
+gate shows that they work; the first evidence is the Phase 2 FIPS build.
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `AWS_LC_FIPS_SYS_USE_SYSTEM` | `0` | Always build the bundled, `Cargo.lock`-pinned module source; never a system libcrypto |
+| `GOTOOLCHAIN` | `local` | The FIPS build's Go tooling may not download another Go toolchain |
+| `GOPROXY` | `off` | The FIPS build may not download Go modules |
+
+`AWS_LC_FIPS_SYS_SYSTEM_DIR` is deliberately not set.
+
+### Build prerequisites (Phase 2)
+
+| Tool | Requirement |
+|------|-------------|
+| CMake | 3.5 or later |
+| Go | 1.17.13 or later; mandatory for the FIPS build |
+| Perl | Perl 5; mandatory for the FIPS build |
+| C compiler | clang or gcc |
+| libclang | Only when bindings must be regenerated; pregenerated bindings exist for the Linux and macOS x86_64 and aarch64 targets |
+
+From Phase 2, CI logs `cmake --version`, `go version`, `perl -v` and
+`cc --version` as CM-2 evidence. The tools come from the signed Ubuntu archive
+(SR-11).
+
+### Planned module checks (Phase 2)
+
+- Startup check that the module reports FIPS mode
+  (`aws_lc_rs::try_fips_mode()`); the process fails closed otherwise.
+- Startup assertion that every rustls `ServerConfig` and `ClientConfig`
+  reports `fips()`; the process fails closed otherwise (SC-13).
+- A test that the rustls provider in use is the FIPS provider
+  (POAM-2026-10-26-08).
+
+## Standards
+
+| Standard | Use in TAK-RS | Provider | Status |
+|----------|---------------|----------|--------|
+| FIPS 140-3 | Cryptographic module validation | AWS-LC-FIPS (`aws-lc-fips-sys`) | Planned (Phase 2) |
+| FIPS 180-4 | SHA-2 hashing (TLS, certificates) | AWS-LC-FIPS | Planned (Phase 2) |
+| FIPS 186-5 | ECDSA and RSA signatures (TLS, certificates, CA operations) | AWS-LC-FIPS | Planned (Phase 2) |
+| FIPS 197 | AES (TLS AES-GCM suites) | AWS-LC-FIPS | Planned (Phase 2) |
+| FIPS 198-1 | HMAC (TLS PRF and HKDF) | AWS-LC-FIPS | Planned (Phase 2) |
+| SP 800-52 Rev. 2 | TLS configuration | rustls with the FIPS provider | Planned (Phase 2) |
+| SP 800-56A Rev. 3 | ECDH key establishment | AWS-LC-FIPS | Planned (Phase 2) |
+| SP 800-56B Rev. 2 | RSA key establishment | AWS-LC-FIPS | Planned (Phase 2) |
+| SP 800-56C Rev. 2 | Key derivation | AWS-LC-FIPS | Planned (Phase 2) |
+| SP 800-90A Rev. 1 | Deterministic random bit generation | AWS-LC-FIPS | Planned (Phase 2) |
+
+Integrity checks used by the developer tooling (SHA-256 of the Gradle
+distribution, the wrapper jar and `rust/LICENSE`; OCI image digests; Cargo
+checksums; git commit SHAs) are supply-chain controls (SR-11), not TOE
+cryptography, and are not FIPS claims.
+
+## TLS Policy
+
+Placeholder; the Phase 2 `tak-crypto` plan owns the design.
+
+| Item | Planned value | Status |
+|------|---------------|--------|
+| Protocol versions | TLS 1.2 and TLS 1.3 only (fielded ATAK needs TLS 1.2) | Planned (Phase 2) |
+| Cipher suites | Only suites the FIPS provider exposes: ECDHE with AES-GCM; no ChaCha20-Poly1305 | Planned (Phase 2) |
+| Key-exchange groups | P-256, P-384; post-quantum hybrids only if the provider marks them FIPS | Planned (Phase 2) |
+| Certificate validation | rustls-webpki with the FIPS provider; path building to the configured TAK CA set; CRL checking (`tak-auth`); no system roots unless configured | Planned (Phase 2) |
+| Fail-closed FIPS assertion | `fips()` checked at startup | Planned (Phase 2) |
+
+The parity harness runs the **Java reference server** with the upstream test
+PKI and TLS 1.2. Those are behaviours of the reference under test, not TAK-RS
+settings.
+
+## Known issues for Phase 2
+
+1. **Non-FIPS `aws-lc-sys` in the rustls `fips` graph** (plan Open question 2,
+   resolved by option (a) on 2026-10-26). Tracked as POAM-2026-10-26-08.
+2. **Module version discrepancy.** The `aws-lc-fips-sys` 0.14.3 README says it
+   binds AWS-LC-FIPS 3.0.x, while the `aws-lc-rs` 1.18.2 crate documentation
+   says 4.x (`fips-2025-09-12-lts`). Phase 2 must decide from the crate's
+   `package.metadata.aws-lc-fips-sys.commit-hash` and the CMVP listing, then
+   pin the exact `aws-lc-fips-sys` version and record the module version and
+   certificate here.
+3. **Static build only on Linux.** FIPS claims are limited to Linux x86_64 and
+   aarch64 static builds. macOS builds are for development and tests.
+4. **The FIPS dependency graph fails `cargo deny check bans` today (QA-004).**
+   `deny.toml` `[bans.build]` sets `executables = "deny"` (and, since fix
+   round 1, `include-archives = true`). With `aws-lc-rs` `fips` in the graph,
+   the build-time chain `bindgen` → `clang-sys` → `libloading` 0.8.9 brings
+   two pre-built test DLLs, `tests/nagisa32.dll` and `tests/nagisa64.dll`,
+   which that rule rejects. The Phase 2 `tak-crypto` plan must add a
+   checksum-pinned bypass for exactly these two files (SHA-256
+   `5c69b2bd9c8a6ad04165c221075fc9fade1dd66ca697399ace528a5a62328e36` for
+   `nagisa32.dll` and
+   `e20b95e3036f3289421abd100760874d4f455afd33c3b5b64fec56b191f7d477` for
+   `nagisa64.dll`, from the release-engineer's WU3 scratch check; re-verify
+   against the version that resolves), not turn the rule off.
+   The WU3 scratch table (`impl-notes-wu3-wu4.md`, the `aws-lc-rs` `fips`
+   probe row) records `bans ok` for this graph, while the same notes report
+   that `[bans.build]` flags the two DLLs on it. The two statements conflict,
+   and QA-004 (QA Round 0) reports the failure. The PASS row is therefore
+   **not** evidence that the FIPS graph passes the current policy. QA did not
+   re-run the probe in Round 1.
+5. **`allow-build-scripts` must grow in Phase 2.** Since fix round 1,
+   `[bans.build]` allows build scripts only for the 15 crates in today's
+   graph. `aws-lc-fips-sys`, `aws-lc-sys`, `aws-lc-rs` (if it has one) and
+   their build-time toolchain crates (for example `cmake`, `cc`, `bindgen`,
+   `clang-sys`) must be added by name in the `tak-crypto` plan,
+   each reviewed. The list names crates, not versions, so a later version
+   with a new build script relies on `Cargo.lock` and Dependabot review
+   (SEC-007 residual).
+
+## Document Change History
+
+| Date | Version | Change | Run |
+|------|---------|--------|-----|
+| 2026-10-26 | 0.2 | Phase 5 (pre-gate). Known issues 4 (QA-004: FIPS graph fails `[bans.build]` on two `libloading` test DLLs; the WU3 scratch PASS is not evidence) and 5 (`allow-build-scripts` must list the AWS-LC crates in Phase 2; SEC-007 residual). Build pins described as inert and not exercised by any gate. No status change: every standard stays Planned (Phase 2) | `20261026-210255-phase0-foundations` (Phase 5) |
+| 2026-10-26 | 0.1 | Initial skeleton: provider (aws-lc-rs `fips`), FIPS boundary limited to `aws-lc-fips-sys` with `aws-lc-sys` out of scope (POAM-2026-10-26-08), Linux-only operating environments, build pins and prerequisites, standards table (all Planned), TLS policy placeholder, known issues | `20261026-210255-phase0-foundations` (WU6) |

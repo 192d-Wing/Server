@@ -1,0 +1,50 @@
+TAK-RS
+Copyright 2026 The TAK-RS Authors
+
+This product is licensed under the Apache License, Version 2.0 (see the
+LICENSE file in this directory). SPDX-License-Identifier: Apache-2.0
+
+The copyright holder named above is provisional and is to be confirmed by
+the legal/program-office review tracked as POAM-2026-10-26-05.
+
+Scope of this work
+------------------
+
+This work is the content of the rust/ directory of this repository only.
+
+The Java TAK Server in ../src (and the repository-root LICENSE.md and
+INTENT.md that govern it) is separately licensed under the GNU General
+Public License, version 3, and is NOT part of this work. It is used as a
+read-only behavioural reference and, through rust/parity/, as a test
+fixture that is built and run locally or in CI but never redistributed
+with this work. No file from ../src is included in this work.
+
+Third-party software included in binary distributions
+------------------------------------------------------
+
+From Phase 2 onward, binaries built with the tak-crypto crate statically
+include AWS-LC (https://github.com/aws/aws-lc), through the aws-lc-rs,
+aws-lc-fips-sys and aws-lc-sys crates. Source distributions of this work
+do not include AWS-LC; it is fetched from crates.io at build time.
+
+  * aws-lc-fips-sys contains the AWS-LC FIPS 140-3 validated module. It is
+    the only FIPS cryptographic boundary of this product.
+  * aws-lc-sys is the non-FIPS AWS-LC build. It is pulled in transitively
+    by the rustls "fips" feature, is linked but not used for any
+    cryptographic operation, and is outside the FIPS boundary
+    (POAM-2026-10-26-08).
+
+AWS-LC contains code derived from OpenSSL and SSLeay. Binary distributions
+that include it carry the following acknowledgements, as required by the
+OpenSSL and SSLeay licences:
+
+  This product includes software developed by the OpenSSL Project for use
+  in the OpenSSL Toolkit (http://www.openssl.org/).
+
+  This product includes cryptographic software written by Eric Young
+  (eay@cryptsoft.com).
+
+The full licence terms for AWS-LC (ISC, Apache-2.0, OpenSSL, SSLeay and
+others) are in the LICENSE file shipped in each of the aws-lc-fips-sys and
+aws-lc-sys crate sources (LICENSE and aws-lc/LICENSE). They must be
+reproduced with any binary distribution that includes AWS-LC.

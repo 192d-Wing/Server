@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Parity harness v0 topology. Drive it through harness.sh, which sets
+# POSTGIS_IMAGE (digest-pinned, from pins.env), SRC_SHA and the files under
+# .work/. Running "compose" directly without them fails on purpose.
+#
+#   [takcl container: takcl.jar -> spawns Java TAK Server processes]
+#            |  db:5432 (internal network "parity", no egress)
+#   [db container: PostgreSQL 15 + PostGIS 3.3, no published ports]
+
+name: tak-parity
+
+services:
+  db:
+    image: ${POSTGIS_IMAGE:?POSTGIS_IMAGE must be set; run via harness.sh}
+    environment:
+      POSTGRES_USER: martiuser
+      POSTGRES_DB: cot
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+      # No POSTGRES_HOST_AUTH_METHOD=trust (unlike upstream testrunner.sh).
+    secrets:
+      - pg_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - parity
+    # No "ports:": the database is reachable only on the internal network.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Minimum for the postgres entrypoint (chown data dir, gosu to postgres).
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "martiuser", "-d", "cot"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
+
+  takcl:
+    image: tak-parity-java:${SRC_SHA:?SRC_SHA must be set; run via harness.sh}
+    env_file:
+      - ./.work/takcl.env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - parity
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # StartupTests runs config, messaging, api and retention JVMs (-Xmx2000m
+    # each, LocalRunnableServer.java:103) plus TAKCL itself.
+    mem_limit: ${TAKCL_MEM_LIMIT:-10g}
+    # Not read_only: TAKCL writes its server farm, certificates and
+    # TEST_RESULTS under /opt/tak.
+
+networks:
+  parity:
+    internal: true
+
+volumes:
+  pgdata: {}
+
+secrets:
+  pg_password:
+    file: ./.work/pg-password

@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Dependabot for TAK-RS. Only the Rust workspace and GitHub Actions are
+# covered; the upstream Java tree under src/ is managed by upstream merges.
+# Dependabot PRs touch only rust/** or .github/**, so rust-ci.yml runs the
+# full gate on them (rust/scripts/ci-changes.sh treats both as Rust-relevant).
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: SI-2 (Flaw Remediation), SI-2(2) (Automated Flaw Remediation
+#   Status), CM-3 (Configuration Change Control), RA-5 (Vulnerability
+#   Monitoring and Scanning), SR-3 (Supply Chain Controls and Processes)
+
+version: 2
+
+updates:
+  # ---- Rust / Cargo (rust/Cargo.toml, rust/Cargo.lock) ----
+  - package-ecosystem: cargo
+    directory: "/rust"
+    schedule:
+      interval: weekly
+    # Version updates wait 7 days after a release (time for a compromised
+    # or broken release to be yanked). Security updates are not delayed.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      # All open advisories in one PR (groups default to version updates).
+      # POAM: POAM-2026-10-26-10 - automated security updates are a repository setting, paused as of 2026-10-26; the cargo-security group applies only once un-paused
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      cargo-minor-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "build(deps)"
+
+  # ---- GitHub Actions (SHA pins in .github/workflows) ----
+  # Dependabot keeps the `# vX.Y.Z` comment in step with the SHA.
+  # Re-verify each new SHA (annotated tags dereferenced) and update the CM-2
+  # pin inventory in rust/docs/compliance/ATO_EVIDENCE.md when merging.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci(deps)"

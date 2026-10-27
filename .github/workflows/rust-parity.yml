@@ -1,0 +1,215 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAK-RS parity harness v0: build the Java reference server from src/ in a
+# throwaway clone, run a TAKCL suite (default StartupTests) against it with
+# PostgreSQL/PostGIS, and upload the JUnit results.
+#
+# NEVER a required check, and it defines no job named after the required
+# check (rust-ci.yml owns that name; rust/scripts/check-workflows.sh enforces
+# it). Not triggered by src/** changes, so upstream merges never start a Java
+# build; the nightly run picks those up after they land on main.
+#
+# Trust: the Java build downloads Gradle plugins, Maven and npm artifacts
+# that are not hash-verified (POAM-2026-10-26-02). Mitigations here: no
+# secrets are referenced, the token is read-only and is not passed to the
+# harness (GITHUB_TOKEN is not in the step environment), the build runs in a
+# non-root container on an ephemeral GitHub-hosted runner, images are pinned
+# by digest in rust/parity/pins.env, the Gradle wrapper jar is validated, and
+# the Gradle cache is saved only from main and holds only downloaded modules
+# (caches/modules-2, caches/jars-*): no init scripts, gradle.properties or
+# unpacked distributions, so the distribution SHA-256 is checked on every run
+# (SEC-005). Container output is checked for symlinks and special files by
+# the harness and again before upload (SEC-003).
+#
+# Version tag: origin has no git tags. src/build.gradle needs `git describe`;
+# `harness.sh --version-tag auto` creates an annotated tag in the harness's
+# throwaway clone only, on the newest first-parent upstream release merge
+# (REL-006). Nothing is tagged in this checkout and nothing is pushed.
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: SA-11 (Developer Testing and Evaluation), CM-2 (Baseline
+#   Configuration), SA-15 (Development Process, Standards, and Tools), SR-3
+#   (Supply Chain Controls and Processes), SR-4 (Provenance), SR-11
+#   (Component Authenticity)
+
+name: rust-parity
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_id:
+        description: TAKCL test class to run (e.g. StartupTests)
+        type: string
+        required: true
+        default: StartupTests
+  schedule:
+    # Nightly, off the hour (UTC).
+    - cron: "41 5 * * *"
+  pull_request:
+    paths:
+      - "rust/parity/**"
+      - ".github/workflows/rust-parity.yml"
+  push:
+    branches: [main]
+    paths:
+      - "rust/parity/**"
+      - ".github/workflows/rust-parity.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: .
+
+jobs:
+  parity:
+    name: parity (Java reference, TAKCL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      TEST_ID: ${{ inputs.test_id || 'StartupTests' }}
+      RESULTS_DIR: ${{ github.workspace }}/rust/parity/results/run-${{ github.run_id }}-${{ github.run_attempt }}
+      CONTAINER_ENGINE: docker
+    steps:
+      # Full history: git describe and the harness's --version-tag search need it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate test id
+        run: |
+          set -euo pipefail
+          if [[ ! "$TEST_ID" =~ ^[A-Za-z][A-Za-z0-9_.]{0,80}$ ]]; then
+            echo "::error::test_id must match ^[A-Za-z][A-Za-z0-9_.]{0,80}\$"
+            exit 2
+          fi
+          echo "test id: $TEST_ID"
+
+      # rust/parity/pins.env is the single source of pins. It is parsed
+      # (never sourced) here and by the harness, which validates it fully.
+      - name: Pins (rust/parity/pins.env)
+        id: pins
+        run: |
+          set -euo pipefail
+          pins=rust/parity/pins.env
+          sha256sum "$pins"
+          awk -F= '/^[[:space:]]*(#|$)/ { next }
+                   $1 !~ /^[A-Z][A-Z0-9_]*$/ || NF < 2 { bad = 1; print "malformed: " $0; next }
+                   { print "  " $0 }
+                   END { exit bad }' "$pins"
+          gv=$(awk -F= '$1 == "GRADLE_VERSION" { print $2 }' "$pins")
+          if [[ ! "$gv" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::GRADLE_VERSION missing or invalid in $pins"
+            exit 4
+          fi
+          echo "gradle_version=$gv" >>"$GITHUB_OUTPUT"
+
+      - name: Free runner disk (harness needs >= 25 GB)
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune --all --force >/dev/null
+          df -h /
+
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Harness self-test (no containers)
+        run: rust/parity/harness.sh selftest
+
+      - name: Restore Gradle cache
+        id: gradle-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            rust/parity/.work/gradle-home/caches/modules-2
+            rust/parity/.work/gradle-home/caches/jars-*
+          key: parity-gradle-modules-${{ steps.pins.outputs.gradle_version }}-${{ hashFiles('src/**/*.gradle', 'src/gradle.properties', 'src/gradle/wrapper/gradle-wrapper.properties', 'rust/parity/pins.env') }}
+          restore-keys: |
+            parity-gradle-modules-${{ steps.pins.outputs.gradle_version }}-
+
+      # Executable or configuration state must never come from a cache
+      # (SEC-005); the paths above exclude it, this enforces it.
+      - name: Drop Gradle executable state
+        run: |
+          set -euo pipefail
+          gh=rust/parity/.work/gradle-home
+          rm -rf "$gh/init.d" "$gh/gradle.properties" "$gh/wrapper/dists"
+
+      - name: Build the Java reference (preflight, build-java, image)
+        run: rust/parity/harness.sh --results "$RESULTS_DIR" --version-tag auto preflight build-java image
+
+      - name: Run TAKCL suite against Java
+        run: rust/parity/harness.sh --results "$RESULTS_DIR" up test "$TEST_ID"
+
+      - name: Save compose logs
+        if: failure()
+        run: rust/parity/harness.sh --results "$RESULTS_DIR" logs || true
+
+      # Saved only from main (never from PR runs): cache-poisoning control.
+      - name: Save Gradle cache
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            rust/parity/.work/gradle-home/caches/modules-2
+            rust/parity/.work/gradle-home/caches/jars-*
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+
+      - name: Teardown
+        if: always()
+        run: rust/parity/harness.sh down || true
+
+      # The harness already deletes key material, symlinks and special files
+      # from results; repeat it so nothing of that kind can reach the
+      # artifact (upload-artifact follows symlinks). Fails the job if any
+      # symlink or special file was found. SEC-009: the tree is made
+      # owner-readable first, and if any find fails the step sets no
+      # `clean` output, so the upload below is skipped (fail closed).
+      - name: Strip key material, symlinks and special files from results
+        id: strip
+        if: always()
+        run: |
+          set -euo pipefail
+          [ -d "$RESULTS_DIR" ] || exit 0
+          chmod -R u+rwX "$RESULTS_DIR"
+          if ! special=$(find "$RESULTS_DIR" ! -type f ! -type d -print); then
+            echo "::error::cannot list results (find failed); not uploading"
+            exit 1
+          fi
+          find "$RESULTS_DIR" ! -type f ! -type d -delete
+          find "$RESULTS_DIR" -type f \( -iname '*.jks' -o -iname '*.p12' -o -iname '*.pfx' \
+            -o -iname '*.key' -o -iname '*.pem' -o -iname '*.csr' -o -iname '*.srl' \
+            -o -iname '*.truststore' \) -print -delete
+          # Re-list after the deletes: anything left that is not a regular
+          # file or directory, or a listing error, blocks the upload.
+          left=$(find "$RESULTS_DIR" ! -type f ! -type d -print)
+          [ -z "$left" ] || { echo "::error::non-regular entries remain: $left"; exit 1; }
+          echo "clean=true" >>"$GITHUB_OUTPUT"
+          if [ -n "$special" ]; then
+            printf 'removed non-regular entry: %s\n' "$special"
+            echo "::error::results contained symlinks or special files (removed)"
+            exit 1
+          fi
+
+      # Uploads only a tree the strip step fully listed and cleaned.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.strip.outputs.clean == 'true'
+        with:
+          name: parity-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RESULTS_DIR }}
+            !${{ env.RESULTS_DIR }}/**/*.jks
+            !${{ env.RESULTS_DIR }}/**/*.p12
+            !${{ env.RESULTS_DIR }}/**/*.pfx
+            !${{ env.RESULTS_DIR }}/**/*.key
+            !${{ env.RESULTS_DIR }}/**/*.pem
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Native-code allow-list for scripts/check-native-deps.sh (pure-Rust policy,
+# layer two; layer one is deny.toml [bans]). Plan section 3.2; D5;
+# POAM-2026-10-26-08.
+#
+# Any package in a shipping target's dependency graph whose manifest declares
+# `links` must be listed here FOR THAT TARGET, or the check fails.
+#
+# Format (one entry per line; `#` starts a comment):
+#   <crate> <class> <targets> # rationale (approved: <date>, <run>)
+#
+# <class>:
+#   native         links native code into shipped binaries
+#   native-unused  native code linked but never called; outside the FIPS boundary
+#   build-native   native code used on the build host only, never shipped
+#   marker         `links` used only as a version-uniqueness marker; no native code
+# <targets>: comma-separated target triples, or `all`
+#   (all = x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, wasm32-unknown-unknown).
+#
+# No aws-lc-* entry may ever cover wasm32-unknown-unknown.
+# Adding an entry needs an approved plan entry (CM-3) and a rationale.
+
+aws-lc-fips-sys     native         x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu  # D5: the only permitted cryptographic native code; FIPS 140-3 module and FIPS boundary (approved: 2026-10-26, 20261026-210255-phase0-foundations)
+aws-lc-sys          native-unused  x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu  # pulled in by rustls `fips` (rustls-0.23.46/Cargo.toml aws_lc_rs feature enables aws-lc-rs/aws-lc-sys); never called directly; not the FIPS boundary; POAM-2026-10-26-08 (approved: 2026-10-26, 20261026-210255-phase0-foundations)
+clang-sys           build-native   x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu  # build-dep of bindgen under the AWS-LC -sys crates; dlopens libclang at build time only, never linked into shipped binaries (approved: 2026-10-26, 20261026-210255-phase0-foundations)
+aws-lc-rs           marker         x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu  # links = "aws_lc_rs_*_sys" is a version-uniqueness marker; native code comes only from the AWS-LC -sys crates (approved: 2026-10-26, 20261026-210255-phase0-foundations)
+wasm-bindgen-shared marker         all                                                 # links = "wasm_bindgen" for single-version enforcement; no native code (approved: 2026-10-26, 20261026-210255-phase0-foundations)
+prettyplease        marker         all                                                 # links = "prettyplease02"; build.rs only prints check-cfg and VERSION; host-only build-time dep via yew-macro; no native code (approved: 2026-10-26, 20261026-210255-phase0-foundations)

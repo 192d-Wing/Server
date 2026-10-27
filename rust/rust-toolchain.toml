@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: CM-2 (Baseline Configuration), SA-15 (Development Process,
+#   Standards, and Tools) - pinned toolchain.
+#
+# MSRV (`rust-version` in Cargo.toml) equals the pinned minor: TAK-RS ships
+# binaries, not published libraries, so a lower MSRV would be an untested
+# claim. Keep `channel` and `rust-version` in sync (enforced by
+# scripts/check-toolchain.sh).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"

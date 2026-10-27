@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Workspace Cargo configuration.
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: CM-6 (Configuration Settings), SC-13 (Cryptographic
+#   Protection), SR-3 (Supply Chain Controls and Processes)
+#
+# These settings pre-position the FIPS crypto build (aws-lc-rs `fips` ->
+# aws-lc-fips-sys, from Phase 2). No Phase 0 crate depends on aws-lc-rs
+# (plan section 1.5.4); the values are inert until then.
+
+[env]
+# Always build the bundled, Cargo.lock-pinned FIPS module, never a
+# system-installed AWS-LC: a system library is not the module whose source and
+# build procedure we pin, so it would silently change the FIPS boundary.
+# `force = true` overrides a plain value in the shell/CI environment. It does
+# not cover the target-suffixed `AWS_LC_FIPS_SYS_USE_SYSTEM_<target>`, which
+# release pipelines must not set. AWS_LC_FIPS_SYS_SYSTEM_DIR is deliberately
+# not set (combined with USE_SYSTEM=0 it fails the build).
+AWS_LC_FIPS_SYS_USE_SYSTEM = { value = "0", force = true }
+# The FIPS build runs Go tooling (delocate). Use only the locally installed Go
+# toolchain; never download a different one.
+GOTOOLCHAIN = { value = "local", force = true }
+# The FIPS build's Go steps need no modules; forbid any module download.
+GOPROXY = { value = "off", force = true }
+
+[net]
+# Use Cargo's built-in git client, not the system `git` CLI.
+git-fetch-with-cli = false

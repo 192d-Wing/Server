@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Synthetic fixture for harness.sh selftest: one failing test. -->
+<testsuite errors="0" failures="1" hostname="fixture" name="com.bbn.marti.tests.StartupTests" skipped="0" tests="1" time="42.0" timestamp="2026-10-26T00:00:00">
+  <properties />
+  <testcase classname="com.bbn.marti.tests.StartupTests" name="jarStartupValiationTest" time="42.0">
+    <failure message="message not delivered" type="java.lang.AssertionError">java.lang.AssertionError: message not delivered</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

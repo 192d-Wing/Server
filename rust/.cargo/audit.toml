@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# cargo-audit configuration (read by `cargo audit` and the CI audit jobs).
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: RA-5 (Vulnerability Monitoring and Scanning), SI-2 (Flaw
+#   Remediation), SA-22 (Unsupported System Components)
+#
+# This file is the triage record of posture for known advisories. The CI gate
+# (`cargo audit --deny warnings`) is blocking, so this list is the only
+# exception path: anything not listed here fails CI.
+#
+# Rules (enforced by scripts/check-advisory-sync.sh):
+# - The set of IDs here MUST equal `deny.toml [advisories].ignore`.
+# - Each entry is a triaged exception preceded by its rationale and a
+#   `# POAM: POAM-YYYY-MM-DD-NN` line naming its POA&M entry in
+#   docs/compliance/POAM.md.
+#
+# Example shape (do not uncomment without a POA&M entry):
+#   # <crate> <issue>; <why it is not exploitable here / why no fix>.
+#   # POAM: POAM-YYYY-MM-DD-NN - <disposition>
+#   "RUSTSEC-YYYY-NNNN",
+
+[advisories]
+ignore = [
+    # --- Unmaintained (warnings; all transitive via yew 0.23, no direct use) ---
+
+    # proc-macro-error 1.0.4: build-time proc-macro dependency of yew-macro
+    # 0.23.0. Runs only inside rustc at compile time; no code in any shipped
+    # artifact. No maintained release; yew upstream must migrate.
+    # POAM: POAM-2026-10-26-09 - SA-22 exception (open; accepted for
+    # development 2026-10-27, pending AO review);
+    # remove when yew-macro drops proc-macro-error.
+    "RUSTSEC-2024-0370",
+
+    # bincode 1.3.3: yew 0.23.0 -> gloo 0.11.0 (non-optional, default
+    # features) -> gloo-worker 0.5.0. TAK-RS uses no gloo-worker API, so no
+    # attacker-controlled data reaches bincode. Not avoidable via yew features.
+    # POAM: POAM-2026-10-26-09 - SA-22 exception (open; accepted for
+    # development 2026-10-27, pending AO review);
+    # remove when gloo/yew drop bincode 1.x or gloo-worker becomes optional.
+    "RUSTSEC-2025-0141",
+]
+
+[yanked]
+enabled = true

@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// markdownlint-cli2 configuration for rust/ (run `make markdownlint` from
+// rust/). Rules follow OstrichPKI .markdownlint.json.
+// ROADMAP.md is pre-existing and ignored; lint it separately when next edited.
+{
+  "config": {
+    "default": true,
+    "MD012": true,
+    "MD013": false,
+    "MD022": true,
+    "MD024": false,
+    "MD026": true,
+    "MD029": true,
+    "MD031": true,
+    "MD032": true,
+    "MD033": false,
+    "MD034": false,
+    "MD036": false,
+    "MD040": false,
+    "MD041": false,
+    "MD060": false
+  },
+  "globs": [
+    "docs/**/*.md",
+    "ARCHITECTURE.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "parity/**/*.md"
+  ],
+  "ignores": [
+    "target/**",
+    "parity/.work/**",
+    "ROADMAP.md"
+  ]
+}

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+# Harness work dir (clone, secrets, build output) and local results.
+/.work/
+/results/

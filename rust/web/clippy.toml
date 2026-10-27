@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Clippy configuration for the crates under rust/web (wasm32-unknown-unknown).
+#
+# Clippy uses the clippy.toml nearest to each crate's manifest and does not
+# merge it with rust/clippy.toml, so this file repeats every line of
+# rust/clippy.toml (enforced by web/components/tests/clippy_config.rs) and
+# adds bans on std calls that compile for wasm32-unknown-unknown but panic at
+# run time (WEB-003). Those bans live here, not in rust/clippy.toml, because
+# native server crates use these calls legitimately.
+#
+# Crates outside rust/web that also build for wasm32 carry their own copy of
+# this file (crates/tak-api-types/clippy.toml, guarded by
+# crates/tak-api-types/tests/clippy_config.rs).
+#
+# The workspace denies unwrap/expect/panic/dbg/print in production code
+# (Cargo.toml [workspace.lints.clippy]); tests may use them.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-dbg-in-tests = true
+allow-print-in-tests = true
+
+# Browser APIs that build markup or code from strings, store credentials in
+# script-readable storage, or open blocking native dialogs (WEB-002). These
+# crates are only in the web dependency graph; a path whose crate is not linked
+# into the crate being checked is ignored. `allow-invalid` silences the
+# warning for paths that exist only behind a web-sys/js-sys cargo feature the
+# crate has not enabled. An exception needs a reviewed
+# `#[expect(clippy::disallowed_methods, reason = "...")]` on the narrowest item.
+disallowed-methods = [
+  { path = "js_sys::eval", reason = "runs a string as JavaScript (CWE-95); the CSP forbids 'unsafe-eval'", allow-invalid = true },
+  { path = "js_sys::Function::new_no_args", reason = "Function constructor is eval (CWE-95); the CSP forbids 'unsafe-eval'", allow-invalid = true },
+  { path = "js_sys::Function::new_with_args", reason = "Function constructor is eval (CWE-95); the CSP forbids 'unsafe-eval'", allow-invalid = true },
+  { path = "js_sys::Function::new_no_args_typed", reason = "Function constructor is eval (CWE-95); the CSP forbids 'unsafe-eval'", allow-invalid = true },
+  { path = "js_sys::Function::new_with_args_typed", reason = "Function constructor is eval (CWE-95); the CSP forbids 'unsafe-eval'", allow-invalid = true },
+  { path = "yew::virtual_dom::VNode::from_html_unchecked", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::Element::set_inner_html", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::Element::set_outer_html", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::Element::insert_adjacent_html", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::ShadowRoot::set_inner_html", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::Range::create_contextual_fragment", reason = "parses a string as HTML (CWE-79); render data as text nodes through html!", allow-invalid = true },
+  { path = "web_sys::HtmlIFrameElement::set_srcdoc", reason = "loads a string as an HTML document (CWE-79)", allow-invalid = true },
+  { path = "web_sys::Window::local_storage", reason = "script-readable storage (CWE-922); rely on the HttpOnly session cookie or mTLS", allow-invalid = true },
+  { path = "web_sys::Window::session_storage", reason = "script-readable storage (CWE-922); rely on the HttpOnly session cookie or mTLS", allow-invalid = true },
+  { path = "web_sys::Window::alert", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::alert_with_message", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::confirm", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::confirm_with_message", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::prompt", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::prompt_with_message", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "web_sys::Window::prompt_with_message_and_default", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "gloo_dialogs::alert", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "gloo_dialogs::confirm", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  { path = "gloo_dialogs::prompt", reason = "blocking native dialog; use the shared accessible Yew dialog component", allow-invalid = true },
+  # std on wasm32-unknown-unknown (no atomics): these compile but panic.
+  { path = "std::time::Instant::now", reason = "panics on wasm32-unknown-unknown; use js_sys::Date::now or web_sys::Performance::now" },
+  { path = "std::time::SystemTime::now", reason = "panics on wasm32-unknown-unknown; use js_sys::Date::now or take the time from the server" },
+  { path = "std::thread::spawn", reason = "panics on wasm32-unknown-unknown (no threads); use wasm_bindgen_futures::spawn_local" },
+  { path = "std::thread::Scope::spawn", reason = "panics on wasm32-unknown-unknown (no threads); use wasm_bindgen_futures::spawn_local" },
+  { path = "std::thread::sleep", reason = "panics on wasm32-unknown-unknown; use gloo_timers" },
+]
+disallowed-types = [
+  { path = "gloo_storage::LocalStorage", reason = "script-readable storage (CWE-922); rely on the HttpOnly session cookie or mTLS", allow-invalid = true },
+  { path = "gloo_storage::SessionStorage", reason = "script-readable storage (CWE-922); rely on the HttpOnly session cookie or mTLS", allow-invalid = true },
+  { path = "web_sys::Storage", reason = "script-readable storage (CWE-922); rely on the HttpOnly session cookie or mTLS", allow-invalid = true },
+  { path = "web_sys::HtmlDocument", reason = "legacy HTMLDocument: write/writeln parse strings as HTML (CWE-79); use web_sys::Document", allow-invalid = true },
+]
