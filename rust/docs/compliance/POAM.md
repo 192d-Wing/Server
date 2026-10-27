@@ -1,10 +1,10 @@
 # TAK-RS Plan of Action and Milestones (POA&M)
 
-**Document Version:** 0.4
+**Document Version:** 0.5
 **Date:** 2026-10-27
 **TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run, at the gate. 10 open entries, 0 closed, 0 risk-accepted by the authorizing official. POAM-2026-10-26-09 is accepted for development by the system owner (2026-10-27) and stays Open pending AO review.
+**Status:** Phase 0 build run, at the gate. 10 open entries, 0 closed, 0 risk-accepted by the authorizing official. POAM-2026-10-26-09 is accepted for development by the system owner (2026-10-27) and stays Open pending AO review. PR 7 CI progress (2026-10-27) noted on -01, -02, -04 and -06; none closed.
 **Run:** `20261026-210255-phase0-foundations`
 
 ## Document Control
@@ -74,6 +74,10 @@ developer process, CI, supply chain and licensing. There is no TAK-RS runtime
   best-effort. The job has `continue-on-error: true` and is not part of
   `rust-ci-gate`. The SBOM is not signed.
 - **Why it is tolerable now (not accepted):** Phase 0 ships no binary.
+- **Progress (2026-10-27):** the `sbom` job ran for the first time in PR 7
+  CI ([rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255)) and uploaded `rust-sbom` (2 `.cdx.json` files,
+  13544 bytes). It is still non-blocking and unsigned, so the entry stays
+  Open.
 - **Milestones:** make the job blocking when the first shipped binary exists
   (Phase 3); sign the SBOM with the release artifacts (Phase 9).
 
@@ -96,6 +100,13 @@ developer process, CI, supply chain and licensing. There is no TAK-RS runtime
   cached modules and jars themselves were downloaded without verification, so
   a cache hit is trust-on-first-use, the same risk as a fresh download. The
   cache is saved only from non-PR runs on `main`.
+- **Observed (2026-10-27):** the first parity runs on PR 7 built the
+  reference with these unverified downloads. Two build problems surfaced and
+  were fixed in the parity tooling: the build image lacked `patch` for
+  Gradle `applyGrpcPatch` (`0c56b62a`), and the `takserver-tool-ui`
+  `react-scripts build` failed on ESLint "jest/globals" with no npm lockfile,
+  so the reference UI build now sets `DISABLE_ESLINT_PLUGIN=true`
+  (`ce9caf79`). [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328) then passed. The weakness is unchanged.
 - **Milestone:** revisit if upstream adds verification metadata.
 
 ### POAM-2026-10-26-03
@@ -152,6 +163,11 @@ developer process, CI, supply chain and licensing. There is no TAK-RS runtime
   first green `rust-ci-gate` run, and where the plan allows also a "require
   workflow" rule pinned to `.github/workflows/rust-ci.yml`. Add `CODEOWNERS`
   once team names exist.
+- **Progress (2026-10-27):** the first green `rust-ci-gate` run happened
+  ([rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255), PR 7 head `ce9caf79`), so the milestone's
+  trigger is met. The ruleset is still not configured: PR 7 was merged to
+  `main` as `9f754245` by the user's decision with all checks green, but
+  nothing enforced it. The entry stays Open.
 - **Closing evidence:** `gh api repos/192d-Wing/Server/rulesets` (or the
   branch rules endpoint) shows `rust-ci-gate` as the only required status
   check; `gh api repos/192d-Wing/Server/actions/permissions` shows
@@ -183,6 +199,9 @@ developer process, CI, supply chain and licensing. There is no TAK-RS runtime
   externally started server. The Rust target depends on a planned `java`
   launcher shim, and the Ignite file-auth path has no design yet.
 - **Interim:** `harness.sh test <id> --target rust` exits 2 (fail closed).
+- **Progress (2026-10-27):** the Java side of the harness works in CI:
+  TAKCL `StartupTests` passed against the Java reference in [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328).
+  The Rust target is still not possible; the entry stays Open.
 - **Milestone:** the Phase 3 plan run designs the Rust target before the Phase 3
   exit tests (InputTests, SimpleTests, PointToPointTests, SubscriptionTests).
 
@@ -283,6 +302,7 @@ developer process, CI, supply chain and licensing. There is no TAK-RS runtime
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-27 | 0.5 | PR 7 CI evidence (rust-ci 40539495255, rust-parity 40539495328): progress notes on POAM-2026-10-26-01 (first `rust-sbom` upload), -02 (parity build ran with the unverified downloads; `patch` and ESLint fixes), -04 (first green `rust-ci-gate`, ruleset still absent, PR 7 merged without enforcement) and -06 (Java `StartupTests` PASS; Rust target still impossible). No status changed: 10 open, 0 closed, 0 risk-accepted by the authorizing official; POAM-09 unchanged (accepted for development, pending AO review). No new entry: hadolint's absence is recorded as a gap in the mapping and test evidence | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.4 | POAM-2026-10-26-09: the user's decision recorded. On 2026-10-27 the system owner (John Edward Willman V) accepted it for development, verbatim: "I accept POAM-2026-10-26-09 (proc-macro-error and bincode 1.x via yew 0.23) as an open POA&M for development, pending AO review." Register row (Weakness, Source), Weakness detail and Decision bullet updated; status stays Open pending AO review; not Risk Accepted; no control status raised. Locations re-verified with `grep -n` after the 2026-10-27 `deny.toml` and `.cargo/audit.toml` comment edits: POAM-09 `deny.toml` 49–52 (marker), 54–55 (ignores), 194–195 (`allow-build-scripts`), `.cargo/audit.toml` 31 and 39 (markers), 34 and 42 (ignores); POAM-08 `deny.toml` 93, 135–136. Header status: 10 open, 0 closed, 0 risk-accepted by the authorizing official | `20261026-210255-phase0-foundations` (gate) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs). POAM-2026-10-26-03 extended to every parity fixture image (non-UBI `eclipse-temurin` JDK and JRE, community PostGIS) and the `takcl` container's non-read-only root filesystem; CM-6 added; deviation not accepted (NIST-021). POAM-2026-10-26-10 Locations: `.github/dependabot.yml` marker (NIST-020). POAM-04: QA-006 verified at QA Round 2. POAM-2026-10-26-09 unchanged: Open, not accepted, the user decides at the gate. 10 open, 0 closed, 0 accepted | `20261026-210255-phase0-foundations` (fix round 3) |
 | 2026-10-26 | 0.2 | Phase 5 and WU10 (pre-gate). New POAM-2026-10-26-10 (Dependabot alerts and security-update settings; security updates found paused; NIST-007). POAM-09: wording "accepted" removed; open exception, acceptance pending the user's decision at the gate (no acceptance recorded); gate dependency and APSC-DV-003240 noted (NIST-003). POAM-02: SEC-005 residual (cached Gradle modules trust-on-first-use). POAM-03: tag age and architecture (WU7 REL-001). POAM-04: CM-5 added; Actions policy (WU5 REL-008). Locations verified with `grep -n` after fix round 1 for all ten entries. Conventions: `POAM:` marks an open gap, not an accepted one (NIST-015) | `20261026-210255-phase0-foundations` (Phase 5, WU10) |

@@ -1,10 +1,10 @@
 # Authority to Operate (ATO) Evidence Guide
 
-**Document Version:** 0.3
+**Document Version:** 0.4
 **Date:** 2026-10-27
 **TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run, before the gate. Local evidence recorded (QA Rounds 1 and 2) and the CM-2 pin inventory filled in; no CI evidence yet.
+**Status:** Phase 0 build run. Local evidence recorded (QA Rounds 1 and 2), the CM-2 pin inventory filled in, and the first CI evidence recorded (PR 7, 2026-10-27). No nightly run yet.
 **Run:** `20261026-210255-phase0-foundations`
 
 ## Document Control
@@ -41,10 +41,10 @@ control is met; status is in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md).
 
 | Evidence | Produced by | Location | Retention |
 |----------|-------------|----------|-----------|
-| CI run record (run URL, commit SHA, job conclusions, `rust-ci-gate` verdict table from `ci-gate.sh`) | `rust-ci.yml` (WU5) | GitHub Actions run history | GitHub default log retention; long-term store TBD |
-| SBOM (CycloneDX JSON, `rust-sbom`) | `sbom` job (non-blocking, POAM-2026-10-26-01) | Actions artifact | 90 days |
-| Parity results (JUnit XML, TAKCL and server logs, `build-info.json`; keystores and keys excluded) | `rust-parity.yml` (WU8) | Actions artifact `parity-results-<run_id>-<attempt>` (regular files only; symlinks and special files rejected) | 90 days |
-| Nightly supply-chain results | `rust-supply-chain.yml` (WU5) | GitHub Actions run history | GitHub default log retention |
+| CI run record (run URL, commit SHA, job conclusions, `rust-ci-gate` verdict table from `ci-gate.sh`) | `rust-ci.yml` (WU5) | GitHub Actions run history; first record: [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) (PR 7), summarised in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3 | GitHub default log retention; long-term store TBD |
+| SBOM (CycloneDX JSON, `rust-sbom`) | `sbom` job (non-blocking, POAM-2026-10-26-01) | Actions artifact; first: `rust-sbom` from run 40539495255 (13544 bytes, 2 files) | 90 days |
+| Parity results (JUnit XML, TAKCL and server logs, `build-info.json`; keystores and keys excluded) | `rust-parity.yml` (WU8) | Actions artifact `parity-results-<run_id>-<attempt>` (regular files only; symlinks and special files rejected); first: `parity-results-40539495328-1` (76550 bytes) | 90 days (the first expires 2027-01-25) |
+| Nightly supply-chain results | `rust-supply-chain.yml` (WU5) | GitHub Actions run history (no scheduled run yet) | GitHub default log retention |
 | Workflow run record (`plan.md`, `impl-notes.md`, `qa-report.md`, `findings-*.md`, `gate.md`, `wu0-applied.md`) | `/tak-rs-workflow` | `.agent-runs/<run>/` (not committed; ignored by the root `.gitignore`) | Until copied to the evidence store |
 | Compliance documents | compliance-scribe | `rust/docs/compliance/` (this directory) | git history |
 
@@ -68,7 +68,7 @@ the reviewer that raised them.
 |---------|----------|--------|
 | CM-3 | Per-change record in `.agent-runs/<run>/`: `plan.md`, `findings-*.md`, fix rounds, `gate.md` (PASS, PASS WITH POA&M or FAIL) | Planned. The Phase 0 run has a plan, a QA report (Rounds 0, 1 and 2), reports from three reviewers plus their re-verification reports, and three fix rounds (fix round 3 not QA-verified); it has not reached its gate |
 | CM-4 | `plan.md` impact sections (interfaces, threat sketch, compliance pre-map) | Planned |
-| SA-11 | `qa-report.md` lists every gate command with its result; gates not run are NOT RUN ([quality-gates.md](../../../.claude/skills/tak-rs-workflow/references/quality-gates.md)) | Two records copied to [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3 (QA Rounds 1 and 2, local). SA-11 is Partially Implemented in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) |
+| SA-11 | `qa-report.md` lists every gate command with its result; gates not run are NOT RUN ([quality-gates.md](../../../.claude/skills/tak-rs-workflow/references/quality-gates.md)) | Two local records (QA Rounds 1 and 2) and one CI record (PR 7, 2026-10-27) in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3. SA-11 is Partially Implemented in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) |
 
 The workflow is a developer-side aid. Agent reviews are SA-11 evidence, not an
 independent CA-2 assessment, and they do not replace human change approval
@@ -78,12 +78,12 @@ independent CA-2 assessment, and they do not replace human change approval
 
 | Evidence | Command or source | Frequency | Status |
 |----------|-------------------|-----------|--------|
-| Advisory scan | `make audit` (`cargo audit --deny warnings`) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (93 crates, 1378 advisories), but only with the two ignores of the open POAM-2026-10-26-09. CI and nightly: NOT RUN |
-| Policy scan (advisories, bans, licences, sources) | `make deny` (`cargo deny --locked check`) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (all four sections ok; advisories ok only with the same two ignores). CI and nightly: NOT RUN |
-| Native-code gate | `make check-native-deps` (per shipping target) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (3 targets; wasm32 markers only). CI and nightly: NOT RUN |
-| Advisory-ignore sync | `make check-advisory-sync` | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (2 IDs, identical, each with a POA&M). CI: NOT RUN |
+| Advisory scan | `make audit` (`cargo audit --deny warnings`) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (93 crates, 1378 advisories), but only with the two ignores of the open POAM-2026-10-26-09. PR CI: PASS in run 40539495255 (93 crates, 1380 advisories), also only with the same two ignores. Nightly: NOT RUN |
+| Policy scan (advisories, bans, licences, sources) | `make deny` (`cargo deny --locked check`) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (all four sections ok; advisories ok only with the same two ignores). PR CI: PASS in run 40539495255 (all four sections ok; advisories ok only with the two ignores). Nightly: NOT RUN |
+| Native-code gate | `make check-native-deps` (per shipping target) | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (3 targets; wasm32 markers only). PR CI: PASS in run 40539495255 (x86_64 and aarch64 Linux, wasm32; markers only; the AWS-LC crates are allow-listed but not in the graph). Nightly: NOT RUN |
+| Advisory-ignore sync | `make check-advisory-sync` | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (2 IDs, identical, each with a POA&M). PR CI: PASS in run 40539495255 (same result) |
 | Supply-chain negative tests | Plan §8.3 scratch checks, recorded in `qa-report.md` | Build run | Round 1: `allow-build-scripts` negative rejects (exit 2, `build-script-not-allowed`). The other §8.3 negatives were run by the release-engineer in WU3 scratch copies (impl notes, not re-run by QA); the FIPS-graph row of that table is not evidence (QA-004, [FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md) §Known issues). Round 2: POAM-09 detection (SA-22): with the two ignores removed in scratch copies, `cargo deny … check advisories` and `cargo audit --deny warnings` each exit 1 on exactly RUSTSEC-2024-0370 and RUSTSEC-2025-0141; controls with the unmodified files exit 0 ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, QA Round 2) |
-| SBOM | `make sbom` | Every Rust-relevant PR (non-blocking) | NOT RUN (cargo-cyclonedx not installed; CI job not yet run; POAM-2026-10-26-01) |
+| SBOM | `make sbom` | Every Rust-relevant PR (non-blocking) | Locally NOT RUN (cargo-cyclonedx not installed). PR CI: job succeeded in run 40539495255 and uploaded `rust-sbom` (2 `.cdx.json` files). Still best-effort, not gating, not signed (POAM-2026-10-26-01) |
 | Dependabot repository settings | `gh api repos/192d-Wing/Server/vulnerability-alerts`; `gh api repos/192d-Wing/Server/automated-security-fixes` | At each phase gate | Read 2026-10-26: alerts on (HTTP 204); security updates `{"enabled":true,"paused":true}`, so **paused** (POAM-2026-10-26-10) |
 
 ### Pin inventory (CM-2)
@@ -106,10 +106,10 @@ inventory is re-checked at the gate.
 | Rust toolchain | 1.99.1 (MSRV `rust-version = "1.99"`) | [rust-toolchain.toml](../../rust-toolchain.toml) line 12; [Cargo.toml](../../Cargo.toml) line 22 | `rustup show active-toolchain` and `check-toolchain` PASS (QA Round 1) |
 | cargo-deny | 0.20.2 | `taiki-e/install-action` `tool:` in `rust-ci.yml` and `rust-supply-chain.yml` | Local 0.20.2 used for QA Round 1 |
 | cargo-audit | 0.22.2 | same | Local 0.22.2 used for QA Round 1 |
-| zizmor | 1.31.1 | `rust-ci.yml` `workflow-lint` | Checksum from the install-action manifest at the pinned SHA; not yet run |
-| shellcheck | 0.11.0 | `rust-ci.yml` `policy` | same; not yet run |
-| cargo-cyclonedx | 0.5.9 | `rust-ci.yml` `sbom` | same; not yet run |
-| actionlint | 1.7.12, `actionlint_1.7.12_linux_amd64.tar.gz` SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8` | `rust-ci.yml` `workflow-lint` (`ACTIONLINT_VERSION`, `ACTIONLINT_SHA256`, `sha256sum --check --strict`) | The release `actionlint_1.7.12_checksums.txt` gives the same value (re-fetched 2026-10-26). install-action has no actionlint manifest, so Dependabot does not update this pin; review it at each install-action bump (WU5 REL-009) |
+| zizmor | 1.31.1 | `rust-ci.yml` `workflow-lint` | Checksum from the install-action manifest at the pinned SHA; run 40539495255 installed it with "verifying sha256 checksum" and logged `zizmor 1.31.1` |
+| shellcheck | 0.11.0 | `rust-ci.yml` `policy` | same; run 40539495255 verified the checksum and logged `version: 0.11.0` |
+| cargo-cyclonedx | 0.5.9 | `rust-ci.yml` `sbom` | same; run 40539495255 verified the checksum and logged `cargo-cyclonedx-cyclonedx 0.5.9` |
+| actionlint | 1.7.12, `actionlint_1.7.12_linux_amd64.tar.gz` SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8` | `rust-ci.yml` `workflow-lint` (`ACTIONLINT_VERSION`, `ACTIONLINT_SHA256`, `sha256sum --check --strict`) | The release `actionlint_1.7.12_checksums.txt` gives the same value (re-fetched 2026-10-26). install-action has no actionlint manifest, so Dependabot does not update this pin; review it at each install-action bump (WU5 REL-009). Run 40539495255: `actionlint_1.7.12_linux_amd64.tar.gz: OK` |
 | markdownlint-cli2 | 0.24.0 | [Makefile](../../Makefile) `MARKDOWNLINT_CLI2_VERSION`; bundled by `DavidAnson/markdownlint-cli2-action` v25.0.0 in CI | npm integrity `sha512-c5hU2MDoTlS230MLzdNlkIyxImXq5acxGKz4nYz4aDhH/2BgFtpsA7iK9/OoTHMgZ4FuR0wedTQA31K6Lp9I/Q==` (release-engineer, `npm view`); `make markdownlint` PASS (QA Round 1) |
 
 **GitHub Actions** (each pinned to the full commit SHA with a version comment)
@@ -175,8 +175,9 @@ round 2 is still changing them; the gate record carries their hashes.
 |------|-------|
 | Java reference | `5.7-RELEASE-14`, commit recorded per run in `build-info.json` |
 | Normalisation rules | None yet (nothing compared in Phase 0) |
-| First result | NOT RUN: TAKCL `StartupTests` against Java in the harness (no container engine locally; CI only) |
-| Local harness evidence | `parity/harness.sh selftest` 39 passed, 0 failed; integrity negative exits 4; exit-code contract PASS (QA Round 1, [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3). QA Round 2: harness selftest 44 passed, 0 failed; `reject_special` fault cases reject (SEC-009) |
+| First result | PASS, 2026-10-27, [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328) (PR 7, head `ce9caf79`): TAKCL `StartupTests` against Java, `verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`; artifact `parity-results-40539495328-1`. This is a Java baseline only; nothing was compared with TAK-RS (POAM-2026-10-26-06) |
+| Local harness evidence | `parity/harness.sh selftest` 39 passed, 0 failed; integrity negative exits 4; exit-code contract PASS (QA Round 1, [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3). QA Round 2: harness selftest 44 passed, 0 failed; `reject_special` fault cases reject (SEC-009). CI (run 40539495328): selftest 44 passed, 0 failed; `wrapper verified: Gradle 8.10.2` |
+| Dockerfile lint | None. hadolint is in no workflow and has never run; the two Dockerfiles in [parity/docker/](../../parity/docker/) are not linted (gap; see [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, PR 7 CI record) |
 | Container policy deviation | The parity fixtures use Docker Hub `eclipse-temurin` and `postgis/postgis` bases, not UBI or Iron Bank, and the `takcl` container is not read-only (WU7 REL-004). They are test fixtures outside the TOE and never shipped. Recorded as a deviation; **not accepted** by anyone yet. The whole deviation (all three images and the `takcl` root filesystem) is tracked as open POA&M POAM-2026-10-26-03 (extended by NIST-021) |
 
 Feature and suite status: [PROTOCOL_PARITY.md](PROTOCOL_PARITY.md).
@@ -206,6 +207,7 @@ in CI. Reasons are in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md)
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-27 | 0.4 | PR 7 CI evidence: §2 first CI run record, `rust-sbom` and `parity-results-40539495328-1` artifacts; §3 SA-11 row cites the CI record; §4 PR-CI results for `make audit`, `make deny`, `check-native-deps`, `check-advisory-sync` and the SBOM job (nightly still NOT RUN; the advisory passes still depend on the open POAM-2026-10-26-09); pin inventory: zizmor, shellcheck, cargo-cyclonedx and actionlint checksums verified in CI; §5 first parity result PASS (Java baseline only) and a Dockerfile-lint gap row (hadolint in no workflow) | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs): QA Round 2 added as evidence (§3 workflow row, §4 POAM-09 detection negatives for SA-22, §5 harness selftest 44/0); QA Round 2 pin re-check noted in the pin inventory; container-policy deviation now wholly under POAM-2026-10-26-03, still not accepted (NIST-021) | `20261026-210255-phase0-foundations` (fix round 3) |
 | 2026-10-26 | 0.2 | WU10 (pre-gate): CM-2 pin inventory (toolchain, tools, 7 actions with tag and commit SHA, 3 image digests, Gradle checksums, OSCAL catalog and MODERATE profile SHA-256 from release tag `v1.6.0`, licence file hashes), each checked against the repository; supply-chain and licence tables filled from QA Round 1; Dependabot settings row (POAM-2026-10-26-10); parity container-policy deviation recorded, not accepted. CI-only items stay NOT RUN | `20261026-210255-phase0-foundations` (WU10) |
 | 2026-10-26 | 0.1 | Initial skeleton: evidence types, locations and retention; workflow, supply-chain, parity and licence/provenance evidence tables (all pending); pin inventory template; OSCAL decision | `20261026-210255-phase0-foundations` (WU6) |

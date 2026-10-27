@@ -1,7 +1,7 @@
 # FIPS Cryptographic Standards Compliance
 
-**Document Version:** 0.2
-**Date:** 2026-10-26
+**Document Version:** 0.3
+**Date:** 2026-10-27
 **TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
 **Status:** Skeleton (Phase 0). No cryptography is implemented; every standard is Planned.
@@ -62,6 +62,11 @@ wasm32 (POAM-2026-10-26-08).
 Set in [.cargo/config.toml](../../.cargo/config.toml) with `force = true`.
 They are inert until a crate depends on `aws-lc-rs` (Phase 2), so no Phase 0
 gate shows that they work; the first evidence is the Phase 2 FIPS build.
+The PR 7 CI run (2026-10-27,
+[rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255))
+confirms this: its `check-native-deps` step reports `aws-lc-fips-sys`,
+`aws-lc-sys` and `aws-lc-rs` as allow-listed but "not in graph" for x86_64
+and aarch64 Linux, so that run is no evidence for any FIPS claim.
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
@@ -173,5 +178,6 @@ settings.
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-27 | 0.3 | PR 7 CI: Build pins section notes that run 40539495255 shows no AWS-LC crate in the graph, so the pins stay unexercised. No status change: every standard stays Planned (Phase 2) | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-26 | 0.2 | Phase 5 (pre-gate). Known issues 4 (QA-004: FIPS graph fails `[bans.build]` on two `libloading` test DLLs; the WU3 scratch PASS is not evidence) and 5 (`allow-build-scripts` must list the AWS-LC crates in Phase 2; SEC-007 residual). Build pins described as inert and not exercised by any gate. No status change: every standard stays Planned (Phase 2) | `20261026-210255-phase0-foundations` (Phase 5) |
 | 2026-10-26 | 0.1 | Initial skeleton: provider (aws-lc-rs `fips`), FIPS boundary limited to `aws-lc-fips-sys` with `aws-lc-sys` out of scope (POAM-2026-10-26-08), Linux-only operating environments, build pins and prerequisites, standards table (all Planned), TLS policy placeholder, known issues | `20261026-210255-phase0-foundations` (WU6) |

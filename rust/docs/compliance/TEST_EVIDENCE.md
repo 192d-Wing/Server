@@ -1,10 +1,10 @@
 # TAK-RS Test Evidence
 
-**Document Version:** 0.4
+**Document Version:** 0.5
 **Date:** 2026-10-27
 **TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run, before the gate. Two local run records (QA Round 1 and QA Round 2, both overall PASS); no CI run recorded.
+**Status:** Phase 0 build run. Two local run records (QA Round 1 and QA Round 2, both overall PASS) and one CI run record (PR 7, GitHub Actions, 2026-10-27, overall PASS). No scheduled (nightly) run recorded. hadolint is in no workflow and has never run.
 **Run:** `20261026-210255-phase0-foundations`
 
 ## Document Control
@@ -41,13 +41,13 @@ Filled per run record.
 | Component | Local (macOS) | CI (`ubuntu-24.04`) |
 |-----------|---------------|---------------------|
 | Rust toolchain | 1.99.1 (from [rust-toolchain.toml](../../rust-toolchain.toml)) | 1.99.1 |
-| cargo-deny | 0.20.2 | 0.20.2 (pinned in the workflows; not yet run) |
-| cargo-audit | 0.22.2 | 0.22.2 (pinned in the workflows; not yet run) |
-| Other tools | jq 1.7.1, `/bin/bash` 3.2.57, BSD awk 20200816, BSD grep, Ruby 2.6.10 with stdlib psych (YAML parsing; `check-workflows.rb` from fix round 2), npx with markdownlint-cli2 0.24.0 | shellcheck 0.11.0, zizmor 1.31.1, actionlint 1.7.12, cargo-cyclonedx 0.5.9 (pinned; not yet run) |
+| cargo-deny | 0.20.2 | 0.20.2 (ran in PR 7 CI, run 40539495255) |
+| cargo-audit | 0.22.2 | 0.22.2 (ran in PR 7 CI, run 40539495255) |
+| Other tools | jq 1.7.1, `/bin/bash` 3.2.57, BSD awk 20200816, BSD grep, Ruby 2.6.10 with stdlib psych (YAML parsing; `check-workflows.rb` from fix round 2), npx with markdownlint-cli2 0.24.0 | shellcheck 0.11.0, zizmor 1.31.1, actionlint 1.7.12, cargo-cyclonedx 0.5.9 (all ran in PR 7 CI, run 40539495255); Ruby 3.2.3; Docker 28.0.4 and Docker Compose 2.38.2 (parity run 40539495328). hadolint: in no workflow |
 | Not installed locally | docker, podman, shellcheck, actionlint, zizmor, hadolint, cargo-cyclonedx, wasm-pack, trunk, gawk, mawk | — |
 | Container engine | None installed | Docker (runner image) |
 | Java | Temurin 27 (cannot run Gradle 8.10.2) | JDK 17 in the build container |
-| Host | macOS (Darwin 27.0.0, aarch64) | `ubuntu-24.04` (not yet run) |
+| Host | macOS (Darwin 27.0.0, aarch64) | `ubuntu-24.04`, runner image version 20261012.334.1 (PR 7 CI) |
 
 ## 2. Run-record template
 
@@ -146,15 +146,15 @@ NOT RUN in this record, with reasons:
 
 | Gate | Reason |
 |------|--------|
-| `shellcheck scripts/*.sh parity/harness.sh` | Not installed locally; runs in the CI `policy` job, which has not run |
-| actionlint, zizmor (`workflow-lint`) | Not installed locally; CI only, not yet run |
-| hadolint, `docker compose config` | No tools and no container engine |
+| `shellcheck scripts/*.sh parity/harness.sh` | Not installed locally; runs in the CI `policy` job, which had not run at this record. It ran on 2026-10-27 (PR 7 CI record) |
+| actionlint, zizmor (`workflow-lint`) | Not installed locally; CI only, not run at this record. They ran on 2026-10-27 (PR 7 CI record) |
+| hadolint, `docker compose config` | No tools and no container engine. hadolint is also in no workflow, so it has not run in CI either (see the PR 7 CI record) |
 | `make sbom` | cargo-cyclonedx not installed (best-effort job, POAM-2026-10-26-01) |
 | `wasm-pack test`, `trunk build --release` | Not applicable in Phase 0: no wasm-bindgen tests and no app crate |
 | Fuzzing | Not applicable in Phase 0: no parsers |
-| TAKCL `StartupTests` against the Java reference (`harness.sh up test StartupTests`) | No container engine; CI only. The SEC-003 container-output path (`docker cp` → `reject_special` → upload strip) is covered only by self-tests |
-| Plan §9.2 items 1 to 7 (GitHub runs, probes, rulesets) | CI only; no GitHub run exists yet |
-| mawk and bash 5.2 (the `ubuntu-24.04` defaults) | Not installed; the first CI run of `make policy-selftest` confirms the detector under mawk |
+| TAKCL `StartupTests` against the Java reference (`harness.sh up test StartupTests`) | No container engine; CI only. The SEC-003 container-output path (`docker cp` → `reject_special` → upload strip) is covered only by self-tests. It ran in CI on 2026-10-27 (PR 7 CI record, §4) |
+| Plan §9.2 items 1 to 7 (GitHub runs, probes, rulesets) | CI only; no GitHub run existed at this record. Status since then: §5 |
+| mawk and bash 5.2 (the `ubuntu-24.04` defaults) | Not installed; the first CI run of `make policy-selftest` confirms the detector under mawk. It ran on 2026-10-27 (PR 7 CI record: 331/0); the log does not print the awk or bash version |
 | `aws-lc-fips-sys` build | Not part of Phase 0 |
 
 **Note on CA-5.** The only failing gate was `make check-annotations-strict`,
@@ -230,10 +230,11 @@ NOT RUN in this record, with reasons:
 
 | Gate | Reason |
 |------|--------|
-| shellcheck, actionlint, zizmor, hadolint | Not installed locally; CI only, not yet run |
+| shellcheck, actionlint, zizmor | Not installed locally; CI only, not run at this record. They ran on 2026-10-27 (PR 7 CI record) |
+| hadolint | Not installed locally, and in **no workflow**: hadolint has never run anywhere. Until 2026-10-27 this row grouped it with the CI-only tools as "CI only, not yet run", which was wrong |
 | `make sbom` | cargo-cyclonedx not installed (POAM-2026-10-26-01) |
-| TAKCL `StartupTests`, plan §9.2 probes | No container engine; CI only |
-| mawk, bash 5.2, Ruby 3.2 (the `ubuntu-24.04` defaults) | Not installed; the parsed-YAML rules are verified only on Ruby 2.6.10 until the first CI run (REL-012) |
+| TAKCL `StartupTests`, plan §9.2 probes | No container engine; CI only. `StartupTests` against Java ran on 2026-10-27 (§4); the probes are in §5 |
+| mawk, bash 5.2, Ruby 3.2 (the `ubuntu-24.04` defaults) | Not installed; the parsed-YAML rules are verified only on Ruby 2.6.10 until the first CI run (REL-012). On 2026-10-27 `check-workflows` passed under Ruby 3.2.3 on the runner (PR 7 CI record) |
 | `wasm-pack test`, fuzzing | Not applicable in Phase 0: none exist |
 
 **Not evidence.** The `make deny` and `make audit` passes depend on the two
@@ -258,11 +259,84 @@ Also verified as resolved in this round: SEC-004, SEC-008, SEC-009, NIST-013
 (2) and (4), NIST-014; NIST-013 (3) is partial for Not Applicable rows
 (QA-007). REL-012 stays open.
 
+### 2026-10-27 PR 7 CI (GitHub Actions)
+
+- **Who and where:** GitHub Actions on GitHub-hosted `ubuntu-24.04` runners
+  (runner image version 20261012.334.1), for
+  [PR 7](https://github.com/192d-Wing/Server/pull/7). Recorded by the
+  compliance-scribe from the run logs.
+- **What was tested:** final PR head `ce9caf79` (event `pull_request`,
+  2026-10-27T16:17:46Z). The PR was merged to `main` as `9f754245` (merge
+  commit) on 2026-10-27. Nothing enforced the merge: `main` has no branch
+  ruleset (POAM-2026-10-26-04).
+- **Runs:**
+  [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255)
+  and
+  [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328).
+  CodeQL (repository default setup, `java-kotlin`, `javascript-typescript`,
+  `python`) also succeeded; it is not part of `rust-ci-gate`.
+- **Overall: PASS.** Every job of both workflows succeeded.
+  `rust-ci-gate` printed `ci-gate: PASS (rust=true)`.
+
+`rust-ci` run 40539495255, one row per job:
+
+| Job | Command or step | Result | Counts and versions |
+|-----|-----------------|--------|---------------------|
+| `changes` | `scripts/ci-changes.sh` | PASS | `rust=true` |
+| `workflow-lint` | actionlint, zizmor, `check-workflows`, `check-toolchain` | PASS | actionlint 1.7.12, tarball `sha256sum --check --strict` "OK"; zizmor 1.31.1 (install-action SHA-256 verified), "No findings to report"; `check-workflows: ok (3 rust workflow file(s), 3 parsed)` under Ruby 3.2.3; `check-toolchain` 1.99.1 vs 1.99 |
+| `annotations-strict` | `make check-annotations-strict` | PASS | `block count 18`, `check-annotations: ok` |
+| `fmt` | `make fmt-check` | PASS | rustc 1.99.1 |
+| `lint (native)` | `make clippy` | PASS | 0 warnings with `-D warnings` |
+| `lint (wasm32)` | `make clippy-wasm`, then the wasm32 build | PASS | 0 warnings; `cargo build … --target wasm32-unknown-unknown --locked` |
+| `test` | `make test test-doc` | PASS | 5 passed, 0 failed (`tak-api-types` lib 0, `clippy_config` 2; `tak-web-components` lib 1, `clippy_config` 2); doc tests 2 passed, 0 failed |
+| `doc` | `make doc` | PASS | exit 0 |
+| `policy` | `make policy policy-selftest`; `shellcheck scripts/*.sh parity/harness.sh` | PASS | `check-unsafe` 0 uses; `check-manifests` 2 members; `check-poam-ids: ok (10 referenced ID(s), 10 entr(ies) in POAM.md)`; `check-workflows` ok; `check-src-coupling` ok; `selftest: 331 passed, 0 failed`; shellcheck 0.11.0 (install-action SHA-256 verified) exit 0 |
+| `supply-chain` | `make deny`, `make audit`, `make check-native-deps check-advisory-sync` | PASS | cargo-deny 0.20.2 `advisories ok, bans ok, licenses ok, sources ok`; cargo-audit 0.22.2: 1380 advisories loaded, 93 crates, no findings; both pass only with the 2 ignores of the open POAM-2026-10-26-09 (not RA-5 or SA-22 evidence; see the QA Round 2 "Not evidence" note). `check-native-deps: ok` on x86_64 and aarch64 Linux (whole workspace) and wasm32 (only the `prettyplease` and `wasm-bindgen-shared` markers); `check-advisory-sync: ok (2 ignored advisory ID(s) …)` |
+| `markdown` | markdownlint-cli2 action | PASS | markdownlint-cli2 0.24.0: 11 files, 0 issues |
+| `sbom` | `make sbom` (non-blocking, POAM-2026-10-26-01) | PASS | cargo-cyclonedx 0.5.9; 2 `.cdx.json` files; artifact `rust-sbom` (13544 bytes, retention 90 days). Best-effort job, not part of `rust-ci-gate` |
+| `rust-ci-gate` | `scripts/ci-gate.sh` | PASS | every needed job `success`, verdict `ok`; `ci-gate: PASS (rust=true)` |
+
+`rust-parity` run 40539495328, job "parity (Java reference, TAKCL)":
+
+| Step | Result | Detail |
+|------|--------|--------|
+| `gradle/actions/wrapper-validation` | PASS | — |
+| Harness self-test | PASS | `selftest: 44 passed, 0 failed` |
+| Java reference build (preflight, `build-java`, image) | PASS | Clone of the PR merge ref (`refs/pull/7/merge`); tag `5.7-RELEASE-14` created at `5187abd4` in the clone only; `wrapper verified: Gradle 8.10.2`, wrapper jar SHA-256 `91a2…1e60`; Docker 28.0.4, Compose 2.38.2. `git diff 5187abd4 9f754245 -- src` is empty, so `src/` is the 5.7-RELEASE-14 tree |
+| TAKCL `StartupTests` against Java | PASS | `harness: test StartupTests: PASS`; test `[dbAvailableEnabled][Java17.0.20.1]StartupTests.jarStartupValiationTest`; `verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0` |
+| Teardown | PASS | `harness: down: ok` |
+| Strip key material, symlinks and special files | PASS | — |
+| Upload | PASS | artifact `parity-results-40539495328-1`, 76550 bytes, retention 90 days (expires 2027-01-25) |
+
+**Earlier runs on PR 7 (the gates detected failures).** Each failure was
+fixed in a later commit on the PR. The failing `rust-ci` runs on `77beace3`
+and `0c56b62a` show that a failing required job turns `rust-ci-gate` red.
+
+| Head | rust-ci | rust-parity | What failed | Fix |
+|------|---------|-------------|-------------|-----|
+| `77beace3` | [40525846385](https://github.com/192d-Wing/Server/actions/runs/40525846385) failure | [40525846019](https://github.com/192d-Wing/Server/actions/runs/40525846019) failure | `make policy-selftest`: 17 of 331 cases failed, because the CI's `BASE_REF` leaked into the fixtures. Parity: Gradle `applyGrpcPatch` needs `patch`, absent from the build image | `0c56b62a`: the self-test unsets the CI inputs; `Dockerfile.java-build` installs `patch` |
+| `0c56b62a` | [40536002508](https://github.com/192d-Wing/Server/actions/runs/40536002508) failure | [40536002486](https://github.com/192d-Wing/Server/actions/runs/40536002486) cancelled | First shellcheck run: SC2209 in `ci-changes.sh`, plus intentional patterns | `de62d29e`: SC2209 fixed; inline disables with reasons |
+| `de62d29e` | [40536818117](https://github.com/192d-Wing/Server/actions/runs/40536818117) success | [40536815081](https://github.com/192d-Wing/Server/actions/runs/40536815081) failure | `takserver-tool-ui` `react-scripts build`: ESLint config "jest/globals" fails with no npm lockfile | `ce9caf79`: `DISABLE_ESLINT_PLUGIN=true` for the reference build (under POAM-2026-10-26-02) |
+
+NOT RUN or not shown by these runs, with reasons:
+
+| Gate | Reason |
+|------|--------|
+| hadolint | In **no workflow**; it has never run, locally or in CI. The two parity Dockerfiles ([parity/docker/](../../parity/docker/)) have no linter. BuildKit printed two `InvalidDefaultArgInFrom` build-check warnings (the base-image `ARG`s have no default, so the digest from `pins.env` must be passed); no gate evaluates them |
+| Branch protection | `main` has no ruleset; `rust-ci-gate` is not a required check (POAM-2026-10-26-04). The merge followed green checks by the user's decision, not by enforcement |
+| Nightly runs | No scheduled run of `rust-supply-chain.yml` or `rust-parity.yml` yet (§6) |
+| Push-to-`main` runs on `9f754245` | In progress when this record was written (rust-ci 40557332845, rust-parity 40557332959); not claimed |
+| Plan §9.2 probes | Not run as separate PRs (§5) |
+| Parity against the Rust server | Not possible yet (POAM-2026-10-26-06) |
+| Dependabot security updates | Still paused (POAM-2026-10-26-10) |
+| awk and bash versions on the runner | `make policy-selftest` passed on the runner, but the log does not print which awk or bash ran it |
+
 ## 4. TAKCL parity results
 
 | Date | Run | Target | Test ID | Tests | Failures | Errors | Result | Artifact |
 |------|-----|--------|---------|-------|----------|--------|--------|----------|
-| — | — | Java | StartupTests | — | — | — | NOT RUN (no container engine locally; CI only, not yet run) | — |
+| 2026-10-27 | [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328) (PR 7, head `ce9caf79`) | Java (`5.7-RELEASE-14`) | StartupTests (`[dbAvailableEnabled][Java17.0.20.1]StartupTests.jarStartupValiationTest`) | 1 | 0 | 0 | PASS (`verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`) | `parity-results-40539495328-1` (76550 bytes, expires 2027-01-25) |
+| — | — | Rust | StartupTests | — | — | — | NOT RUN (the Rust target is not possible yet; POAM-2026-10-26-06) | — |
 
 Suite inventory and Java baselines: [PROTOCOL_PARITY.md](PROTOCOL_PARITY.md)
 Table B.
@@ -271,12 +345,12 @@ Table B.
 
 | Probe | Expectation | Result | Evidence |
 |-------|-------------|--------|----------|
-| Phase 0 PR | Every `rust-ci.yml` job succeeds; `rust-ci-gate` green; `sbom` uploads `rust-sbom` | NOT RUN | No PR opened yet |
-| `src/**`-only PR | `changes` reports `rust=false`; heavy jobs skipped; `rust-ci-gate` green in under 2 minutes; no parity run | NOT RUN | Locally, the extracted `changes` step gives `rust=false` for the last upstream merge (§3); not evidence for this probe |
-| Gate fails closed | Draft PR with a mis-formatted `.rs` file: `fmt` fails and `rust-ci-gate` fails | NOT RUN | — |
+| Phase 0 PR | Every `rust-ci.yml` job succeeds; `rust-ci-gate` green; `sbom` uploads `rust-sbom` | PASS | PR 7, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255): 13 of 13 jobs `success`, `ci-gate: PASS (rust=true)`, `rust-sbom` uploaded (13544 bytes). §3, PR 7 CI record |
+| `src/**`-only PR | `changes` reports `rust=false`; heavy jobs skipped; `rust-ci-gate` green in under 2 minutes; no parity run | NOT RUN | No `src/**`-only PR has been opened. Locally, the extracted `changes` step gives `rust=false` for the last upstream merge (§3); not evidence for this probe |
+| Gate fails closed | Draft PR with a mis-formatted `.rs` file: `fmt` fails and `rust-ci-gate` fails | NOT RUN (as specified) | The deliberate probe was not run. Related evidence: on PR 7, a real `policy` failure turned `rust-ci-gate` red in [40525846385](https://github.com/192d-Wing/Server/actions/runs/40525846385) (head `77beace3`) and [40536002508](https://github.com/192d-Wing/Server/actions/runs/40536002508) (head `0c56b62a`); §3, PR 7 CI record. That shows a failing required job fails the gate; it does not exercise the `fmt` path |
 | Nightly supply chain | `audit`, `deny`, `native-deps` green on the first scheduled run | NOT RUN | — |
-| Parity dispatch | `StartupTests` JUnit: tests at least 1, failures 0, errors 0; teardown ran | NOT RUN | — |
-| Required check | Ruleset shows `rust-ci-gate` as the only required check (closes POAM-2026-10-26-04) | NOT RUN | — |
+| Parity dispatch | `StartupTests` JUnit: tests at least 1, failures 0, errors 0; teardown ran | PASS (on `pull_request`) | [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328): tests 1, failures 0, errors 0; `harness: down: ok`. Triggered by the PR, not by `workflow_dispatch`; the manual trigger itself is not exercised |
+| Required check | Ruleset shows `rust-ci-gate` as the only required check (closes POAM-2026-10-26-04) | NOT RUN | No ruleset on `main`; POAM-2026-10-26-04 stays Open |
 
 ## 6. Nightly results
 
@@ -284,13 +358,14 @@ Listed at each phase gate (POAM-2026-10-26-07).
 
 | Period | Workflow | Runs | Failures | Notes |
 |--------|----------|------|----------|-------|
-| — | `rust-supply-chain.yml` | — | — | No scheduled run yet |
-| — | `rust-parity.yml` | — | — | No scheduled run yet |
+| — | `rust-supply-chain.yml` | — | — | No scheduled run yet (as of 2026-10-27) |
+| — | `rust-parity.yml` | — | — | No scheduled run yet (as of 2026-10-27). The PR 7 run (§4) was a `pull_request` run, not a nightly one |
 
 ## Document Change History
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-27 | 0.5 | PR 7 CI evidence: new run record "2026-10-27 PR 7 CI (GitHub Actions)" (rust-ci 40539495255 and rust-parity 40539495328 on head `ce9caf79`, merged as `9f754245`; every job PASS; tool versions; `StartupTests` against Java PASS with the `verify-junit` line; artifacts `rust-sbom` and `parity-results-40539495328-1`); the three earlier failing runs recorded as detection evidence; §1 CI column filled; §4 Java `StartupTests` row; §5 Phase 0 PR and parity probes PASS, the others NOT RUN; NOT RUN reasons in the QA Round 1 and 2 records annotated with the later CI result. hadolint: separated from the CI-only tools; it is in no workflow and has never run (the QA Round 2 row had said "CI only") | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.4 | Gate: QA Round 2 "Not evidence" note records that POAM-2026-10-26-09 was accepted for development by the system owner on 2026-10-27, pending AO review (still Open). POAM-09 detection rows: the recorded commands are unchanged; current ignore line numbers added (`deny.toml` 54–55, `.cargo/audit.toml` 34 and 42) after the 2026-10-27 comment edits. No result changed | `20261026-210255-phase0-foundations` (gate) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs): second run record from QA Round 2 (overall PASS; every Round 1 gate re-run; POAM-09 detection negative gates for `cargo deny` and `cargo audit`, exit 1 on RUSTSEC-2024-0370 and RUSTSEC-2025-0141, cited as SA-22 detection evidence; fix round 2 re-verification; NOT RUN list; open findings QA-003, QA-004, QA-005, QA-007, QA-008); Round 1 QA-006 row points to Round 2; Ruby version in §1 | `20261026-210255-phase0-foundations` (fix round 3) |
 | 2026-10-26 | 0.2 | WU10 (pre-gate): first run record from QA Round 1 (overall PASS; local gates with commands and counts; NOT RUN list with reasons; Round 0 FAIL summary; open QA findings QA-003 to QA-006); local environment filled in; parity and §9.2 probes marked NOT RUN | `20261026-210255-phase0-foundations` (WU10) |

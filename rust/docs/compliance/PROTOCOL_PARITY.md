@@ -1,10 +1,10 @@
 # Protocol Parity: Java TAK Server to TAK-RS
 
-**Document Version:** 0.1
-**Date:** 2026-10-26
+**Document Version:** 0.2
+**Date:** 2026-10-27
 **TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`, commit `5187abd4`)
-**Status:** Skeleton (Phase 0). Every feature is Not started.
+**Status:** Skeleton (Phase 0). Every feature is Not started. Java baseline recorded for StartupTests only (PR 7 CI, 2026-10-27).
 **Run:** `20261026-210255-phase0-foundations`
 
 ## Document Control
@@ -160,7 +160,7 @@ line 65: names containing `ebsocket`, `ission` or `StartupTests`).
 
 | Suite.test | Needs DB | Java baseline | Rust result |
 |------------|----------|---------------|-------------|
-| StartupTests.jarStartupValiationTest | Yes | Pending first harness run | Not run (Rust target Phase 3; POAM-2026-10-26-06) |
+| StartupTests.jarStartupValiationTest | Yes | PASS, 2026-10-27, [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328) (PR 7, head `ce9caf79`; `[dbAvailableEnabled][Java17.0.20.1]`; tests 1, failures 0, errors 0; artifact `parity-results-40539495328-1`) | Not run (Rust target Phase 3; POAM-2026-10-26-06) |
 | FederationV1Tests.advancedFederationTest | No | Not run | Not run |
 | FederationV1Tests.basicFederationTest | No | Not run | Not run |
 | FederationV1Tests.basicMultiInputFederationTest | No | Not run | Not run |
@@ -229,4 +229,5 @@ None yet. Nothing in Phase 0 compares Java and Rust output.
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-27 | 0.2 | PR 7 CI: Table B Java baseline for StartupTests.jarStartupValiationTest recorded as PASS (rust-parity 40539495328, `verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`). Rust result unchanged (Not run, POAM-2026-10-26-06); no feature status changed; no deviation | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-26 | 0.1 | Initial skeleton: status vocabulary, Table A (58 features from ROADMAP §1 and §4, all Not started, Java entry points checked to exist), Table B (TAKCL inventory from `testing.md` and `TestRunnerModule.java`; StartupTests baseline pending first harness run), empty Table C, provenance note | `20261026-210255-phase0-foundations` (WU6) |
