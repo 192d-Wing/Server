@@ -17,9 +17,10 @@ ARG BUILDER_UID=10001
 ARG BUILDER_GID=10001
 
 # git: Grgit reads the clone's .git to derive the version (src/build.gradle).
+# patch: takserver-protobuf's applyGrpcPatch task runs the `patch` binary.
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends git; \
+    apt-get install -y --no-install-recommends git patch; \
     rm -rf /var/lib/apt/lists/*; \
     groupadd --non-unique --gid "${BUILDER_GID}" builder; \
     useradd --non-unique --uid "${BUILDER_UID}" --gid "${BUILDER_GID}" \

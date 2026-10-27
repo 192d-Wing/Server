@@ -21,6 +21,11 @@ root=$(cd "$here/.." && pwd)
 T=$(mktemp -d "${TMPDIR:-/tmp}/tak-rs-selftest.XXXXXX")
 trap 'rm -rf "$T"' EXIT
 
+# Fixtures must not inherit the caller's check inputs: CI exports BASE_REF for
+# `make policy`, and the fixture trees have no git history to compare with.
+# Cases that need one of these set it explicitly.
+unset BASE_REF REPO_ROOT RUST_ROOT MAPPING_FILE MAPPING_PENDING ANNOTATIONS_STRICT
+
 # Fixture workspaces live outside rust/, so pin the same toolchain explicitly.
 if [ -z "${RUSTUP_TOOLCHAIN:-}" ] && command -v rustup >/dev/null 2>&1; then
   RUSTUP_TOOLCHAIN=$(cd "$root" && rustup show active-toolchain 2>/dev/null | awk 'NR == 1 { print $1 }') || true
