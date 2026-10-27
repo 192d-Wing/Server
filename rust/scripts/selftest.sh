@@ -14,6 +14,8 @@
 # run time so the real checks never see them in this file.
 #
 # Exit: 0 all cases behaved as expected, 1 otherwise.
+# Fixtures hold literal backticks and ${{ }} expressions on purpose.
+# shellcheck disable=SC2016
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)

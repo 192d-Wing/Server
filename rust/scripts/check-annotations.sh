@@ -81,6 +81,7 @@ EOF
 status=0
 
 # ---- (a) block structure and control-ID form -------------------------------
+# shellcheck disable=SC2016 # awk program, not shell
 check_blocks_awk='
 function is_comment(l) { return l ~ /^[[:space:]]*(\/\/|#|\*|--|;)/ }
 function body(l) { sub(/^[[:space:]]*(\/\/[\/!]?|#+|\*|--|;+)/, "", l); return l }
@@ -217,6 +218,7 @@ if [ -s "$ids" ]; then
     pending=""
     [ -f "$pending_file" ] && pending=$(sed -e 's/#.*$//' "$pending_file" | awk 'NF { print $1 }' | LC_ALL=C sort -u)
     n_pending=0
+    # shellcheck disable=SC2013 # control IDs contain no whitespace
     for id in $(cut -f1 "$ids" | LC_ALL=C sort -u); do
       if printf '%s\n' "$mapped" | grep -qxF "$id"; then
         continue

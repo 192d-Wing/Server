@@ -862,6 +862,7 @@ open(sys.argv[1], "wb").write("<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<!DO
   mkdir -p "$ST_TMP/failbin"
   printf '#!/bin/sh\nexit 1\n' >"$ST_TMP/failbin/find"
   chmod +x "$ST_TMP/failbin/find"
+  # shellcheck disable=SC2329 # invoked through st_expect
   st_failing_find() { (export PATH="$ST_TMP/failbin:$PATH"; st_lib "$@"); }
   st_expect 1 "reject_special rejects when find fails" st_failing_find - st_reject_as_cmd_test "$ST_TMP/findfail"
   mkdir -p "$ST_TMP/unread/d"
@@ -957,6 +958,7 @@ open(sys.argv[1], "wb").write("<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<!DO
 # so single functions can be exercised in a separate process.
 
 if [ "${TAK_PARITY_LIB:-0}" = 1 ]; then
+  # shellcheck disable=SC2317 # exit is the fallback when not sourced
   return 0 2>/dev/null || exit 0
 fi
 

@@ -47,7 +47,7 @@ set -euo pipefail
 
 trap 'printf "rust=true\n"; exit 0' ERR
 
-mode=nl
+mode='nl'
 case "${1:-}" in
   -z) mode=nul ;;
   '') ;;
