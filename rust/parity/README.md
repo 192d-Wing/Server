@@ -6,7 +6,8 @@ JUnit results. Later phases point the same suites at the Rust server.
 
 Phase 0 exit criterion: TAKCL `StartupTests` passes against the Java reference
 in this harness. That run happens in CI only (`rust-parity.yml`; see
-[What is verified where](#what-is-verified-where)).
+[What is verified where](#what-is-verified-where)). Phase 1a adds the
+[golden corpus](#golden-corpus) commands.
 
 ## Topology
 
@@ -75,6 +76,12 @@ rust/parity/harness.sh preflight build-java image up test StartupTests
 rust/parity/harness.sh logs down
 ```
 
+Golden corpus (also `make parity-capture-corpus` from `rust/`):
+
+```sh
+rust/parity/harness.sh preflight build-java image capture-corpus verify-corpus
+```
+
 Exit codes: `0` ok · `1` test or build failure · `2` unsupported command or
 target, or bad usage · `3` missing prerequisite · `4` integrity check failed.
 
@@ -124,10 +131,25 @@ the change in the CM-2 pin inventory (`rust/docs/compliance/ATO_EVIDENCE.md`).
 
 ## Golden corpus
 
-Phase 1a's exit criterion is that the XML-to-proto conversion is
-byte-equivalent to the Java server's. The evidence is a golden corpus in
-`corpus/`. Its inputs, output format, byte-equivalence rules, licence and
-update procedure are in [corpus/README.md](corpus/README.md).
+Phase 1a's exit criterion is that the CoT XML and TAK Protocol v1
+conversion is byte-equivalent to the Java server's in all four directions
+(`x2p`, `x2x`, `p2x`, `p2p`), plus the number and time formatting tables.
+The evidence is a golden corpus in `corpus/`. Its inputs, output format,
+byte-equivalence rules, licence and update procedure are in
+[corpus/README.md](corpus/README.md). `corpus/MANIFEST.tsv` is the list of
+cases (one row per id and direction); this file gives no counts.
+
+**Status: inputs only.** `corpus/golden/` does not exist yet: no capture has
+been run against the reference, so the exit criterion is not met. Until the
+first capture is imported:
+
+- `verify-corpus` exits 3 ("no committed goldens"). The scheduled and
+  pull-request `rust-parity` runs therefore fail at the corpus step; the
+  TAKCL suite step still runs and reports on its own.
+- The first capture is a `workflow_dispatch` run with
+  `verify_corpus: false`, followed by `import-corpus` on its
+  `parity-corpus-<run>` artifact and a reviewed PR with the goldens (see
+  [corpus/README.md](corpus/README.md)).
 
 `capture-corpus` adds no network access and no new image. It reuses the two
 pinned images:
@@ -151,9 +173,21 @@ its own directory under `.work/corpus/`. That directory goes through
 `reject_special` before the host reads it (SEC-003, SEC-009). The two runs
 must be byte-identical.
 
-`rust-parity.yml` runs `capture-corpus verify-corpus` after the Java build. It
+`rust-parity.yml` runs `capture-corpus verify-corpus` after the Java build
+(`capture-corpus` only when dispatched with `verify_corpus: false`). It
 uploads the capture as its own `parity-corpus-<run>` artifact, which is the
 input to `import-corpus`.
+
+### Fuzz seeds from the corpus inputs
+
+The corpus inputs also seed the fuzz targets in `rust/fuzz/`:
+`rust/scripts/fuzz-seeds.sh` (`make fuzz-seeds`, and per target through
+`make fuzz-run FUZZ_TARGET=<t>`) builds `fuzz/seeds/<target>/` from
+`corpus/cases/`. Inputs over `FUZZ_SEED_MAX_BYTES` (64 KiB, the same value as
+libFuzzer's `-max_len`) are skipped and counted (the 8 MiB, 1 MiB and 400 KB
+limit cases). Goldens are not used as seeds. `rust-fuzz.yml` also runs on
+pull requests that change `corpus/cases/`, and new inputs are picked up
+without any change to the fuzz workspace.
 
 ## How TAKCL runs StartupTests (findings)
 

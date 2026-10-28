@@ -234,12 +234,12 @@ evattr-special-chars	x2p	cases/xml/evattr-special-chars.xml	1793102400000	179310
 evattr-special-chars	x2x	cases/xml/evattr-special-chars.xml	-	-	K-01,C-02; uid with characters that need escaping
 evattr-type-whitespace	x2p	cases/xml/evattr-type-whitespace.xml	1793102400000	1793102400250	K-01; type with surrounding spaces copied verbatim
 evattr-type-whitespace	x2x	cases/xml/evattr-type-whitespace.xml	-	-	K-01; type with surrounding spaces copied verbatim
-evattr-root-not-event	x2p	cases/xml/evattr-root-not-event.xml	1793102400000	1793102400250	K-01,K-12; root element is not event (accepted or rejected?)
-evattr-root-not-event	x2x	cases/xml/evattr-root-not-event.xml	-	-	K-01,K-12; root element is not event (accepted or rejected?)
+evattr-root-not-event	x2p	cases/xml/evattr-root-not-event.xml	1793102400000	1793102400250	SEC-004,K-01,K-12; root element is not event (accepted or rejected?)
+evattr-root-not-event	x2x	cases/xml/evattr-root-not-event.xml	-	-	SEC-004,K-01,K-12; root element is not event (accepted or rejected?)
 evattr-root-namespaced	x2p	cases/xml/evattr-root-namespaced.xml	1793102400000	1793102400250	C-06,C-04; event in a default namespace
 evattr-root-namespaced	x2x	cases/xml/evattr-root-namespaced.xml	-	-	C-06,C-04; event in a default namespace
-evattr-root-prefixed	x2p	cases/xml/evattr-root-prefixed.xml	1793102400000	1793102400250	C-06; prefixed root element e:event
-evattr-root-prefixed	x2x	cases/xml/evattr-root-prefixed.xml	-	-	C-06; prefixed root element e:event
+evattr-root-prefixed	x2p	cases/xml/evattr-root-prefixed.xml	1793102400000	1793102400250	SEC-004,C-06; prefixed root element e:event
+evattr-root-prefixed	x2x	cases/xml/evattr-root-prefixed.xml	-	-	SEC-004,C-06; prefixed root element e:event
 evattr-bare-event	x2p	cases/xml/evattr-bare-event.xml	1793102400000	1793102400250	K-01..K-05,C-12; event with no attributes and no children
 evattr-bare-event	x2x	cases/xml/evattr-bare-event.xml	-	-	K-01..K-05,C-12; event with no attributes and no children
 evattr-creation-zero	x2p	cases/xml/evattr-creation-zero.xml	0	-	K-11; creation 0 -> creationTime not written; submission setter not called
@@ -669,6 +669,50 @@ enc-wiretype-7	p2x	cases/proto/enc-wiretype-7.pb.hex	-	-	K-24; invalid wire type
 enc-wiretype-7	p2p	cases/proto/enc-wiretype-7.pb.hex	1793102400000	-	K-24; invalid wire type 7 -> reject
 enc-end-group-unmatched	p2x	cases/proto/enc-end-group-unmatched.pb.hex	-	-	K-24; stray end-group tag -> reject
 enc-end-group-unmatched	p2p	cases/proto/enc-end-group-unmatched.pb.hex	1793102400000	-	K-24; stray end-group tag -> reject
+ser-ns-attr-prefix-from-event	x2p	cases/xml/ser-ns-attr-prefix-from-event.xml	1793102400000	1793102400250	PROTO-003,C-04,K-20; detail child with a prefixed attribute whose prefix is declared on event: placement of the copied xmlns:x
+ser-ns-attr-prefix-from-event	x2x	cases/xml/ser-ns-attr-prefix-from-event.xml	-	-	PROTO-003,C-04,K-20; detail child with a prefixed attribute whose prefix is declared on event: placement of the copied xmlns:x
+ser-pi-empty-data	x2p	cases/xml/ser-pi-empty-data.xml	1793102400000	1793102400250	PROTO-003,C-05; PI with no data inside detail text (written as <?syn-pi?> or <?syn-pi ?>?)
+ser-pi-empty-data	x2x	cases/xml/ser-pi-empty-data.xml	-	-	PROTO-003,C-05; PI with no data inside detail text (written as <?syn-pi?> or <?syn-pi ?>?)
+ser-name5-element-u3400	x2p	cases/xml/ser-name5-element-u3400.xml	1793102400000	1793102400250	PROTO-005,C-10; detail child element named U+3400 (5th-edition NameStartChar, not 4th-edition Letter): accepted?
+ser-name5-element-u3400	x2x	cases/xml/ser-name5-element-u3400.xml	-	-	PROTO-005,C-10; detail child element named U+3400 (5th-edition NameStartChar, not 4th-edition Letter): accepted?
+ser-name5-element-u10000	x2p	cases/xml/ser-name5-element-u10000.xml	1793102400000	1793102400250	PROTO-005,C-10; detail child element named U+10000 (non-BMP, 5th edition only): accepted?
+ser-name5-element-u10000	x2x	cases/xml/ser-name5-element-u10000.xml	-	-	PROTO-005,C-10; detail child element named U+10000 (non-BMP, 5th edition only): accepted?
+ser-name5-attribute-u3400	x2p	cases/xml/ser-name5-attribute-u3400.xml	1793102400000	1793102400250	PROTO-005,C-10; attribute named U+3400 on a detail child (5th edition only): accepted?
+ser-name5-attribute-u3400	x2x	cases/xml/ser-name5-attribute-u3400.xml	-	-	PROTO-005,C-10; attribute named U+3400 on a detail child (5th edition only): accepted?
+evattr-dup-local-uid	x2p	cases/xml/evattr-dup-local-uid.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:uid then uid (which value reaches proto uid and the X2X output?)
+evattr-dup-local-uid	x2x	cases/xml/evattr-dup-local-uid.xml	-	-	SEC-003,C-06,K-01; p:uid then uid (which value reaches proto uid and the X2X output?)
+evattr-dup-local-uid-reversed	x2p	cases/xml/evattr-dup-local-uid-reversed.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; uid then p:uid (first match or no-namespace match?)
+evattr-dup-local-uid-reversed	x2x	cases/xml/evattr-dup-local-uid-reversed.xml	-	-	SEC-003,C-06,K-01; uid then p:uid (first match or no-namespace match?)
+evattr-dup-local-type	x2p	cases/xml/evattr-dup-local-type.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:type then type
+evattr-dup-local-type	x2x	cases/xml/evattr-dup-local-type.xml	-	-	SEC-003,C-06,K-01; p:type then type
+evattr-dup-local-how	x2p	cases/xml/evattr-dup-local-how.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:how then how
+evattr-dup-local-how	x2x	cases/xml/evattr-dup-local-how.xml	-	-	SEC-003,C-06,K-01; p:how then how
+evattr-root-foo-minimal	x2p	cases/xml/evattr-root-foo-minimal.xml	1793102400000	1793102400250	SEC-004,K-01,K-12; minimal non-event root <foo uid type/> with no point or detail: accepted or rejected?
+evattr-root-foo-minimal	x2x	cases/xml/evattr-root-foo-minimal.xml	-	-	SEC-004,K-01,K-12; minimal non-event root <foo uid type/> with no point or detail: accepted or rejected?
+evattr-root-prefixed-minimal	x2p	cases/xml/evattr-root-prefixed-minimal.xml	1793102400000	1793102400250	SEC-004,C-06,K-12; minimal namespaced root p:event with no point or detail: accepted or rejected?
+evattr-root-prefixed-minimal	x2x	cases/xml/evattr-root-prefixed-minimal.xml	-	-	SEC-004,C-06,K-12; minimal namespaced root p:event with no point or detail: accepted or rejected?
+enc-nonchar-uid-nul	p2x	cases/proto/enc-nonchar-uid-nul.pb.hex	-	-	PROTO-001,K-13; uid is U+0000 (valid UTF-8, not an XML 1.0 Char): Java relays it, TAK-RS rejects (P2X form &#0;?)
+enc-nonchar-uid-nul	p2p	cases/proto/enc-nonchar-uid-nul.pb.hex	1793102400000	-	PROTO-001,K-13; uid is U+0000 (valid UTF-8, not an XML 1.0 Char): Java relays it, TAK-RS rejects (P2X form &#0;?)
+enc-nonchar-callsign-bel	p2x	cases/proto/enc-nonchar-callsign-bel.pb.hex	-	-	PROTO-001,K-18; contact callsign is U+0007: does the sender still reach XML and proto receivers?
+enc-nonchar-callsign-bel	p2p	cases/proto/enc-nonchar-callsign-bel.pb.hex	1793102400000	-	PROTO-001,K-18; contact callsign is U+0007: does the sender still reach XML and proto receivers?
+enc-nonchar-endpoint-us	p2x	cases/proto/enc-nonchar-endpoint-us.pb.hex	-	-	PROTO-001,K-18; contact endpoint is U+001F
+enc-nonchar-endpoint-us	p2p	cases/proto/enc-nonchar-endpoint-us.pb.hex	1793102400000	-	PROTO-001,K-18; contact endpoint is U+001F
+enc-nonchar-how-fffe	p2x	cases/proto/enc-nonchar-how-fffe.pb.hex	-	-	PROTO-001,K-13; how is U+FFFE (noncharacter, not an XML 1.0 Char)
+enc-nonchar-how-fffe	p2p	cases/proto/enc-nonchar-how-fffe.pb.hex	1793102400000	-	PROTO-001,K-13; how is U+FFFE (noncharacter, not an XML 1.0 Char)
+evattr-dup-local-time	x2p	cases/xml/evattr-dup-local-time.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:time (12:01) then time (12:00): which value reaches proto sendTime and the X2X output?
+evattr-dup-local-time	x2x	cases/xml/evattr-dup-local-time.xml	-	-	SEC-008,C-06,D-18,K-02; p:time (12:01) then time (12:00): which value reaches proto sendTime and the X2X output?
+evattr-dup-local-stale	x2p	cases/xml/evattr-dup-local-stale.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:stale (12:10) then stale (12:05): which value reaches proto staleTime and the X2X output?
+evattr-dup-local-stale	x2x	cases/xml/evattr-dup-local-stale.xml	-	-	SEC-008,C-06,D-18,K-02; p:stale (12:10) then stale (12:05): which value reaches proto staleTime and the X2X output?
+evattr-dup-local-start	x2p	cases/xml/evattr-dup-local-start.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:start (12:01) then start (12:00): completes the D-18 identity set (uid/type/how/time/start/stale)
+evattr-dup-local-start	x2x	cases/xml/evattr-dup-local-start.xml	-	-	SEC-008,C-06,D-18,K-02; p:start (12:01) then start (12:00): completes the D-18 identity set (uid/type/how/time/start/stale)
+typed-group-dup-local-name	x2p	cases/xml/typed-group-dup-local-name.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B, no role (finding's form): typed or xmlDetail, and which name?
+typed-group-dup-local-name	x2x	cases/xml/typed-group-dup-local-name.xml	-	-	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B, no role (finding's form): typed or xmlDetail, and which name?
+typed-group-dup-local-name-role	x2p	cases/xml/typed-group-dup-local-name-role.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B with role: does the duplicate break exact-set eligibility, and which name reaches proto group.name?
+typed-group-dup-local-name-role	x2x	cases/xml/typed-group-dup-local-name-role.xml	-	-	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B with role: does the duplicate break exact-set eligibility, and which name reaches proto group.name?
+typed-contact-dup-local-callsign	x2p	cases/xml/typed-contact-dup-local-callsign.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B (finding's form): typed or xmlDetail, and which callsign?
+typed-contact-dup-local-callsign	x2x	cases/xml/typed-contact-dup-local-callsign.xml	-	-	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B (finding's form): typed or xmlDetail, and which callsign?
+typed-contact-dup-local-callsign-endpoint	x2p	cases/xml/typed-contact-dup-local-callsign-endpoint.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B with endpoint: eligibility and which callsign reaches proto contact.callsign?
+typed-contact-dup-local-callsign-endpoint	x2x	cases/xml/typed-contact-dup-local-callsign-endpoint.xml	-	-	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B with endpoint: eligibility and which callsign reaches proto contact.callsign?
 numbers-doubles	dbl-fmt	cases/numbers/doubles.tsv	-	-	K-34,DEV-03; Double.toString: 420 curated (gated), 16 JDK17 probes and 4096 seeded random (measured)
 numbers-double-strings	dbl-parse	cases/numbers/double-strings.txt	-	-	K-34; parseDoubleOrDefault grammar, 100 strings
 numbers-int-strings	int-parse	cases/numbers/int-strings.txt	-	-	K-34; parseIntOrDefault grammar, 40 strings

@@ -21,6 +21,8 @@
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation), SC-5 (Denial-of-service
 //   Protection)
+// - ASD STIG: APSC-DV-002530 / V-222606, APSC-DV-002590 / V-222612
+//   (unverified)
 
 #![forbid(unsafe_code)]
 #![deny(clippy::arithmetic_side_effects)]
@@ -84,6 +86,8 @@ pub const MAX_MESSAGE_BYTES_DEFAULT: usize = 8 * 1024 * 1024;
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation), SC-5 (Denial-of-service
 //   Protection)
+// - ASD STIG: APSC-DV-002530 / V-222606, APSC-DV-002590 / V-222612
+//   (unverified)
 // PARITY: src/takserver-core/src/main/java/com/bbn/marti/nio/protocol/connections/StreamingProtoBufProtocol.java#onDataReceived
 pub fn decode_tak_message(buf: &[u8], max_len: usize) -> Result<v1::TakMessage, DecodeError> {
     if buf.len() > max_len {
@@ -98,18 +102,199 @@ pub fn decode_tak_message(buf: &[u8], max_len: usize) -> Result<v1::TakMessage, 
 /// Encodes a `TakMessage` to the bytes the reference server writes for it.
 ///
 /// Fields are written in tag order and proto3 defaults are omitted, as
-/// protobuf-java does (plan section 1.7, K-24). Whether a `-0.0` double must
-/// be written is fixed by the golden corpus (C-08); this function is the one
-/// place that changes if it must.
+/// protobuf-java does (plan section 1.7, K-24). The one difference from
+/// prost's encoding is a `double` field holding `-0.0`: protobuf-java's
+/// generated proto3 code omits a double only when its bit pattern is zero,
+/// so `-0.0` is written (C-08), while prost omits every value equal to
+/// `0.0`. The messages on the `TakMessage` path that hold doubles
+/// (`CotEvent`, `Detail` for its `Track`, and `Track`) are therefore
+/// encoded here by hand; all other sub-messages use prost.
+//
+// PARITY: src/takserver-plugins/src/main/java/tak/server/proto/StreamingProtoBufHelper.java#cot2protoBuf
 #[must_use]
 pub fn encode_tak_message(msg: &v1::TakMessage) -> Vec<u8> {
-    msg.encode_to_vec()
+    let mut count = encode::Count::default();
+    encode::tak_message(msg, &mut count);
+    let mut out = Vec::with_capacity(count.0);
+    encode::tak_message(msg, &mut out);
+    out
+}
+
+/// The hand encoder behind [`encode_tak_message`]. Each message is written
+/// through a [`Sink`](encode::Sink): once into a byte counter to learn a
+/// nested message's length, then into the output.
+mod encode {
+    use crate::v1::{CotEvent, Detail, TakMessage, Track};
+
+    const VARINT: u64 = 0;
+    const FIXED64: u64 = 1;
+    const LEN: u64 = 2;
+
+    pub(super) trait Sink {
+        fn put(&mut self, bytes: &[u8]);
+        /// The body of a message prost can encode (no doubles).
+        fn put_message(&mut self, msg: &impl prost::Message);
+    }
+
+    /// Counts bytes instead of writing them.
+    #[derive(Default)]
+    pub(super) struct Count(pub(super) usize);
+
+    impl Sink for Count {
+        fn put(&mut self, bytes: &[u8]) {
+            self.0 = self.0.saturating_add(bytes.len());
+        }
+
+        fn put_message(&mut self, msg: &impl prost::Message) {
+            self.0 = self.0.saturating_add(msg.encoded_len());
+        }
+    }
+
+    impl Sink for Vec<u8> {
+        fn put(&mut self, bytes: &[u8]) {
+            self.extend_from_slice(bytes);
+        }
+
+        fn put_message(&mut self, msg: &impl prost::Message) {
+            self.extend_from_slice(&msg.encode_to_vec());
+        }
+    }
+
+    fn varint(mut value: u64, sink: &mut impl Sink) {
+        let mut buf = [0_u8; 10];
+        let mut len = 0_usize;
+        for slot in &mut buf {
+            let [low, ..] = value.to_le_bytes();
+            value = value.checked_shr(7).unwrap_or(0);
+            len = len.saturating_add(1);
+            if value == 0 {
+                *slot = low & 0x7f;
+                break;
+            }
+            *slot = low | 0x80;
+        }
+        sink.put(buf.get(..len).unwrap_or(&buf));
+    }
+
+    fn key(tag: u32, wire_type: u64, sink: &mut impl Sink) {
+        // Tags here are at most 17, so the shift cannot lose bits.
+        varint(u64::from(tag).checked_shl(3).unwrap_or(0) | wire_type, sink);
+    }
+
+    fn length(len: usize, sink: &mut impl Sink) {
+        varint(u64::try_from(len).unwrap_or(u64::MAX), sink);
+    }
+
+    fn string(tag: u32, value: &str, sink: &mut impl Sink) {
+        if !value.is_empty() {
+            key(tag, LEN, sink);
+            length(value.len(), sink);
+            sink.put(value.as_bytes());
+        }
+    }
+
+    fn uint64(tag: u32, value: u64, sink: &mut impl Sink) {
+        if value != 0 {
+            key(tag, VARINT, sink);
+            varint(value, sink);
+        }
+    }
+
+    /// Omitted only when all 64 bits are zero: `-0.0` is written.
+    fn double(tag: u32, value: f64, sink: &mut impl Sink) {
+        if value.to_bits() != 0 {
+            key(tag, FIXED64, sink);
+            sink.put(&value.to_le_bytes());
+        }
+    }
+
+    fn prost_message(tag: u32, msg: &impl prost::Message, sink: &mut impl Sink) {
+        key(tag, LEN, sink);
+        length(msg.encoded_len(), sink);
+        sink.put_message(msg);
+    }
+
+    pub(super) fn tak_message(msg: &TakMessage, sink: &mut impl Sink) {
+        if let Some(control) = &msg.tak_control {
+            prost_message(1, control, sink);
+        }
+        if let Some(event) = &msg.cot_event {
+            let mut count = Count::default();
+            cot_event(event, &mut count);
+            key(2, LEN, sink);
+            length(count.0, sink);
+            cot_event(event, sink);
+        }
+        uint64(3, msg.submission_time, sink);
+        uint64(4, msg.creation_time, sink);
+    }
+
+    fn cot_event(ev: &CotEvent, sink: &mut impl Sink) {
+        string(1, &ev.r#type, sink);
+        string(2, &ev.access, sink);
+        string(3, &ev.qos, sink);
+        string(4, &ev.opex, sink);
+        string(5, &ev.uid, sink);
+        uint64(6, ev.send_time, sink);
+        uint64(7, ev.start_time, sink);
+        uint64(8, ev.stale_time, sink);
+        string(9, &ev.how, sink);
+        double(10, ev.lat, sink);
+        double(11, ev.lon, sink);
+        double(12, ev.hae, sink);
+        double(13, ev.ce, sink);
+        double(14, ev.le, sink);
+        if let Some(d) = &ev.detail {
+            let mut count = Count::default();
+            detail(d, &mut count);
+            key(15, LEN, sink);
+            length(count.0, sink);
+            detail(d, sink);
+        }
+        string(16, &ev.caveat, sink);
+        string(17, &ev.releaseable_to, sink);
+    }
+
+    fn detail(d: &Detail, sink: &mut impl Sink) {
+        string(1, &d.xml_detail, sink);
+        if let Some(m) = &d.contact {
+            prost_message(2, m, sink);
+        }
+        if let Some(m) = &d.group {
+            prost_message(3, m, sink);
+        }
+        if let Some(m) = &d.precision_location {
+            prost_message(4, m, sink);
+        }
+        if let Some(m) = &d.status {
+            prost_message(5, m, sink);
+        }
+        if let Some(m) = &d.takv {
+            prost_message(6, m, sink);
+        }
+        if let Some(t) = &d.track {
+            let mut count = Count::default();
+            track(t, &mut count);
+            key(7, LEN, sink);
+            length(count.0, sink);
+            track(t, sink);
+        }
+    }
+
+    fn track(t: &Track, sink: &mut impl Sink) {
+        double(1, t.speed, sink);
+        double(2, t.course, sink);
+    }
 }
 
 /// Why a `TakMessage` could not be decoded.
 ///
 /// `Display` never includes message bytes (SI-11); the wrapped prost error
 /// names only the message and field where decoding stopped.
+//
+// COMPLIANCE MAPPING:
+// - NIST 800-53: SI-11 (Error Handling)
+// - ASD STIG: APSC-DV-002570 / V-222610 (unverified)
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum DecodeError {

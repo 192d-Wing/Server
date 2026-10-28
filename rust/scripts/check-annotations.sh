@@ -61,7 +61,9 @@ parity_marker="$parity_marker:"
 
 list_files() { # <dir>
   find "$1" \( -path "$1/target" -o -path "$1/docs" -o -path "$1/parity/.work" \
-      -o -path "$1/parity/results" -o -name .git -o -name node_modules \) -prune -o \
+      -o -path "$1/parity/results" -o -path "$1/fuzz/target" -o -path "$1/fuzz/corpus" \
+      -o -path "$1/fuzz/seeds" -o -path "$1/fuzz/artifacts" -o -path "$1/fuzz/coverage" \
+      -o -name .git -o -name node_modules \) -prune -o \
       -type f \( -name '*.rs' -o -name '*.sh' -o -name '*.toml' -o -name '*.yml' \
       -o -name '*.yaml' -o -name Makefile \) -print | LC_ALL=C sort
 }
@@ -289,7 +291,7 @@ fi
 
 # ---- (c) SPDX headers -------------------------------------------------------
 spdx_files=$(
-  for d in crates services web; do
+  for d in crates services web fuzz/fuzz_targets; do
     [ -d "$root/$d" ] && find "$root/$d" -path "$root/$d/*/target" -prune -o -type f -name '*.rs' -print
   done
   for d in scripts parity; do

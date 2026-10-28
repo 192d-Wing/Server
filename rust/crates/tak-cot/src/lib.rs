@@ -15,9 +15,9 @@
 //! never panic. Nothing here performs I/O, reads a clock, holds global state
 //! or calls cryptography; the crate builds for `wasm32-unknown-unknown`.
 //!
-//! Phase 1a skeleton: the modules are filled in by work units WU3 (`xml`,
-//! `limits`, XML errors), WU4 (`javafmt`) and WU5 (`event`, `convert`,
-//! conversion errors).
+//! Entry points: [`CotEvent::parse`] (XML in), [`CotEvent::to_xml_bytes`]
+//! (XML out), [`to_tak_message`] (XML to TAK Protocol) and
+//! [`from_tak_message`] (TAK Protocol to XML).
 //
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation), SC-5 (Denial-of-service
@@ -33,3 +33,11 @@ mod convert;
 mod error;
 mod event;
 mod limits;
+
+pub use convert::{ToProtoOptions, from_tak_message, to_tak_message};
+pub use error::{
+    ConvertError, ConvertErrorKind, CotError, CotErrorKind, LimitKind, TimeField, XmlError,
+    XmlErrorKind,
+};
+pub use event::CotEvent;
+pub use limits::Limits;

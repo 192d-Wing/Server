@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Dependabot for TAK-RS. Only the Rust workspace and GitHub Actions are
-# covered; the upstream Java tree under src/ is managed by upstream merges.
+# Dependabot for TAK-RS. Only the Rust workspaces (rust/ and the excluded
+# rust/fuzz/) and GitHub Actions are covered; the upstream Java tree under
+# src/ is managed by upstream merges.
 # Dependabot PRs touch only rust/** or .github/**, so rust-ci.yml runs the
 # full gate on them (rust/scripts/ci-changes.sh treats both as Rust-relevant).
 #
@@ -31,6 +32,31 @@ updates:
         patterns:
           - "*"
       cargo-minor-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "build(deps)"
+
+  # ---- Rust / Cargo, fuzz workspace (rust/fuzz/Cargo.toml, Cargo.lock) ----
+  # Separate, excluded cargo-fuzz workspace (development only; plan Q2).
+  # Shared crates (tak-cot/tak-proto deps) should stay at the versions in
+  # rust/Cargo.lock; after merging an update to either lockfile, re-align
+  # the other. rust/fuzz/deny.toml must stay equal to rust/deny.toml outside
+  # its FUZZ-DELTA blocks (scripts/check-fuzz-policy.sh).
+  - package-ecosystem: cargo
+    directory: "/rust/fuzz"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      fuzz-cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      fuzz-cargo-minor-patch:
         update-types:
           - minor
           - patch

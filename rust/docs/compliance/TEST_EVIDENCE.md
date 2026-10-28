@@ -1,11 +1,11 @@
 # TAK-RS Test Evidence
 
-**Document Version:** 0.5
-**Date:** 2026-10-27
-**TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
+**Document Version:** 0.7
+**Date:** 2026-10-28
+**TAK-RS Version:** 0.0.1 (Phase 1a, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run. Two local run records (QA Round 1 and QA Round 2, both overall PASS) and one CI run record (PR 7, GitHub Actions, 2026-10-27, overall PASS). No scheduled (nightly) run recorded. hadolint is in no workflow and has never run.
-**Run:** `20261026-210255-phase0-foundations`
+**Status:** Phase 1a build run, before its gate. Phase 1a adds one local QA record (2026-10-28, overall **FAIL** for the Phase 1a gate: golden capture and golden test NOT RUN, QA-001 open at that time) and one record of the fix rounds' own runs (not QA). No CI run exists for Phase 1a: GitHub Actions is disabled for the repository. Phase 0 records (QA Rounds 1 and 2, PR 7 CI) unchanged. No scheduled (nightly) run recorded. hadolint is in no workflow and has never run.
+**Run:** `20261027-180458-phase1-protocol-config`
 
 ## Document Control
 
@@ -22,7 +22,11 @@
 
 Phase 0: development environment only. Tests cover the stub crates, the
 policy and CI-helper scripts, the supply-chain policy and the parity harness.
-There is no TAK-RS runtime (TOE) yet.
+
+Phase 1a adds tests of the first TOE library components, `tak-proto` and
+`tak-cot` (unit, negative, property, integration and fuzz), the excluded fuzz
+workspace, and the golden-corpus inputs and capture driver. The golden
+comparison with the Java reference has not run.
 
 ### Result vocabulary
 
@@ -48,6 +52,7 @@ Filled per run record.
 | Container engine | None installed | Docker (runner image) |
 | Java | Temurin 27 (cannot run Gradle 8.10.2) | JDK 17 in the build container |
 | Host | macOS (Darwin 27.0.0, aarch64) | `ubuntu-24.04`, runner image version 20261012.334.1 (PR 7 CI) |
+| Phase 1a local host and tools | Apple M2 Max, 12 cores, 32 GiB; rustc 1.99.1 (58cf8f9c3 2026-10-13); fuzz toolchain `nightly-2026-10-23` (rustc 1.101.0-nightly 7189d39d9), cargo-fuzz 0.13.2; cargo-deny 0.20.2, cargo-audit 0.22.2, shellcheck 0.11.0, markdownlint-cli2 0.24.0. actionlint and zizmor not installed | No Phase 1a CI run (GitHub Actions disabled) |
 
 ## 2. Run-record template
 
@@ -331,6 +336,173 @@ NOT RUN or not shown by these runs, with reasons:
 | Dependabot security updates | Still paused (POAM-2026-10-26-10) |
 | awk and bash versions on the runner | `make policy-selftest` passed on the runner, but the log does not print which awk or bash ran it |
 
+### 2026-10-28 20261027-180458-phase1-protocol-config (Phase 1a QA, local)
+
+- **Who and where:** qa-engineer, macOS (Phase 1a row of §1), from
+  `/Users/jwillman/Dev/Server/rust` unless noted.
+- **What was tested:** `main` (`df6a4662`) to `HEAD` (`04774cc0`: WU1, WU2,
+  WU6a, WU6b committed) plus the uncommitted working tree (WU3, WU4, WU5,
+  WU9), **before** fix rounds 1 and 2. Nothing has been committed since
+  `04774cc0` (commit signing temporarily unavailable).
+- **Source:** the run's `qa-report.md`. Logs are in the run directory
+  (`qa-gate-logs/`, `qa-fuzz-logs/`), not in the repository.
+- **Overall: FAIL for the Phase 1a gate.** Every build, lint, test,
+  supply-chain, policy and fuzz gate that could run here passed, except the
+  expected `make check-annotations-strict` failure. The gate fails because
+  the golden capture (WU7) and golden test (WU8), the Phase 1a exit
+  criterion, are NOT RUN, and QA-001 (MAJOR) was open. QA-001 was fixed in
+  fix round 1 (next record), which QA has not re-run.
+
+| Gate | Command | Result | Counts |
+|------|---------|--------|--------|
+| Format | `make fmt-check` | PASS | no diff |
+| Lint (native) | `make clippy` (`--workspace --all-targets --all-features --locked -- -D warnings`) | PASS | 0 warnings; re-run after the last test edit, still 0 |
+| Lint (wasm32) | `make clippy-wasm` (`tak-api-types`, `tak-web-components`, `tak-proto`, `tak-cot`) | PASS | 0 warnings |
+| Build (wasm32) | `make build-wasm` | PASS | `tak-proto` and `tak-cot` built for `wasm32-unknown-unknown` |
+| Unit, property and integration tests | `make test` | PASS | 19 test binaries, **220 passed, 0 failed, 0 ignored** (198 before the 22 QA tests); property tests 512 fixed-seed cases each |
+| Golden parity (WU8) | `tak-cot/tests/golden.rs` in `make test` | **NOT RUN** | No goldens exist (WU7 blocked); `golden.rs` was not added, because it must fail when `golden/` is missing |
+| Corpus capture (WU7) | `rust-parity` dispatch: `harness.sh capture-corpus verify-corpus` | **NOT RUN** | GitHub Actions dispatch fails: "Actions has been disabled for this repository"; no run URL |
+| Doc tests | `make test-doc` | PASS | 2 passed |
+| Docs | `make doc` (`RUSTDOCFLAGS=-D warnings`) | PASS | 4 crates |
+| Supply chain: policy | `make deny` | PASS | `advisories ok, bans ok, licenses ok, sources ok`; 22 known warnings (unmatched wrapper or allow entries, duplicate versions) |
+| Supply chain: advisories | `make audit` | PASS | 1380 advisories, 143 crates, no findings; passes only with the 2 ignores of the open POAM-2026-10-26-09 (not RA-5 or SA-22 evidence) |
+| Native-code gate | `make check-native-deps` | PASS | wasm32 closure of `tak-api-types`, `tak-web-components`, `tak-proto`, `tak-cot`: `check-native-deps: ok` |
+| Advisory-ignore sync | `make check-advisory-sync` | PASS | 2 IDs, lists identical, each with a POA&M |
+| Policy | `make policy` | PASS | `check-unsafe`, `check-manifests`, `check-annotations` (2 PENDING), `check-poam-ids` (10/10), `check-toolchain`, `check-workflows` (4 files), `check-src-coupling` (3 references, all covered), `check-fuzz-policy` ok |
+| Policy self-tests | `make policy-selftest` | PASS | 381 passed, 0 failed |
+| Annotations | `make check-annotations` | PASS | 2 PENDING (SC-5, SI-10(3)); block count 50 |
+| Annotations (strict) | `make check-annotations-strict` | FAIL (expected) | exit 2: `FAIL (d) SC-5 …` and `FAIL (d) SI-10(3) …` only; their mapping blocks are added in WU10 (this revision) |
+| Markdown | `make markdownlint` | PASS | 13 files, 0 issues |
+| Harness self-test | `parity/harness.sh selftest` | PASS | 97 passed, 0 failed |
+| Shell | `shellcheck scripts/*.sh parity/harness.sh` | PASS | 15 files, no output |
+| Fuzz supply chain | `make fuzz-deny` (cargo-deny with `fuzz/deny.toml`, cargo audit on `fuzz/Cargo.lock`, native allow-list) | PASS | `libfuzzer-sys (native) allow-listed for aarch64-apple-darwin, not in graph`; `check-native-deps: ok` |
+| Fuzz build | `make fuzz-build` (`cargo fuzz build --debug-assertions`, AddressSanitizer) | PASS | 7 binaries |
+| Fuzz format and lint | `cd fuzz && cargo fmt --all -- --check`; `cd fuzz && cargo clippy --all-targets -- -D warnings` | PASS | exit 0 and 0 |
+| Fuzz runs | 7 targets × 300 s (table below) | PASS | 0 crashes, 0 timeouts, 0 OOMs; `fuzz/artifacts/` empty |
+| No generated code committed | `git ls-files rust \| grep -E 'tak_proto_includes\|atakmap\.commoncommo'` | PASS | no match |
+| Upstream tree untouched | `git status --porcelain src/` (repository root) | PASS | no output, checked at the end of the run |
+| Unsafe | `make check-unsafe` (in `policy`) | PASS | both crates `#![forbid(unsafe_code)]`; fuzz crate `unsafe_code = "forbid"` |
+
+**Fuzz runs.** `make fuzz-build` and `make fuzz-seeds` ran once (exit 0).
+The seven targets then ran in parallel, each with the `fuzz-run` recipe body
+(`cargo fuzz run --debug-assertions <t> corpus/<t> seeds/<t> --
+-max_total_time=300 -max_len=65536 -rss_limit_mb=2048 -timeout=1`) under
+`/usr/bin/time -l`, starting 2026-10-28T06:11:01Z from the corpus left by
+the WU9 60 s runs plus seeds from `parity/corpus/cases/`. (`make fuzz-run`
+itself could not run in parallel then; QA-003, fixed in fix round 1.)
+
+| Target | Exit | Executions in 301 s | Final coverage | Peak RSS | Crash / timeout / OOM |
+|--------|------|---------------------|----------------|----------|------------------------|
+| `cot_parse` | 0 | 3 454 337 | cov 2602, ft 14085 | 632 MB | 0 / 0 / 0 |
+| `cot_to_proto` | 0 | 3 779 863 | cov 4412, ft 17310 | 636 MB | 0 / 0 / 0 |
+| `proto_decode` | 0 | 40 808 939 | cov 1317, ft 2626 | 818 MB | 0 / 0 / 0 |
+| `proto_to_cot` | 0 | 16 804 603 | cov 3161, ft 7730 | 583 MB | 0 / 0 / 0 |
+| `proto_roundtrip` | 0 | 19 010 364 | cov 2830, ft 6778 | 703 MB | 0 / 0 / 0 |
+| `stream_frame` | 0 | 15 394 966 | cov 154, ft 609 | 696 MB | 0 / 0 / 0 |
+| `javafmt` | 0 | 26 166 426 | cov 916, ft 2206 | 557 MB | 0 / 0 / 0 |
+| **Total** | | **125 419 498** | | max 818 MB of 2048 MB | **0 / 0 / 0** |
+
+The total is the sum of the seven rows. `qa-report.md` §7 says "79 M fuzz
+executions in total"; the table it reports sums to 125 419 498, which is the
+figure used here.
+
+**Limits at the boundary.** Every documented limit is accepted at its value
+and refused one past it with a typed error, and no case returns a partial
+document or event (`qa-report.md` §3): `max_input_bytes`, `max_depth`
+(including depth measured from the event root for proto `xmlDetail`),
+`max_nodes`, `max_attributes`, `max_namespace_decls`, `max_name_bytes`
+(including `xmlns:` names), `max_attr_value_bytes`, `max_text_bytes`,
+`max_xml_detail_bytes` (P2X and X2P), the 8 MiB TakMessage and stream-frame
+caps, the 5-byte / u32 varint length prefix and prost's recursion limit
+(100 accepted, 101 refused; 10^6 refused without stack overflow).
+
+**Error content (SI-11).** With the marker `Qz7Mark` in every name, value
+and text, no `Display`, `Debug` or `source()` chain contains it, for 25 XML
+error and limit kinds through three entry points, every conversion error
+kind and `DecodeError`; `Debug` of `CotEvent`, `Document` and `ElementRef` is
+content-free.
+
+**Tests added by QA** (test code only, both new files):
+`crates/tak-cot/tests/qa_boundaries.rs` (11 tests) and
+`crates/tak-proto/tests/decode_hostile.rs` (11 tests); `cargo test -p tak-cot
+--test qa_boundaries --locked` 11 passed, `cargo test -p tak-proto --test
+decode_hostile --locked` 11 passed. Both are included in the 220.
+
+NOT RUN in this record, with reasons:
+
+| Gate | Reason |
+|------|--------|
+| Golden parity (WU8) and corpus capture (WU7) | GitHub Actions is disabled for the repository, so the capture cannot be dispatched and no goldens exist. Equivalence with the Java reference is unproven in every direction; the Phase 1a exit criterion is not met |
+| actionlint, zizmor | Not installed locally; the `workflow-lint` job in rust-ci would run them, but no CI run exists |
+| `rust-ci-gate` on a PR | No PR, and GitHub Actions is disabled |
+| Nightly or PR fuzzing (`rust-fuzz.yml`) | GitHub Actions is disabled; only the local runs above exist |
+| WASM browser tests, `trunk` | Not applicable: no `rust/web/**` change |
+| Integration with PostgreSQL | Not applicable: no service behaviour in Phase 1a |
+| `encode_stream_frame` with a message over `u32::MAX` bytes | Needs more than 4 GiB of memory; the code path uses a checked conversion (by inspection) |
+
+**Open QA findings at this record:**
+
+| Finding | Severity | Status | Note |
+|---------|----------|--------|------|
+| QA-001 | MAJOR | Open at this record; fixed in fix round 1, not QA re-verified | Quadratic CPU in the proto `xmlDetail` merge: 49 000 + 49 000 elements (686 000 bytes) took 4.31 s in a release build |
+| QA-002 | MINOR | Open at this record; fixed in fix round 1, not QA re-verified | Effective P2X `xmlDetail` cap was 8 MiB − 55 bytes, refused with `xml.limit.input_bytes` |
+| QA-003 | MINOR | Open at this record; fixed in fix round 1 (release-engineer), not QA re-verified | `make fuzz-run` regenerated every seed directory, so parallel runs raced |
+| QA-004 | MINOR | Open | No coverage for size-dependent CPU cost: fuzzing capped at 64 KiB, tests cannot time themselves |
+
+### 2026-10-28 20261027-180458-phase1-protocol-config (Phase 1a fix rounds 1 and 2; fixers' runs, not QA)
+
+- **Who and where:** rust-coder and release-engineer, macOS, the same
+  working tree, after the QA record above; then re-verification by the
+  security, nist-800-53, tak-protocol and crypto-tls reviewers.
+- **Source:** the run's `fixes-round-1.md`, `fixes-round-1-release.md`,
+  `fixes-round-2.md`, `fixes-round-2-release.md` and the
+  `findings-*-round1.md` / `findings-*-round2.md` re-verification reports.
+- **Status of this evidence:** these are the fixers' own runs and the
+  reviewers' checks, **not** a QA re-run. They are recorded so the gaps they
+  close are visible; they raise no control status on their own
+  ([NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) rule 6).
+
+| Gate or check | Round | Result | Counts or output |
+|---------------|-------|--------|------------------|
+| `make test` | 1 | PASS | 223 passed, 0 failed, 0 ignored (220 + 2 conversion unit tests, −1 + 2 in `qa_boundaries.rs`) |
+| QA-001 regression test | 1 | PASS | `convert::tests::xml_detail_merge_is_linear_in_the_element_count` (`crates/tak-cot/src/convert.rs` line 701): at most 8·n child steps at n = 1 000 and 4 000. With the old scan restored it failed (exit 101, 1 002 999 steps at n = 1 000); code restored |
+| QA-001 timings (release build, reproducer copied in and removed) | 1 | — | n = 5 000 / 10 000 / 20 000 / 40 000: 2.2 / 3.7 / 7.4 / 13.3 ms (were 69 ms / 234 ms / 826 ms / 2.98 s); n = 49 000: 15.0 ms (was 4.31 s); n = 98 000 (`max_nodes` raised): 28.6 ms, ratio 1.98; P2P worst case 19.4 ms (was 4.30 s) |
+| QA-002 exact cap | 1 | PASS | `p2x_xml_detail_cap_is_exact_at_default_limits`, `p2x_xml_detail_cap_does_not_depend_on_max_input_bytes` in `make test` |
+| Schema digest, tampered manifest | 1 | PASS (fails closed) | changed digest and deleted line each fail the build (exit 101); manifest restored |
+| `make policy-selftest` | 1 | PASS | 392 passed, 0 failed (381 + 11 `fuzz-seeds` cases) |
+| Concurrent `make fuzz-run` (QA-003) | 1 | PASS | `proto_decode` and `javafmt`, 20 s each, started together: exit 0 and 0; each regenerated only its own seeds |
+| `make check-annotations` | 1 | PASS | 2 PENDING (SC-5, SI-10(3)); block count 54 |
+| `make check-annotations-strict` | 1 | FAIL (expected) | exit 2 on SC-5 and SI-10(3) only |
+| fmt, clippy, clippy-wasm, test-doc, doc, build-wasm, fuzz-build, `make policy` | 1 | PASS | exit 0 each |
+| `make test` | 2 | PASS | exit 0 (count not reported) |
+| Schema digest cases A–F (scratch copy outside the repository) | 2 | PASS (as expected) | A nested import, B symlinked import, D shadowed well-known import, E CRLF checkout, F `EXTRA.PROTO`: each exit 101 with the expected message; C bundled well-known import: exit 0; baseline and restored: exit 0 |
+| `make policy-selftest` | 2 | PASS | 419 passed, 0 failed (adds 9 F9 cases and 17 `check-poam-markers` cases) |
+| `make check-annotations` | 2 | PASS | 3 PENDING (SA-10(1), SC-5, SI-10(3)); block count 55 |
+| `make check-poam-markers` | 2 | FAIL (expected) | make exit 2 (script exit 1): 2 of 13 markers without an ID, `crates/tak-cot/src/limits.rs:18` and `crates/tak-cot/src/xml/serialize.rs:45` |
+| `make check-annotations-strict` | 2 | FAIL (expected) | exit 2: the 3 pending IDs and the 2 bare markers |
+| `make policy`, `make fuzz-deny`, `make check-workflows`, shellcheck | 2 | PASS | `check-poam-ids` 10/10; F9 ok |
+| Schema digest review (crypto-tls-reviewer) | 1 and 2 | PASS | Round 1 review: `shasum` of the 15 schemas equals `schema.sha256`; SHA-256 differential against Python `hashlib` on lengths 0 to 1100 and one 5 000 003-byte input, 1102/1102 match; FIPS 180-4 vectors pass. Round 2: `cargo build -p tak-proto --offline` exit 0 |
+
+After these rounds the reviewers' verdicts were: security PASS, crypto-tls
+PASS, nist-800-53 APPROVE WITH COMMENTS (round scope), tak-protocol APPROVE
+WITH COMMENTS for the round, with the run level still CHANGES REQUESTED for
+PROTO-001 (user decision) and PROTO-002 (needs goldens).
+
+The WU10 results of this revision (strict annotations, policy, markdownlint
+after the mapping blocks were added) are in the run's `docs-update.md`; they
+are the compliance-scribe's runs, not QA evidence.
+
+The round 2 `make check-poam-markers` and `make check-annotations-strict`
+FAIL rows above describe the tree before the WU10 follow-up, not its current
+state. In that follow-up the orchestrator gave every POA&M marker its ID and
+added `check-poam-markers` to `POLICY_CHECKS`. The compliance-scribe's local
+runs on 2026-10-28 afterwards: `make policy` exit 0, with
+`check-poam-markers: ok (15 marker(s), each with a POA&M ID)` and
+`check-poam-ids: ok (13 referenced ID(s), 13 entr(ies) in POAM.md)`;
+`make check-annotations-strict` exit 0. These are not QA evidence: QA has not
+re-run either check, and no CI run exists (details in the run's
+`docs-update.md`, section "WU10 follow-up").
+
 ## 4. TAKCL parity results
 
 | Date | Run | Target | Test ID | Tests | Failures | Errors | Result | Artifact |
@@ -340,6 +512,13 @@ NOT RUN or not shown by these runs, with reasons:
 
 Suite inventory and Java baselines: [PROTOCOL_PARITY.md](PROTOCOL_PARITY.md)
 Table B.
+
+**Phase 1a golden corpus** (plan §1.4; exact bytes, see
+[PROTOCOL_PARITY.md](PROTOCOL_PARITY.md) §Normalisation rules):
+
+| Direction | Cases (inputs) | Java capture | Golden test | Result |
+|-----------|----------------|--------------|-------------|--------|
+| X2P, P2X, X2X, P2P, numbers, times | 715 manifest rows, 471 case IDs ([parity/corpus/MANIFEST.tsv](../../parity/corpus/MANIFEST.tsv)) | NOT RUN (GitHub Actions disabled; no run URL) | Not written (WU8; it must fail when `golden/` is missing) | **NOT RUN**. No byte-equivalence with the Java reference is shown |
 
 ## 5. CI probes (plan §9.2)
 
@@ -360,11 +539,14 @@ Listed at each phase gate (POAM-2026-10-26-07).
 |--------|----------|------|----------|-------|
 | — | `rust-supply-chain.yml` | — | — | No scheduled run yet (as of 2026-10-27) |
 | — | `rust-parity.yml` | — | — | No scheduled run yet (as of 2026-10-27). The PR 7 run (§4) was a `pull_request` run, not a nightly one |
+| — | `rust-fuzz.yml` | — | — | No run of any kind (as of 2026-10-28): the workflow is new in Phase 1a and GitHub Actions is disabled for the repository |
 
 ## Document Change History
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-28 | 0.7 | Phase 1a WU10 follow-up (pre-gate). §3 fix-rounds record: note after the table that the round 2 `check-poam-markers` and `check-annotations-strict` FAIL rows predate the follow-up; the compliance-scribe's local runs afterwards (`make policy` exit 0 with `check-poam-markers` 15/15 and `check-poam-ids` 13/13; `make check-annotations-strict` exit 0), marked as not QA evidence. Round 2 rows unchanged | `20261027-180458-phase1-protocol-config` (WU10 follow-up) |
+| 2026-10-28 | 0.6 | Phase 1a (WU10, pre-gate). New run record "Phase 1a QA, local" (overall FAIL for the gate: WU7 and WU8 NOT RUN, QA-001 open; every runnable gate PASS except the expected strict-annotations FAIL; `make test` 220/0; `make policy-selftest` 381/0; harness selftest 97/0; fuzz 7 × 300 s, 0 crashes, 125 419 498 executions by the sum of QA's table, not the 79 M in its prose; limits and SI-11 summaries; NOT RUN list; QA-001 to QA-004). New record of fix rounds 1 and 2 as the fixers' and reviewers' runs, not QA (`make test` 223/0, policy-selftest 392/0 then 419/0, QA-001 timings, schema-digest fail-closed cases, `check-poam-markers` 2 of 13 bare). §1 Phase 1a host and tool row; §4 golden corpus table (NOT RUN); §6 `rust-fuzz.yml` (no run) | `20261027-180458-phase1-protocol-config` (Phase 5, WU10) |
 | 2026-10-27 | 0.5 | PR 7 CI evidence: new run record "2026-10-27 PR 7 CI (GitHub Actions)" (rust-ci 40539495255 and rust-parity 40539495328 on head `ce9caf79`, merged as `9f754245`; every job PASS; tool versions; `StartupTests` against Java PASS with the `verify-junit` line; artifacts `rust-sbom` and `parity-results-40539495328-1`); the three earlier failing runs recorded as detection evidence; §1 CI column filled; §4 Java `StartupTests` row; §5 Phase 0 PR and parity probes PASS, the others NOT RUN; NOT RUN reasons in the QA Round 1 and 2 records annotated with the later CI result. hadolint: separated from the CI-only tools; it is in no workflow and has never run (the QA Round 2 row had said "CI only") | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.4 | Gate: QA Round 2 "Not evidence" note records that POAM-2026-10-26-09 was accepted for development by the system owner on 2026-10-27, pending AO review (still Open). POAM-09 detection rows: the recorded commands are unchanged; current ignore line numbers added (`deny.toml` 54–55, `.cargo/audit.toml` 34 and 42) after the 2026-10-27 comment edits. No result changed | `20261026-210255-phase0-foundations` (gate) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs): second run record from QA Round 2 (overall PASS; every Round 1 gate re-run; POAM-09 detection negative gates for `cargo deny` and `cargo audit`, exit 1 on RUSTSEC-2024-0370 and RUSTSEC-2025-0141, cited as SA-22 detection evidence; fix round 2 re-verification; NOT RUN list; open findings QA-003, QA-004, QA-005, QA-007, QA-008); Round 1 QA-006 row points to Round 2; Ruby version in §1 | `20261026-210255-phase0-foundations` (fix round 3) |

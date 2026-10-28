@@ -6,7 +6,8 @@ This corpus is the evidence for the Phase 1a exit criterion: TAK-RS converts
 CoT XML to TAK Protocol v1 (and back) byte for byte as the Java reference
 server does. The inputs were written for TAK-RS. The goldens are the Java
 reference's own output on those inputs, captured by the parity harness.
-`rust/crates/tak-cot/tests/golden.rs` compares every case on every PR
+Once the first goldens are imported, `rust/crates/tak-cot/tests/golden.rs`
+(work unit WU8, not yet added) will compare every case on every PR
 (`make test`).
 
 ## Layout

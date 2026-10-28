@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Pinned nightly for cargo-fuzz (libFuzzer needs -Zsanitizer and
+# -Cpasses=sancov-module, which are nightly-only). Applies only inside
+# rust/fuzz/; the product workspace keeps its stable pin in
+# rust/rust-toolchain.toml. scripts/check-fuzz-policy.sh requires a dated
+# `nightly-YYYY-MM-DD` channel here (never a floating `nightly`). Bump
+# deliberately and record the new pin in the CM-2 pin inventory
+# (docs/compliance/ATO_EVIDENCE.md).
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: CM-2 (Baseline Configuration), SA-15 (Development Process,
+#   Standards, and Tools)
+[toolchain]
+channel = "nightly-2026-10-23"
+profile = "minimal"

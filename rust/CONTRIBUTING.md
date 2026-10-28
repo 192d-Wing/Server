@@ -68,6 +68,17 @@ run's `parity-map.md` record what it was derived from: `schema`,
 `Derived from` column of
 [docs/compliance/PROTOCOL_PARITY.md](docs/compliance/PROTOCOL_PARITY.md).
 
+**Golden corpus** (`parity/corpus/`, Phase 1a):
+
+- Inputs are **synthetic** and written for TAK-RS: never taken from `src/`
+  (including its tests and test resources) and never captured from fielded
+  systems. No real callsigns, UIDs, device identifiers or coordinates of real
+  sites, and no CUI or PII. Each input is listed in `MANIFEST.tsv` and
+  covered by `cases/REUSE.toml`.
+- Goldens are the Java reference's output and enter the tree **only** through
+  `parity/harness.sh import-corpus`, never by hand. No goldens exist yet; see
+  `parity/corpus/README.md`.
+
 The open legal questions (derivative work, reuse of schema files, the effect
 of `INTENT.md`, the NOTICE copyright holder, OpenSSL attribution) are tracked
 in [docs/compliance/POAM.md](docs/compliance/POAM.md) as POAM-2026-10-26-05.
@@ -92,9 +103,9 @@ required are in
 - [ ] **Supply chain:** `make supply-chain` when `Cargo.toml` or `Cargo.lock`
   changed.
 - [ ] **Policy:** `make policy` and `make policy-selftest` (unsafe, manifests,
-  annotations and SPDX headers, POA&M IDs, toolchain, workflows, `src/`
-  coupling). `make check-workflows` needs `ruby` locally and fails without
-  it.
+  annotations and SPDX headers, POA&M IDs and markers, toolchain, workflows,
+  `src/` coupling, fuzz workspace isolation). `make check-workflows` needs
+  `ruby` locally and fails without it.
 - [ ] **No `unsafe`** unless the crate's plan approved it; every `unsafe`
   block has a `// SAFETY:` comment.
 - [ ] **Compliance annotations:** the number of `COMPLIANCE MAPPING:` blocks
@@ -125,6 +136,19 @@ harness) is recorded as **NOT RUN** with the reason, never as passed.
   `scripts/ci-changes.sh`, so that upstream changes to that input run the
   Rust jobs. `make check-src-coupling` fails otherwise. It is a text
   heuristic, so review the entry when adding the read.
+- **TAK Protocol schemas.** `crates/tak-proto/build.rs` compiles the
+  `.proto` files in place and fails the build when one is missing, an
+  unlisted `.proto` appears, or a schema's SHA-256 differs from
+  `crates/tak-proto/schema.sha256`. After an upstream schema change, compare
+  the schema diff with the hand encoder in `crates/tak-proto/src/lib.rs` and
+  the parity map, then update the manifest (`shasum -a 256 *.proto` in the
+  schema directory) in a change the tak-protocol-reviewer approves.
+- **Fuzz workspace.** `rust/fuzz/` is the only place `libfuzzer-sys` and its
+  C++ build may appear (development-only exception, POAM-2026-10-27-01).
+  Shared supply-chain policy is edited in `deny.toml` and copied into
+  `fuzz/deny.toml`; only the marked `FUZZ-DELTA` blocks may differ
+  (`make check-fuzz-policy`). Run `make fuzz-deny` after any change under
+  `rust/fuzz/`.
 - **crates.io only.** No git or other registry sources. Commit `Cargo.lock`,
   and build with `--locked`.
 - **Advisory ignores** need a `# POAM:` ID and must be identical in
@@ -156,7 +180,9 @@ Example (the STIG V-ID and Java method are illustrative):
 - `// POAM: POAM-<date>-<nn> <description>` marks an open gap tracked in
   [docs/compliance/POAM.md](docs/compliance/POAM.md). It does not mean the
   gap is accepted; acceptance, if any, is recorded in POAM.md. Every
-  referenced ID must exist there (`scripts/check-poam-ids.sh`).
+  referenced ID must exist there (`scripts/check-poam-ids.sh`), and the
+  first token after the marker must be the ID
+  (`scripts/check-poam-markers.sh`). Both run in `make policy`.
 - Every control ID on a `NIST 800-53:` line must be mapped in
   [docs/compliance/NIST_800-53_MAPPING.md](docs/compliance/NIST_800-53_MAPPING.md)
   (`scripts/check-annotations.sh` rule (d)).
@@ -175,15 +201,17 @@ entry.
 
 - Workflows live in the repository root `.github/workflows/`:
   `rust-ci.yml` (every PR and push to `main`), `rust-supply-chain.yml`
-  (nightly and manual) and `rust-parity.yml` (nightly, manual, and changes to
-  `rust/parity/**`).
+  (nightly and manual), `rust-parity.yml` (nightly, manual, and changes to
+  `rust/parity/**`) and `rust-fuzz.yml` (nightly, manual, and pull requests
+  that touch `tak-cot`, `tak-proto`, their schemas, the corpus inputs or the
+  fuzz workspace).
 - **`rust-ci-gate` is the required check**, and the only one. It always runs
   and passes only if every job that should have run succeeded. A PR that
   touches only `src/**` (an upstream merge) runs the change detector,
   workflow lint and the gate, and passes quickly.
-- `rust-parity.yml` is never a required check, and neither is the
-  `annotations-strict` job in `rust-ci.yml`, which only makes a pending
-  compliance-mapping ID visible on every PR.
+- `rust-parity.yml` and `rust-fuzz.yml` are never required checks, and
+  neither is the `annotations-strict` job in `rust-ci.yml`, which only makes
+  a pending compliance-mapping ID visible on every PR.
 - Workflow rules: every action is pinned to a full commit SHA with a version
   comment; `permissions: contents: read`; no `pull_request_target`; no
   `${{ github.event.* }}`, `${{ inputs.* }}` or `${{ needs.* }}` inside

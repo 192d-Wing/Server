@@ -8,7 +8,8 @@
 # rust/clippy.toml and miss the wasm-panicking std bans (WEB-003). Every
 # setting below is identical to rust/web/clippy.toml;
 # crates/tak-api-types/tests/clippy_config.rs fails if the two drift. Edit
-# rust/web/clippy.toml first, then copy its setting lines here.
+# rust/web/clippy.toml first, then copy its setting lines here and into the
+# other copies: crates/tak-proto/clippy.toml and crates/tak-cot/clippy.toml.
 #
 # The workspace denies unwrap/expect/panic/dbg/print in production code
 # (Cargo.toml [workspace.lints.clippy]); tests may use them.

@@ -17,6 +17,8 @@
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation), SC-5 (Denial-of-service
 //   Protection)
+// - ASD STIG: APSC-DV-002530 / V-222606, APSC-DV-002590 / V-222612
+//   (unverified)
 
 use std::ops::Range;
 
@@ -95,6 +97,8 @@ pub fn encode_stream_frame(
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation), SC-5 (Denial-of-service
 //   Protection)
+// - ASD STIG: APSC-DV-002530 / V-222606, APSC-DV-002590 / V-222612
+//   (unverified)
 // PARITY: src/takserver-core/src/main/java/com/bbn/marti/nio/protocol/connections/StreamingProtoBufProtocol.java#onDataReceived
 pub fn decode_stream_frame(buf: &[u8], max_frame: usize) -> Result<Option<Frame>, FrameError> {
     let Some((&first, rest)) = buf.split_first() else {
@@ -159,6 +163,7 @@ pub fn encode_mesh(msg: &[u8], out: &mut Vec<u8>) {
 //
 // COMPLIANCE MAPPING:
 // - NIST 800-53: SI-10 (Information Input Validation)
+// - ASD STIG: APSC-DV-002530 / V-222606 (unverified)
 // PARITY: src/takserver-core/src/main/java/com/bbn/marti/nio/protocol/connections/SingleProtobufOrCotProtocol.java#byteBufToCot
 pub fn decode_mesh(datagram: &[u8]) -> Result<&[u8], FrameError> {
     let (&first, rest) = datagram.split_first().ok_or(FrameError::Truncated)?;
@@ -221,6 +226,10 @@ fn put_varint(mut value: u32, out: &mut Vec<u8>) {
 /// Why a frame could not be decoded or encoded.
 ///
 /// `Display` never includes frame bytes (SI-11).
+//
+// COMPLIANCE MAPPING:
+// - NIST 800-53: SI-11 (Error Handling)
+// - ASD STIG: APSC-DV-002570 / V-222610 (unverified)
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum FrameError {

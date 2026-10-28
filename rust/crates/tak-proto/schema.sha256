@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# SHA-256 of every TAK Protocol schema that tak-proto/build.rs compiles, read
+# in place from src/takserver-protobuf/src/main/proto (SEC-005). build.rs
+# recomputes each digest and fails the build on any difference, so an
+# upstream merge that renumbers, retypes or adds a field cannot change the
+# generated decoder (or leave the hand encoder in src/lib.rs, which hard-codes
+# field numbers and wire types, behind) without a reviewed change here.
+#
+# Updating: re-run `shasum -a 256 *.proto` in the schema directory, compare
+# the schema diff with the hand encoder and the parity map, and have the
+# tak-protocol-reviewer approve the change to this file (CM-3, SA-10(1);
+# a build-host change detector outside the TOE, not an SI-7 claim).
+#
+# Format: one `<sha256 hex>  <file name>` line per schema (sha256sum format),
+# sorted by name; `#` lines and blank lines are ignored.
+
+073979560b562a658bc2bb515fbcb68de03092c2bdc993eba9a989918013a992  binarypayload.proto
+09b9b0f72889b39bab588d6b6195a79509fc366dc3c1d0e91b54c9cfa8fbaad0  contact.proto
+14fc114392ab4173e928b421056c4dd7fa670658a87aed76cc7f12b5f4026fb6  cotevent.proto
+4f650366021fd552124a068395a3aa6879a59de745409993d63b2fd118b8c5e0  detail.proto
+7b807a2570ed34fd1a779b2cfda7e6087b48869519a01eeeca1ddbab4d643900  fig.proto
+586663754ecdaf6a41e8346b89dc14576a5d3db229297d532067611a0dc71c96  group.proto
+1b410d5a37e180a227e22399e337f3982ccb87aa320e008d11db6b087888c600  message.proto
+7f082a8db6d07e173bfa4670fbafda24c951371fe0a6b3bb044e13cdaf95fdee  missionannouncement.proto
+76ea0454857f5646d1207a9544f94109ea417b9afe4ac76e3062aa53bbb16569  precisionlocation.proto
+ff0257fcf1ff37268261c3cad3688cdce368856f614444fe43adb2b408e2e69d  status.proto
+eef63c85cd20ce70ff95b223083f330308314269ca3413c14b8c352f8524c3df  streaminginput.proto
+12a2fed9d08e3a8f8cc20cddab667ea24a73dfdfaea0bde6fdb07e10001d306e  takcontrol.proto
+5e579944082e5d09ca6c2fc172cdcf89ddcbe4cf33e9b9a9ee7e9187a57b98a6  takmessage.proto
+44e4729b876c6548a0a9a64ab3190f6e94fdc9836fc6274847db09141afc82f0  takv.proto
+5e7c27511ab1d20e78abf43348bb00b037e560fabbbaa57ccf5b1cd3cf575a56  track.proto
