@@ -1,0 +1,720 @@
+# SPDX-License-Identifier: Apache-2.0
+# TAK-RS golden corpus manifest (plan 1.4.3). Inputs under cases/ are synthetic, written for TAK-RS, Apache-2.0.
+# Lines starting with '#' are comments; the first other line is the header. One row per (id, direction).
+# creation_ms/submission_ms: decimal i64, or '-' = setter not called / not applicable.
+id	direction	input	creation_ms	submission_ms	purpose
+typical-sa-full	x2p	cases/xml/typical-sa-full.xml	1793102400000	1793102400250	K-01..K-10,K-24; SA a-f-G-U-C with all six typed details plus uid -> xmlDetail
+typical-sa-full	x2x	cases/xml/typical-sa-full.xml	-	-	K-01..K-10,K-24; SA a-f-G-U-C with all six typed details plus uid -> xmlDetail
+typical-sa-minimal	x2p	cases/xml/typical-sa-minimal.xml	1793102400000	1793102400250	K-06,K-07; SA with callsign-only contact and __group, no xmlDetail
+typical-sa-minimal	x2x	cases/xml/typical-sa-minimal.xml	-	-	K-06,K-07; SA with callsign-only contact and __group, no xmlDetail
+typical-sa-single-quoted	x2p	cases/xml/typical-sa-single-quoted.xml	1793102400000	1793102400250	C-02,C-11,K-06..K-08; single-quoted attributes, typed attributes in non-canonical order
+typical-sa-single-quoted	x2x	cases/xml/typical-sa-single-quoted.xml	-	-	C-02,C-11,K-06..K-08; single-quoted attributes, typed attributes in non-canonical order
+typical-sa-indented	x2p	cases/xml/typical-sa-indented.xml	1793102400000	1793102400250	K-10,C-05; pretty-printed SA: whitespace text under event/detail, seconds-only times
+typical-sa-indented	x2x	cases/xml/typical-sa-indented.xml	-	-	K-10,C-05; pretty-printed SA: whitespace text under event/detail, seconds-only times
+typical-sa-vehicle	x2p	cases/xml/typical-sa-vehicle.xml	1793102400000	1793102400250	K-02,K-06..K-08; one-digit fraction times, integer point strings, IP endpoint
+typical-sa-vehicle	x2x	cases/xml/typical-sa-vehicle.xml	-	-	K-02,K-06..K-08; one-digit fraction times, integer point strings, IP endpoint
+typical-geochat-all	x2p	cases/xml/typical-geochat-all.xml	1793102400000	1793102400250	K-10,C-02; GeoChat b-t-f: __chat, link, remarks, __serverdestination, marti/dest kept in xmlDetail
+typical-geochat-all	x2x	cases/xml/typical-geochat-all.xml	-	-	K-10,C-02; GeoChat b-t-f: __chat, link, remarks, __serverdestination, marti/dest kept in xmlDetail
+typical-geochat-group	x2p	cases/xml/typical-geochat-group.xml	1793102400000	1793102400250	K-10; GeoChat to a named room without __serverdestination
+typical-geochat-group	x2x	cases/xml/typical-geochat-group.xml	-	-	K-10; GeoChat to a named room without __serverdestination
+typical-shape-500-links	x2p	cases/xml/typical-shape-500-links.xml	1793102400000	1793102400250	K-06,K-10,C-03; u-d-f polyline with 500 link elements in xmlDetail, contact converted
+typical-shape-500-links	x2x	cases/xml/typical-shape-500-links.xml	-	-	K-06,K-10,C-03; u-d-f polyline with 500 link elements in xmlDetail, contact converted
+typical-route	x2p	cases/xml/typical-route.xml	1793102400000	1793102400250	K-06,K-10,C-03; b-m-r route with waypoints, nested empty elements
+typical-route	x2x	cases/xml/typical-route.xml	-	-	K-06,K-10,C-03; b-m-r route with waypoints, nested empty elements
+typical-emergency	x2p	cases/xml/typical-emergency.xml	1793102400000	1793102400250	K-06,K-10; emergency b-a-o-tbl with text content element
+typical-emergency	x2x	cases/xml/typical-emergency.xml	-	-	K-06,K-10; emergency b-a-o-tbl with text content element
+typical-emergency-cancel	x2p	cases/xml/typical-emergency-cancel.xml	1793102400000	1793102400250	K-10; emergency cancel b-a-o-can
+typical-emergency-cancel	x2x	cases/xml/typical-emergency-cancel.xml	-	-	K-10; emergency cancel b-a-o-can
+typical-ping	x2p	cases/xml/typical-ping.xml	1793102400000	1793102400250	K-05,K-10,C-01,C-03; t-x-c-t ping without XML declaration, empty detail element
+typical-ping	x2x	cases/xml/typical-ping.xml	-	-	K-05,K-10,C-01,C-03; t-x-c-t ping without XML declaration, empty detail element
+typical-pong	x2p	cases/xml/typical-pong.xml	1793102400000	1793102400250	K-05,C-03; t-x-c-t-r with <detail></detail> (start-end empty form)
+typical-pong	x2x	cases/xml/typical-pong.xml	-	-	K-05,C-03; t-x-c-t-r with <detail></detail> (start-end empty form)
+typical-marker-hostile	x2p	cases/xml/typical-marker-hostile.xml	1793102400000	1793102400250	K-06..K-09; marker with ineligible status/precisionlocation (wrong attribute set) kept in xmlDetail
+typical-marker-hostile	x2x	cases/xml/typical-marker-hostile.xml	-	-	K-06..K-09; marker with ineligible status/precisionlocation (wrong attribute set) kept in xmlDetail
+typical-circle	x2p	cases/xml/typical-circle.xml	1793102400000	1793102400250	K-10,C-03; u-r-b-c-c circle with nested shape/link/Style elements and text
+typical-circle	x2x	cases/xml/typical-circle.xml	-	-	K-10,C-03; u-r-b-c-c circle with nested shape/link/Style elements and text
+typical-casevac	x2p	cases/xml/typical-casevac.xml	1793102400000	1793102400250	K-06,K-10; b-r-f-h-c 9-line with nested attributes holding empty values
+typical-casevac	x2x	cases/xml/typical-casevac.xml	-	-	K-06,K-10; b-r-f-h-c 9-line with nested attributes holding empty values
+typical-sensor	x2p	cases/xml/typical-sensor.xml	1793102400000	1793102400250	K-10,C-11; sensor point: element with 20 attributes, attribute order preserved
+typical-sensor	x2x	cases/xml/typical-sensor.xml	-	-	K-10,C-11; sensor point: element with 20 attributes, attribute order preserved
+typical-sa-no-detail	x2p	cases/xml/typical-sa-no-detail.xml	1793102400000	1793102400250	K-05; SA without a detail element -> no Detail
+typical-sa-no-detail	x2x	cases/xml/typical-sa-no-detail.xml	-	-	K-05; SA without a detail element -> no Detail
+typed-contact-exact	x2p	cases/xml/typed-contact-exact.xml	1793102400000	1793102400250	K-06; contact with exactly its attribute set -> typed, removed from xmlDetail
+typed-contact-extra-attr	x2p	cases/xml/typed-contact-extra-attr.xml	1793102400000	1793102400250	K-06; contact with one extra attribute -> stays in xmlDetail
+typed-contact-missing-attr	x2p	cases/xml/typed-contact-missing-attr.xml	1793102400000	1793102400250	K-06; contact missing endpoint -> stays in xmlDetail (contact: callsign-only is exact)
+typed-contact-missing-first-attr	x2p	cases/xml/typed-contact-missing-first-attr.xml	1793102400000	1793102400250	K-06; contact missing callsign -> stays in xmlDetail
+typed-contact-empty-value	x2p	cases/xml/typed-contact-empty-value.xml	1793102400000	1793102400250	K-06; contact with empty callsign value
+typed-contact-prefixed-attr	x2p	cases/xml/typed-contact-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-06; contact with prefixed callsign (local-name match?)
+typed-contact-xmlns-decl	x2p	cases/xml/typed-contact-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-06; contact exact attributes plus an unused prefix declaration
+typed-contact-default-ns	x2p	cases/xml/typed-contact-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-06; contact exact attributes in a default namespace
+typed-contact-prefixed-element	x2p	cases/xml/typed-contact-prefixed-element.xml	1793102400000	1793102400250	C-06,K-06; prefixed element s:contact (local-name match?)
+typed-contact-dup-first-eligible	x2p	cases/xml/typed-contact-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-06; two contact: first eligible converted, second stays in xmlDetail
+typed-contact-dup-first-ineligible	x2p	cases/xml/typed-contact-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-06; first contact ineligible -> second (eligible) not tried, both in xmlDetail
+typed-contact-pos-first	x2p	cases/xml/typed-contact-pos-first.xml	1793102400000	1793102400250	K-10,K-06; contact first child of detail
+typed-contact-pos-middle	x2p	cases/xml/typed-contact-pos-middle.xml	1793102400000	1793102400250	K-10,K-06; contact between other children
+typed-contact-pos-last	x2p	cases/xml/typed-contact-pos-last.xml	1793102400000	1793102400250	K-10,K-06; contact last child of detail
+typed-contact-attr-order-reversed	x2p	cases/xml/typed-contact-attr-order-reversed.xml	1793102400000	1793102400250	K-06,K-18; contact attributes in reverse order still eligible
+typed-contact-with-child	x2p	cases/xml/typed-contact-with-child.xml	1793102400000	1793102400250	K-06; contact with exact attributes and a child element (child content dropped or kept?)
+typed-contact-with-text	x2p	cases/xml/typed-contact-with-text.xml	1793102400000	1793102400250	K-06; contact with exact attributes and text content
+typed-group-exact	x2p	cases/xml/typed-group-exact.xml	1793102400000	1793102400250	K-07; __group with exactly its attribute set -> typed, removed from xmlDetail
+typed-group-extra-attr	x2p	cases/xml/typed-group-extra-attr.xml	1793102400000	1793102400250	K-07; __group with one extra attribute -> stays in xmlDetail
+typed-group-missing-attr	x2p	cases/xml/typed-group-missing-attr.xml	1793102400000	1793102400250	K-07; __group missing role -> stays in xmlDetail (contact: callsign-only is exact)
+typed-group-missing-first-attr	x2p	cases/xml/typed-group-missing-first-attr.xml	1793102400000	1793102400250	K-07; __group missing name -> stays in xmlDetail
+typed-group-empty-value	x2p	cases/xml/typed-group-empty-value.xml	1793102400000	1793102400250	K-07; __group with empty name value
+typed-group-prefixed-attr	x2p	cases/xml/typed-group-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-07; __group with prefixed name (local-name match?)
+typed-group-xmlns-decl	x2p	cases/xml/typed-group-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-07; __group exact attributes plus an unused prefix declaration
+typed-group-default-ns	x2p	cases/xml/typed-group-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-07; __group exact attributes in a default namespace
+typed-group-prefixed-element	x2p	cases/xml/typed-group-prefixed-element.xml	1793102400000	1793102400250	C-06,K-07; prefixed element s:__group (local-name match?)
+typed-group-dup-first-eligible	x2p	cases/xml/typed-group-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-07; two __group: first eligible converted, second stays in xmlDetail
+typed-group-dup-first-ineligible	x2p	cases/xml/typed-group-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-07; first __group ineligible -> second (eligible) not tried, both in xmlDetail
+typed-group-pos-first	x2p	cases/xml/typed-group-pos-first.xml	1793102400000	1793102400250	K-10,K-07; __group first child of detail
+typed-group-pos-middle	x2p	cases/xml/typed-group-pos-middle.xml	1793102400000	1793102400250	K-10,K-07; __group between other children
+typed-group-pos-last	x2p	cases/xml/typed-group-pos-last.xml	1793102400000	1793102400250	K-10,K-07; __group last child of detail
+typed-group-attr-order-reversed	x2p	cases/xml/typed-group-attr-order-reversed.xml	1793102400000	1793102400250	K-07,K-18; __group attributes in reverse order still eligible
+typed-group-with-child	x2p	cases/xml/typed-group-with-child.xml	1793102400000	1793102400250	K-07; __group with exact attributes and a child element (child content dropped or kept?)
+typed-group-with-text	x2p	cases/xml/typed-group-with-text.xml	1793102400000	1793102400250	K-07; __group with exact attributes and text content
+typed-precisionlocation-exact	x2p	cases/xml/typed-precisionlocation-exact.xml	1793102400000	1793102400250	K-07; precisionlocation with exactly its attribute set -> typed, removed from xmlDetail
+typed-precisionlocation-extra-attr	x2p	cases/xml/typed-precisionlocation-extra-attr.xml	1793102400000	1793102400250	K-07; precisionlocation with one extra attribute -> stays in xmlDetail
+typed-precisionlocation-missing-attr	x2p	cases/xml/typed-precisionlocation-missing-attr.xml	1793102400000	1793102400250	K-07; precisionlocation missing altsrc -> stays in xmlDetail (contact: callsign-only is exact)
+typed-precisionlocation-missing-first-attr	x2p	cases/xml/typed-precisionlocation-missing-first-attr.xml	1793102400000	1793102400250	K-07; precisionlocation missing geopointsrc -> stays in xmlDetail
+typed-precisionlocation-empty-value	x2p	cases/xml/typed-precisionlocation-empty-value.xml	1793102400000	1793102400250	K-07; precisionlocation with empty geopointsrc value
+typed-precisionlocation-prefixed-attr	x2p	cases/xml/typed-precisionlocation-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-07; precisionlocation with prefixed geopointsrc (local-name match?)
+typed-precisionlocation-xmlns-decl	x2p	cases/xml/typed-precisionlocation-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-07; precisionlocation exact attributes plus an unused prefix declaration
+typed-precisionlocation-default-ns	x2p	cases/xml/typed-precisionlocation-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-07; precisionlocation exact attributes in a default namespace
+typed-precisionlocation-prefixed-element	x2p	cases/xml/typed-precisionlocation-prefixed-element.xml	1793102400000	1793102400250	C-06,K-07; prefixed element s:precisionlocation (local-name match?)
+typed-precisionlocation-dup-first-eligible	x2p	cases/xml/typed-precisionlocation-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-07; two precisionlocation: first eligible converted, second stays in xmlDetail
+typed-precisionlocation-dup-first-ineligible	x2p	cases/xml/typed-precisionlocation-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-07; first precisionlocation ineligible -> second (eligible) not tried, both in xmlDetail
+typed-precisionlocation-pos-first	x2p	cases/xml/typed-precisionlocation-pos-first.xml	1793102400000	1793102400250	K-10,K-07; precisionlocation first child of detail
+typed-precisionlocation-pos-middle	x2p	cases/xml/typed-precisionlocation-pos-middle.xml	1793102400000	1793102400250	K-10,K-07; precisionlocation between other children
+typed-precisionlocation-pos-last	x2p	cases/xml/typed-precisionlocation-pos-last.xml	1793102400000	1793102400250	K-10,K-07; precisionlocation last child of detail
+typed-precisionlocation-attr-order-reversed	x2p	cases/xml/typed-precisionlocation-attr-order-reversed.xml	1793102400000	1793102400250	K-07,K-18; precisionlocation attributes in reverse order still eligible
+typed-precisionlocation-with-child	x2p	cases/xml/typed-precisionlocation-with-child.xml	1793102400000	1793102400250	K-07; precisionlocation with exact attributes and a child element (child content dropped or kept?)
+typed-precisionlocation-with-text	x2p	cases/xml/typed-precisionlocation-with-text.xml	1793102400000	1793102400250	K-07; precisionlocation with exact attributes and text content
+typed-status-exact	x2p	cases/xml/typed-status-exact.xml	1793102400000	1793102400250	K-08; status with exactly its attribute set -> typed, removed from xmlDetail
+typed-status-extra-attr	x2p	cases/xml/typed-status-extra-attr.xml	1793102400000	1793102400250	K-08; status with one extra attribute -> stays in xmlDetail
+typed-status-missing-attr	x2p	cases/xml/typed-status-missing-attr.xml	1793102400000	1793102400250	K-08; status with no attributes -> stays in xmlDetail
+typed-status-empty-value	x2p	cases/xml/typed-status-empty-value.xml	1793102400000	1793102400250	K-08; status with empty battery value
+typed-status-prefixed-attr	x2p	cases/xml/typed-status-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-08; status with prefixed battery (local-name match?)
+typed-status-xmlns-decl	x2p	cases/xml/typed-status-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-08; status exact attributes plus an unused prefix declaration
+typed-status-default-ns	x2p	cases/xml/typed-status-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-08; status exact attributes in a default namespace
+typed-status-prefixed-element	x2p	cases/xml/typed-status-prefixed-element.xml	1793102400000	1793102400250	C-06,K-08; prefixed element s:status (local-name match?)
+typed-status-dup-first-eligible	x2p	cases/xml/typed-status-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-08; two status: first eligible converted, second stays in xmlDetail
+typed-status-dup-first-ineligible	x2p	cases/xml/typed-status-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-08; first status ineligible -> second (eligible) not tried, both in xmlDetail
+typed-status-pos-first	x2p	cases/xml/typed-status-pos-first.xml	1793102400000	1793102400250	K-10,K-08; status first child of detail
+typed-status-pos-middle	x2p	cases/xml/typed-status-pos-middle.xml	1793102400000	1793102400250	K-10,K-08; status between other children
+typed-status-pos-last	x2p	cases/xml/typed-status-pos-last.xml	1793102400000	1793102400250	K-10,K-08; status last child of detail
+typed-status-with-child	x2p	cases/xml/typed-status-with-child.xml	1793102400000	1793102400250	K-08; status with exact attributes and a child element (child content dropped or kept?)
+typed-status-with-text	x2p	cases/xml/typed-status-with-text.xml	1793102400000	1793102400250	K-08; status with exact attributes and text content
+typed-takv-exact	x2p	cases/xml/typed-takv-exact.xml	1793102400000	1793102400250	K-07; takv with exactly its attribute set -> typed, removed from xmlDetail
+typed-takv-extra-attr	x2p	cases/xml/typed-takv-extra-attr.xml	1793102400000	1793102400250	K-07; takv with one extra attribute -> stays in xmlDetail
+typed-takv-missing-attr	x2p	cases/xml/typed-takv-missing-attr.xml	1793102400000	1793102400250	K-07; takv missing version -> stays in xmlDetail (contact: callsign-only is exact)
+typed-takv-missing-first-attr	x2p	cases/xml/typed-takv-missing-first-attr.xml	1793102400000	1793102400250	K-07; takv missing device -> stays in xmlDetail
+typed-takv-empty-value	x2p	cases/xml/typed-takv-empty-value.xml	1793102400000	1793102400250	K-07; takv with empty device value
+typed-takv-prefixed-attr	x2p	cases/xml/typed-takv-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-07; takv with prefixed device (local-name match?)
+typed-takv-xmlns-decl	x2p	cases/xml/typed-takv-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-07; takv exact attributes plus an unused prefix declaration
+typed-takv-default-ns	x2p	cases/xml/typed-takv-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-07; takv exact attributes in a default namespace
+typed-takv-prefixed-element	x2p	cases/xml/typed-takv-prefixed-element.xml	1793102400000	1793102400250	C-06,K-07; prefixed element s:takv (local-name match?)
+typed-takv-dup-first-eligible	x2p	cases/xml/typed-takv-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-07; two takv: first eligible converted, second stays in xmlDetail
+typed-takv-dup-first-ineligible	x2p	cases/xml/typed-takv-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-07; first takv ineligible -> second (eligible) not tried, both in xmlDetail
+typed-takv-pos-first	x2p	cases/xml/typed-takv-pos-first.xml	1793102400000	1793102400250	K-10,K-07; takv first child of detail
+typed-takv-pos-middle	x2p	cases/xml/typed-takv-pos-middle.xml	1793102400000	1793102400250	K-10,K-07; takv between other children
+typed-takv-pos-last	x2p	cases/xml/typed-takv-pos-last.xml	1793102400000	1793102400250	K-10,K-07; takv last child of detail
+typed-takv-attr-order-reversed	x2p	cases/xml/typed-takv-attr-order-reversed.xml	1793102400000	1793102400250	K-07,K-18; takv attributes in reverse order still eligible
+typed-takv-with-child	x2p	cases/xml/typed-takv-with-child.xml	1793102400000	1793102400250	K-07; takv with exact attributes and a child element (child content dropped or kept?)
+typed-takv-with-text	x2p	cases/xml/typed-takv-with-text.xml	1793102400000	1793102400250	K-07; takv with exact attributes and text content
+typed-track-exact	x2p	cases/xml/typed-track-exact.xml	1793102400000	1793102400250	K-08; track with exactly its attribute set -> typed, removed from xmlDetail
+typed-track-extra-attr	x2p	cases/xml/typed-track-extra-attr.xml	1793102400000	1793102400250	K-08; track with one extra attribute -> stays in xmlDetail
+typed-track-missing-attr	x2p	cases/xml/typed-track-missing-attr.xml	1793102400000	1793102400250	K-08; track missing course -> stays in xmlDetail (contact: callsign-only is exact)
+typed-track-missing-first-attr	x2p	cases/xml/typed-track-missing-first-attr.xml	1793102400000	1793102400250	K-08; track missing speed -> stays in xmlDetail
+typed-track-empty-value	x2p	cases/xml/typed-track-empty-value.xml	1793102400000	1793102400250	K-08; track with empty speed value
+typed-track-prefixed-attr	x2p	cases/xml/typed-track-prefixed-attr.xml	1793102400000	1793102400250	C-06,K-08; track with prefixed speed (local-name match?)
+typed-track-xmlns-decl	x2p	cases/xml/typed-track-xmlns-decl.xml	1793102400000	1793102400250	C-06,C-04,K-08; track exact attributes plus an unused prefix declaration
+typed-track-default-ns	x2p	cases/xml/typed-track-default-ns.xml	1793102400000	1793102400250	C-06,C-04,K-08; track exact attributes in a default namespace
+typed-track-prefixed-element	x2p	cases/xml/typed-track-prefixed-element.xml	1793102400000	1793102400250	C-06,K-08; prefixed element s:track (local-name match?)
+typed-track-dup-first-eligible	x2p	cases/xml/typed-track-dup-first-eligible.xml	1793102400000	1793102400250	K-09,K-08; two track: first eligible converted, second stays in xmlDetail
+typed-track-dup-first-ineligible	x2p	cases/xml/typed-track-dup-first-ineligible.xml	1793102400000	1793102400250	K-09,K-08; first track ineligible -> second (eligible) not tried, both in xmlDetail
+typed-track-pos-first	x2p	cases/xml/typed-track-pos-first.xml	1793102400000	1793102400250	K-10,K-08; track first child of detail
+typed-track-pos-middle	x2p	cases/xml/typed-track-pos-middle.xml	1793102400000	1793102400250	K-10,K-08; track between other children
+typed-track-pos-last	x2p	cases/xml/typed-track-pos-last.xml	1793102400000	1793102400250	K-10,K-08; track last child of detail
+typed-track-attr-order-reversed	x2p	cases/xml/typed-track-attr-order-reversed.xml	1793102400000	1793102400250	K-08,K-18; track attributes in reverse order still eligible
+typed-track-with-child	x2p	cases/xml/typed-track-with-child.xml	1793102400000	1793102400250	K-08; track with exact attributes and a child element (child content dropped or kept?)
+typed-track-with-text	x2p	cases/xml/typed-track-with-text.xml	1793102400000	1793102400250	K-08; track with exact attributes and text content
+typed-contact-endpoint-empty	x2p	cases/xml/typed-contact-endpoint-empty.xml	1793102400000	1793102400250	K-06; empty endpoint dropped from proto and xmlDetail
+typed-contact-callsign-empty-only	x2p	cases/xml/typed-contact-callsign-empty-only.xml	1793102400000	1793102400250	K-06; callsign present but empty
+typed-contact-phone	x2p	cases/xml/typed-contact-phone.xml	1793102400000	1793102400250	K-06; plan 8.7 example: extra phone attribute -> whole contact in xmlDetail
+typed-status-battery-abc	x2p	cases/xml/typed-status-battery-abc.xml	1793102400000	1793102400250	K-08,K-34; status battery='abc' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-negative	x2p	cases/xml/typed-status-battery-negative.xml	1793102400000	1793102400250	K-08,K-34; status battery='-5' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-u32max	x2p	cases/xml/typed-status-battery-u32max.xml	1793102400000	1793102400250	K-08,K-34; status battery='4294967295' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-i32max	x2p	cases/xml/typed-status-battery-i32max.xml	1793102400000	1793102400250	K-08,K-34; status battery='2147483647' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-i32over	x2p	cases/xml/typed-status-battery-i32over.xml	1793102400000	1793102400250	K-08,K-34; status battery='2147483648' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-space	x2p	cases/xml/typed-status-battery-space.xml	1793102400000	1793102400250	K-08,K-34; status battery=' 50' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-plus	x2p	cases/xml/typed-status-battery-plus.xml	1793102400000	1793102400250	K-08,K-34; status battery='+50' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-float	x2p	cases/xml/typed-status-battery-float.xml	1793102400000	1793102400250	K-08,K-34; status battery='50.0' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-empty	x2p	cases/xml/typed-status-battery-empty.xml	1793102400000	1793102400250	K-08,K-34; status battery='' (Integer.parseInt grammar, unparseable -> 0)
+typed-status-battery-arabic-digits	x2p	cases/xml/typed-status-battery-arabic-digits.xml	1793102400000	1793102400250	K-08,K-34; status battery='٥٠' (Integer.parseInt grammar, unparseable -> 0)
+typed-track-speed-abc	x2p	cases/xml/typed-track-speed-abc.xml	1793102400000	1793102400250	K-08,K-34; track speed='abc' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-nan	x2p	cases/xml/typed-track-speed-nan.xml	1793102400000	1793102400250	K-08,K-34; track speed='NaN' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-minus-one	x2p	cases/xml/typed-track-speed-minus-one.xml	1793102400000	1793102400250	K-08,K-34; track speed='-1' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-big	x2p	cases/xml/typed-track-speed-big.xml	1793102400000	1793102400250	K-08,K-34; track speed='1e400' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-space	x2p	cases/xml/typed-track-speed-space.xml	1793102400000	1793102400250	K-08,K-34; track speed=' 2 ' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-suffix	x2p	cases/xml/typed-track-speed-suffix.xml	1793102400000	1793102400250	K-08,K-34; track speed='1.5d' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-hex	x2p	cases/xml/typed-track-speed-hex.xml	1793102400000	1793102400250	K-08,K-34; track speed='0x1p3' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-speed-inf	x2p	cases/xml/typed-track-speed-inf.xml	1793102400000	1793102400250	K-08,K-34; track speed='Infinity' (Double.parseDouble grammar, unparseable -> 0)
+typed-track-course-neg-zero	x2p	cases/xml/typed-track-course-neg-zero.xml	1793102400000	1793102400250	K-08,C-08; track course -0.0 (negative zero encoding)
+typed-all-six-only	x2p	cases/xml/typed-all-six-only.xml	1793102400000	1793102400250	K-10; all six typed, nothing left -> xmlDetail unset
+typed-all-six-reverse-order	x2p	cases/xml/typed-all-six-reverse-order.xml	1793102400000	1793102400250	K-10,K-24; typed elements in reverse order; encoding in tag order
+typed-other-only	x2p	cases/xml/typed-other-only.xml	1793102400000	1793102400250	K-05,K-10; no typed element: all children concatenated in xmlDetail
+typed-text-comment-pi-only	x2p	cases/xml/typed-text-comment-pi-only.xml	1793102400000	1793102400250	K-05,K-10; detail with only text/comment/PI -> Detail present, xmlDetail unset
+typed-text-between-elements	x2p	cases/xml/typed-text-between-elements.xml	1793102400000	1793102400250	K-10; text and comments directly under detail dropped between xmlDetail elements
+typed-detail-empty	x2p	cases/xml/typed-detail-empty.xml	1793102400000	1793102400250	K-05; <detail></detail> -> empty Detail (field 15 length 0)
+typed-detail-selfclosed	x2p	cases/xml/typed-detail-selfclosed.xml	1793102400000	1793102400250	K-05; <detail/> -> empty Detail
+typed-no-detail	x2p	cases/xml/typed-no-detail.xml	1793102400000	1793102400250	K-05; no detail element -> no Detail field
+typed-two-details	x2p	cases/xml/typed-two-details.xml	1793102400000	1793102400250	K-05,K-09; two detail elements: only the first is used?
+typed-detail-prefixed	x2p	cases/xml/typed-detail-prefixed.xml	1793102400000	1793102400250	C-06,K-05; prefixed s:detail element (local-name match?)
+typed-detail-before-point	x2p	cases/xml/typed-detail-before-point.xml	1793102400000	1793102400250	K-03,K-05; detail before point
+typed-nested-contact	x2p	cases/xml/typed-nested-contact.xml	1793102400000	1793102400250	K-06,K-10; contact nested below another element is not a detail child
+typed-contact-xmlns-on-detail-child	x2p	cases/xml/typed-contact-xmlns-on-detail-child.xml	1793102400000	1793102400250	C-06,C-04; contact declaring a prefix and using it on endpoint
+typed-group-non-ascii	x2p	cases/xml/typed-group-non-ascii.xml	1793102400000	1793102400250	K-07,C-02; __group values with non-ASCII text
+typed-takv-escaped-values	x2p	cases/xml/typed-takv-escaped-values.xml	1793102400000	1793102400250	K-07,C-02; takv with entity references in values (decoded into proto)
+typed-xmldetail-ns-from-event	x2p	cases/xml/typed-xmldetail-ns-from-event.xml	1793102400000	1793102400250	C-04; xmlDetail element using a prefix declared on event (re-declared on the fragment?)
+typed-xmldetail-default-ns-from-event	x2p	cases/xml/typed-xmldetail-default-ns-from-event.xml	1793102400000	1793102400250	C-04; xmlDetail child inheriting a default namespace declared on event
+evattr-missing-type	x2p	cases/xml/evattr-missing-type.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without type attribute
+evattr-missing-type	x2x	cases/xml/evattr-missing-type.xml	-	-	K-01,K-02,K-13; event without type attribute
+evattr-missing-uid	x2p	cases/xml/evattr-missing-uid.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without uid attribute
+evattr-missing-uid	x2x	cases/xml/evattr-missing-uid.xml	-	-	K-01,K-02,K-13; event without uid attribute
+evattr-missing-how	x2p	cases/xml/evattr-missing-how.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without how attribute
+evattr-missing-how	x2x	cases/xml/evattr-missing-how.xml	-	-	K-01,K-02,K-13; event without how attribute
+evattr-missing-time	x2p	cases/xml/evattr-missing-time.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without time attribute
+evattr-missing-time	x2x	cases/xml/evattr-missing-time.xml	-	-	K-01,K-02,K-13; event without time attribute
+evattr-missing-start	x2p	cases/xml/evattr-missing-start.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without start attribute
+evattr-missing-start	x2x	cases/xml/evattr-missing-start.xml	-	-	K-01,K-02,K-13; event without start attribute
+evattr-missing-stale	x2p	cases/xml/evattr-missing-stale.xml	1793102400000	1793102400250	K-01,K-02,K-13; event without stale attribute
+evattr-missing-stale	x2x	cases/xml/evattr-missing-stale.xml	-	-	K-01,K-02,K-13; event without stale attribute
+evattr-missing-version	x2p	cases/xml/evattr-missing-version.xml	1793102400000	1793102400250	K-13; event without version (P2X always writes version=2.0)
+evattr-missing-version	x2x	cases/xml/evattr-missing-version.xml	-	-	K-13; event without version (P2X always writes version=2.0)
+evattr-version-other	x2p	cases/xml/evattr-version-other.xml	1793102400000	1793102400250	K-13; version 1.9 on input
+evattr-version-other	x2x	cases/xml/evattr-version-other.xml	-	-	K-13; version 1.9 on input
+evattr-access-present	x2p	cases/xml/evattr-access-present.xml	1793102400000	1793102400250	K-04; access present
+evattr-access-present	x2x	cases/xml/evattr-access-present.xml	-	-	K-04; access present
+evattr-access-empty	x2p	cases/xml/evattr-access-empty.xml	1793102400000	1793102400250	K-04; access present but empty
+evattr-access-empty	x2x	cases/xml/evattr-access-empty.xml	-	-	K-04; access present but empty
+evattr-qos-present	x2p	cases/xml/evattr-qos-present.xml	1793102400000	1793102400250	K-04; qos present
+evattr-qos-present	x2x	cases/xml/evattr-qos-present.xml	-	-	K-04; qos present
+evattr-qos-empty	x2p	cases/xml/evattr-qos-empty.xml	1793102400000	1793102400250	K-04; qos present but empty
+evattr-qos-empty	x2x	cases/xml/evattr-qos-empty.xml	-	-	K-04; qos present but empty
+evattr-opex-present	x2p	cases/xml/evattr-opex-present.xml	1793102400000	1793102400250	K-04; opex present
+evattr-opex-present	x2x	cases/xml/evattr-opex-present.xml	-	-	K-04; opex present
+evattr-opex-empty	x2p	cases/xml/evattr-opex-empty.xml	1793102400000	1793102400250	K-04; opex present but empty
+evattr-opex-empty	x2x	cases/xml/evattr-opex-empty.xml	-	-	K-04; opex present but empty
+evattr-caveat-present	x2p	cases/xml/evattr-caveat-present.xml	1793102400000	1793102400250	K-04; caveat present
+evattr-caveat-present	x2x	cases/xml/evattr-caveat-present.xml	-	-	K-04; caveat present
+evattr-caveat-empty	x2p	cases/xml/evattr-caveat-empty.xml	1793102400000	1793102400250	K-04; caveat present but empty
+evattr-caveat-empty	x2x	cases/xml/evattr-caveat-empty.xml	-	-	K-04; caveat present but empty
+evattr-releasableTo-present	x2p	cases/xml/evattr-releasableTo-present.xml	1793102400000	1793102400250	K-04; releasableTo present
+evattr-releasableTo-present	x2x	cases/xml/evattr-releasableTo-present.xml	-	-	K-04; releasableTo present
+evattr-releasableTo-empty	x2p	cases/xml/evattr-releasableTo-empty.xml	1793102400000	1793102400250	K-04; releasableTo present but empty
+evattr-releasableTo-empty	x2x	cases/xml/evattr-releasableTo-empty.xml	-	-	K-04; releasableTo present but empty
+evattr-all-optional	x2p	cases/xml/evattr-all-optional.xml	1793102400000	1793102400250	K-04,K-24; all five optional attributes; caveat(16)/releaseableTo(17) after detail(15)
+evattr-all-optional	x2x	cases/xml/evattr-all-optional.xml	-	-	K-04,K-24; all five optional attributes; caveat(16)/releaseableTo(17) after detail(15)
+evattr-all-optional-no-detail	x2p	cases/xml/evattr-all-optional-no-detail.xml	1793102400000	1793102400250	K-04,K-24; optional attributes without detail
+evattr-all-optional-no-detail	x2x	cases/xml/evattr-all-optional-no-detail.xml	-	-	K-04,K-24; optional attributes without detail
+evattr-releaseableTo-proto-spelling	x2p	cases/xml/evattr-releaseableTo-proto-spelling.xml	1793102400000	1793102400250	K-04; XML attribute spelled as the proto field is not mapped
+evattr-releaseableTo-proto-spelling	x2x	cases/xml/evattr-releaseableTo-proto-spelling.xml	-	-	K-04; XML attribute spelled as the proto field is not mapped
+evattr-prefixed-uid	x2p	cases/xml/evattr-prefixed-uid.xml	1793102400000	1793102400250	C-06,K-01; uid as prefixed attribute s:uid
+evattr-prefixed-uid	x2x	cases/xml/evattr-prefixed-uid.xml	-	-	C-06,K-01; uid as prefixed attribute s:uid
+evattr-prefixed-time	x2p	cases/xml/evattr-prefixed-time.xml	1793102400000	1793102400250	C-06,K-02; time as prefixed attribute s:time
+evattr-prefixed-time	x2x	cases/xml/evattr-prefixed-time.xml	-	-	C-06,K-02; time as prefixed attribute s:time
+evattr-extra-attrs	x2p	cases/xml/evattr-extra-attrs.xml	1793102400000	1793102400250	K-01,C-11; unknown event attributes ignored in X2P, kept in X2X
+evattr-extra-attrs	x2x	cases/xml/evattr-extra-attrs.xml	-	-	K-01,C-11; unknown event attributes ignored in X2P, kept in X2X
+evattr-attr-order	x2p	cases/xml/evattr-attr-order.xml	1793102400000	1793102400250	C-11,K-13; event attributes in reverse order
+evattr-attr-order	x2x	cases/xml/evattr-attr-order.xml	-	-	C-11,K-13; event attributes in reverse order
+evattr-empty-strings	x2p	cases/xml/evattr-empty-strings.xml	1793102400000	1793102400250	K-01; empty uid/type/how
+evattr-empty-strings	x2x	cases/xml/evattr-empty-strings.xml	-	-	K-01; empty uid/type/how
+evattr-special-chars	x2p	cases/xml/evattr-special-chars.xml	1793102400000	1793102400250	K-01,C-02; uid with characters that need escaping
+evattr-special-chars	x2x	cases/xml/evattr-special-chars.xml	-	-	K-01,C-02; uid with characters that need escaping
+evattr-type-whitespace	x2p	cases/xml/evattr-type-whitespace.xml	1793102400000	1793102400250	K-01; type with surrounding spaces copied verbatim
+evattr-type-whitespace	x2x	cases/xml/evattr-type-whitespace.xml	-	-	K-01; type with surrounding spaces copied verbatim
+evattr-root-not-event	x2p	cases/xml/evattr-root-not-event.xml	1793102400000	1793102400250	SEC-004,K-01,K-12; root element is not event (accepted or rejected?)
+evattr-root-not-event	x2x	cases/xml/evattr-root-not-event.xml	-	-	SEC-004,K-01,K-12; root element is not event (accepted or rejected?)
+evattr-root-namespaced	x2p	cases/xml/evattr-root-namespaced.xml	1793102400000	1793102400250	C-06,C-04; event in a default namespace
+evattr-root-namespaced	x2x	cases/xml/evattr-root-namespaced.xml	-	-	C-06,C-04; event in a default namespace
+evattr-root-prefixed	x2p	cases/xml/evattr-root-prefixed.xml	1793102400000	1793102400250	SEC-004,C-06; prefixed root element e:event
+evattr-root-prefixed	x2x	cases/xml/evattr-root-prefixed.xml	-	-	SEC-004,C-06; prefixed root element e:event
+evattr-bare-event	x2p	cases/xml/evattr-bare-event.xml	1793102400000	1793102400250	K-01..K-05,C-12; event with no attributes and no children
+evattr-bare-event	x2x	cases/xml/evattr-bare-event.xml	-	-	K-01..K-05,C-12; event with no attributes and no children
+evattr-creation-zero	x2p	cases/xml/evattr-creation-zero.xml	0	-	K-11; creation 0 -> creationTime not written; submission setter not called
+evattr-creation-negative	x2p	cases/xml/evattr-creation-negative.xml	-5	-1	K-11; negative creation/submission -> not written
+evattr-submission-unset	x2p	cases/xml/evattr-submission-unset.xml	1793102400000	-	K-11; submission setter not called -> submissionTime absent?
+evattr-creation-i64max	x2p	cases/xml/evattr-creation-i64max.xml	9223372036854775807	1	K-11; creation i64::MAX and submission 1 written
+point-missing	x2p	cases/xml/point-missing.xml	1793102400000	1793102400250	K-03; no point -> lat/lon/hae/ce/le all 0 (plan 8.7)
+point-missing-lat	x2p	cases/xml/point-missing-lat.xml	1793102400000	1793102400250	K-03; point without lat -> 0
+point-missing-lon	x2p	cases/xml/point-missing-lon.xml	1793102400000	1793102400250	K-03; point without lon -> 0
+point-missing-hae	x2p	cases/xml/point-missing-hae.xml	1793102400000	1793102400250	K-03; point without hae -> 0
+point-missing-ce	x2p	cases/xml/point-missing-ce.xml	1793102400000	1793102400250	K-03; point without ce -> 0
+point-missing-le	x2p	cases/xml/point-missing-le.xml	1793102400000	1793102400250	K-03; point without le -> 0
+point-lat-empty	x2p	cases/xml/point-lat-empty.xml	1793102400000	1793102400250	K-03,K-34; lat='' (unparseable -> 0)
+point-lat-abc	x2p	cases/xml/point-lat-abc.xml	1793102400000	1793102400250	K-03,K-34; lat='abc' (unparseable -> 0)
+point-lat-suffix-d	x2p	cases/xml/point-lat-suffix-d.xml	1793102400000	1793102400250	K-03,K-34; lat='1.5d' (unparseable -> 0)
+point-lat-spaces	x2p	cases/xml/point-lat-spaces.xml	1793102400000	1793102400250	K-03,K-34; lat=' 2 ' (unparseable -> 0)
+point-lat-hex	x2p	cases/xml/point-lat-hex.xml	1793102400000	1793102400250	K-03,K-34; lat='0x1p3' (unparseable -> 0)
+point-lat-nan	x2p	cases/xml/point-lat-nan.xml	1793102400000	1793102400250	K-03,K-34; lat='NaN' (unparseable -> 0)
+point-lat-infinity	x2p	cases/xml/point-lat-infinity.xml	1793102400000	1793102400250	K-03,K-34; lat='Infinity' (unparseable -> 0)
+point-lat-big	x2p	cases/xml/point-lat-big.xml	1793102400000	1793102400250	K-03,K-34; lat='1e400' (unparseable -> 0)
+point-ce-empty	x2p	cases/xml/point-ce-empty.xml	1793102400000	1793102400250	K-03,K-34; ce='' (unparseable -> 999999)
+point-ce-abc	x2p	cases/xml/point-ce-abc.xml	1793102400000	1793102400250	K-03,K-34; ce='abc' (unparseable -> 999999)
+point-ce-suffix-d	x2p	cases/xml/point-ce-suffix-d.xml	1793102400000	1793102400250	K-03,K-34; ce='1.5d' (unparseable -> 999999)
+point-ce-nan	x2p	cases/xml/point-ce-nan.xml	1793102400000	1793102400250	K-03,K-34; ce='NaN' (unparseable -> 999999)
+point-ce-neg-inf	x2p	cases/xml/point-ce-neg-inf.xml	1793102400000	1793102400250	K-03,K-34; ce='-Infinity' (unparseable -> 999999)
+point-le-abc	x2p	cases/xml/point-le-abc.xml	1793102400000	1793102400250	K-03; le unparseable -> 999999
+point-hae-abc	x2p	cases/xml/point-hae-abc.xml	1793102400000	1793102400250	K-03; hae unparseable -> 0
+point-negative-zero	x2p	cases/xml/point-negative-zero.xml	1793102400000	1793102400250	C-08,K-24; plan 1.7 case x2p-point-negative-zero: is -0.0 written by protobuf-java?
+point-positive-zero	x2p	cases/xml/point-positive-zero.xml	1793102400000	1793102400250	K-24; +0.0 values omitted (proto3 default)
+point-second-point	x2p	cases/xml/point-second-point.xml	1793102400000	1793102400250	K-03; only the first point is used
+point-after-detail	x2p	cases/xml/point-after-detail.xml	1793102400000	1793102400250	K-03; point after detail is still found
+point-prefixed-element	x2p	cases/xml/point-prefixed-element.xml	1793102400000	1793102400250	C-06,K-03; prefixed s:point (local-name match?)
+point-in-detail-only	x2p	cases/xml/point-in-detail-only.xml	1793102400000	1793102400250	K-03,K-10; point only inside detail -> no point; it stays in xmlDetail
+point-extremes	x2p	cases/xml/point-extremes.xml	1793102400000	1793102400250	K-03,K-24,K-34; out-of-range coordinates and extreme doubles copied as parsed
+point-many-digits	x2p	cases/xml/point-many-digits.xml	1793102400000	1793102400250	K-34; long digit strings, underflow to 0, leading zeros, le=-1
+point-suffix-f-and-exp	x2p	cases/xml/point-suffix-f-and-exp.xml	1793102400000	1793102400250	K-34; f/F suffixes, exponent forms, leading plus
+time-no-millis	x2p	cases/xml/time-no-millis.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00Z' (unparseable -> whole conversion rejected)
+time-frac-1	x2p	cases/xml/time-frac-1.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.1Z' (unparseable -> whole conversion rejected)
+time-frac-2	x2p	cases/xml/time-frac-2.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.12Z' (unparseable -> whole conversion rejected)
+time-frac-3	x2p	cases/xml/time-frac-3.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123Z' (unparseable -> whole conversion rejected)
+time-frac-4	x2p	cases/xml/time-frac-4.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.1234Z' (unparseable -> whole conversion rejected)
+time-frac-5	x2p	cases/xml/time-frac-5.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.12345Z' (unparseable -> whole conversion rejected)
+time-frac-6	x2p	cases/xml/time-frac-6.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123456Z' (unparseable -> whole conversion rejected)
+time-frac-7	x2p	cases/xml/time-frac-7.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.1234567Z' (unparseable -> whole conversion rejected)
+time-frac-8	x2p	cases/xml/time-frac-8.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.12345678Z' (unparseable -> whole conversion rejected)
+time-frac-9	x2p	cases/xml/time-frac-9.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123456789Z' (unparseable -> whole conversion rejected)
+time-offset-utc	x2p	cases/xml/time-offset-utc.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123+00:00' (unparseable -> whole conversion rejected)
+time-offset-neg	x2p	cases/xml/time-offset-neg.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123-05:30' (unparseable -> whole conversion rejected)
+time-offset-pos-14	x2p	cases/xml/time-offset-pos-14.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123+14:00' (unparseable -> whole conversion rejected)
+time-offset-compact	x2p	cases/xml/time-offset-compact.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123+0530' (unparseable -> whole conversion rejected)
+time-offset-hours-only	x2p	cases/xml/time-offset-hours-only.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123+05' (unparseable -> whole conversion rejected)
+time-no-offset-frac	x2p	cases/xml/time-no-offset-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123' (unparseable -> whole conversion rejected)
+time-no-offset-no-frac	x2p	cases/xml/time-no-offset-no-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00' (unparseable -> whole conversion rejected)
+time-offset-no-frac	x2p	cases/xml/time-offset-no-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00+00:00' (unparseable -> whole conversion rejected)
+time-lower-t	x2p	cases/xml/time-lower-t.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27t12:00:00Z' (unparseable -> whole conversion rejected)
+time-lower-z	x2p	cases/xml/time-lower-z.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00z' (unparseable -> whole conversion rejected)
+time-lower-t-z-frac	x2p	cases/xml/time-lower-t-z-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27t12:00:00.500z' (unparseable -> whole conversion rejected)
+time-single-digit-fields	x2p	cases/xml/time-single-digit-fields.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-1-7T2:3:4Z' (unparseable -> whole conversion rejected)
+time-single-digit-fields-frac	x2p	cases/xml/time-single-digit-fields-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-1-7T2:3:4.5Z' (unparseable -> whole conversion rejected)
+time-month-13	x2p	cases/xml/time-month-13.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-13-01T00:00:00Z' (unparseable -> whole conversion rejected)
+time-feb-30	x2p	cases/xml/time-feb-30.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-02-30T00:00:00.000Z' (unparseable -> whole conversion rejected)
+time-hour-24	x2p	cases/xml/time-hour-24.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T24:00:00Z' (unparseable -> whole conversion rejected)
+time-second-60	x2p	cases/xml/time-second-60.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T23:59:60.000Z' (unparseable -> whole conversion rejected)
+time-year-999	x2p	cases/xml/time-year-999.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='0999-01-01T00:00:00Z' (unparseable -> whole conversion rejected)
+time-year-3-digit	x2p	cases/xml/time-year-3-digit.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='999-01-01T00:00:00.000Z' (unparseable -> whole conversion rejected)
+time-year-0	x2p	cases/xml/time-year-0.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='0000-01-01T00:00:00.000Z' (unparseable -> whole conversion rejected)
+time-year-10000	x2p	cases/xml/time-year-10000.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='10000-01-01T00:00:00Z' (unparseable -> whole conversion rejected)
+time-year-10000-frac	x2p	cases/xml/time-year-10000-frac.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='10000-01-01T00:00:00.000Z' (unparseable -> whole conversion rejected)
+time-year-negative	x2p	cases/xml/time-year-negative.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='-0001-01-01T00:00:00.000Z' (unparseable -> whole conversion rejected)
+time-garbage	x2p	cases/xml/time-garbage.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='yesterday' (unparseable -> whole conversion rejected)
+time-empty	x2p	cases/xml/time-empty.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='' (unparseable -> whole conversion rejected)
+time-epoch-ms-digits	x2p	cases/xml/time-epoch-ms-digits.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='1793102400000' (unparseable -> whole conversion rejected)
+time-space-separator	x2p	cases/xml/time-space-separator.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27 12:00:00Z' (unparseable -> whole conversion rejected)
+time-no-seconds	x2p	cases/xml/time-no-seconds.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00Z' (unparseable -> whole conversion rejected)
+time-dot-no-digits	x2p	cases/xml/time-dot-no-digits.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.Z' (unparseable -> whole conversion rejected)
+time-fraction-12-digits	x2p	cases/xml/time-fraction-12-digits.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12:00:00.123456789012Z' (unparseable -> whole conversion rejected)
+time-fractional-hour	x2p	cases/xml/time-fractional-hour.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='2026-10-27T12.5Z' (unparseable -> whole conversion rejected)
+time-leading-space	x2p	cases/xml/time-leading-space.xml	1793102400000	1793102400250	K-02,K-36,C-07; time=' 2026-10-27T12:00:00Z' (unparseable -> whole conversion rejected)
+time-pre-epoch	x2p	cases/xml/time-pre-epoch.xml	1793102400000	1793102400250	K-02,K-36,C-07; time='1969-12-31T23:59:59.999Z' (unparseable -> whole conversion rejected)
+time-start-frac	x2p	cases/xml/time-start-frac.xml	1793102400000	1793102400250	K-02,K-36; start with 6 fraction digits
+time-stale-offset	x2p	cases/xml/time-stale-offset.xml	1793102400000	1793102400250	K-02,K-36; stale with a negative offset
+time-stale-garbage	x2p	cases/xml/time-stale-garbage.xml	1793102400000	1793102400250	K-02; unparseable stale rejects the conversion
+time-before-start	x2p	cases/xml/time-before-start.xml	1793102400000	1793102400250	K-02; times out of order copied as-is
+ser-decl-absent	x2x	cases/xml/ser-decl-absent.xml	-	-	C-01; no XML declaration on input
+ser-decl-absent	x2p	cases/xml/ser-decl-absent.xml	1793102400000	1793102400250	C-01; no XML declaration on input
+ser-decl-minimal	x2x	cases/xml/ser-decl-minimal.xml	-	-	C-01; minimal declaration, no newline after it
+ser-decl-minimal	x2p	cases/xml/ser-decl-minimal.xml	1793102400000	1793102400250	C-01; minimal declaration, no newline after it
+ser-decl-encoding	x2x	cases/xml/ser-decl-encoding.xml	-	-	C-01; declaration with encoding
+ser-decl-encoding	x2p	cases/xml/ser-decl-encoding.xml	1793102400000	1793102400250	C-01; declaration with encoding
+ser-decl-standalone-no	x2x	cases/xml/ser-decl-standalone-no.xml	-	-	C-01; single-quoted declaration, lowercase encoding, standalone=no, CRLF after it
+ser-decl-standalone-no	x2p	cases/xml/ser-decl-standalone-no.xml	1793102400000	1793102400250	C-01; single-quoted declaration, lowercase encoding, standalone=no, CRLF after it
+ser-decl-latin1	x2x	cases/xml/ser-decl-latin1.xml	-	-	C-01; ISO-8859-1 declared on a character input (ignored or rejected?)
+ser-decl-latin1	x2p	cases/xml/ser-decl-latin1.xml	1793102400000	1793102400250	C-01; ISO-8859-1 declared on a character input (ignored or rejected?)
+ser-prolog-comment-pi	x2x	cases/xml/ser-prolog-comment-pi.xml	-	-	C-05; comment and PI before the root
+ser-prolog-comment-pi	x2p	cases/xml/ser-prolog-comment-pi.xml	1793102400000	1793102400250	C-05; comment and PI before the root
+ser-epilog-comment	x2x	cases/xml/ser-epilog-comment.xml	-	-	C-05; comment and PI after the root
+ser-epilog-comment	x2p	cases/xml/ser-epilog-comment.xml	1793102400000	1793102400250	C-05; comment and PI after the root
+ser-comment-in-detail-child	x2x	cases/xml/ser-comment-in-detail-child.xml	-	-	C-05,K-10; comment inside a detail child (kept in xmlDetail?)
+ser-comment-in-detail-child	x2p	cases/xml/ser-comment-in-detail-child.xml	1793102400000	1793102400250	C-05,K-10; comment inside a detail child (kept in xmlDetail?)
+ser-pi-in-detail-child	x2x	cases/xml/ser-pi-in-detail-child.xml	-	-	C-05,K-10; PI inside a detail child
+ser-pi-in-detail-child	x2p	cases/xml/ser-pi-in-detail-child.xml	1793102400000	1793102400250	C-05,K-10; PI inside a detail child
+ser-comment-pi-under-event	x2x	cases/xml/ser-comment-pi-under-event.xml	-	-	C-05; comment/PI directly under event
+ser-comment-pi-under-event	x2p	cases/xml/ser-comment-pi-under-event.xml	1793102400000	1793102400250	C-05; comment/PI directly under event
+ser-cdata	x2x	cases/xml/ser-cdata.xml	-	-	C-05,C-02; CDATA kept or merged into escaped text
+ser-cdata	x2p	cases/xml/ser-cdata.xml	1793102400000	1793102400250	C-05,C-02; CDATA kept or merged into escaped text
+ser-cdata-mixed	x2x	cases/xml/ser-cdata-mixed.xml	-	-	C-05; CDATA mixed with text and empty CDATA
+ser-cdata-mixed	x2p	cases/xml/ser-cdata-mixed.xml	1793102400000	1793102400250	C-05; CDATA mixed with text and empty CDATA
+ser-entity-refs-text	x2x	cases/xml/ser-entity-refs-text.xml	-	-	C-02; five predefined entities in text
+ser-entity-refs-text	x2p	cases/xml/ser-entity-refs-text.xml	1793102400000	1793102400250	C-02; five predefined entities in text
+ser-char-refs-text	x2x	cases/xml/ser-char-refs-text.xml	-	-	C-02,K-30; decimal and hex char refs in text incl. tab/LF/CR/NBSP/non-BMP
+ser-char-refs-text	x2p	cases/xml/ser-char-refs-text.xml	1793102400000	1793102400250	C-02,K-30; decimal and hex char refs in text incl. tab/LF/CR/NBSP/non-BMP
+ser-char-refs-attr	x2x	cases/xml/ser-char-refs-attr.xml	-	-	C-02; char refs in attribute incl. tab/LF/CR (preserved, then escaped how?)
+ser-char-refs-attr	x2p	cases/xml/ser-char-refs-attr.xml	1793102400000	1793102400250	C-02; char refs in attribute incl. tab/LF/CR (preserved, then escaped how?)
+ser-attr-quote-chars	x2x	cases/xml/ser-attr-quote-chars.xml	-	-	C-02; quote, apostrophe, <, >, & in attribute values
+ser-attr-quote-chars	x2p	cases/xml/ser-attr-quote-chars.xml	1793102400000	1793102400250	C-02; quote, apostrophe, <, >, & in attribute values
+ser-attr-literal-ws	x2x	cases/xml/ser-attr-literal-ws.xml	-	-	C-02; literal tab/newline/CRLF in attributes normalised to spaces; CDATA-type, no trimming
+ser-attr-literal-ws	x2p	cases/xml/ser-attr-literal-ws.xml	1793102400000	1793102400250	C-02; literal tab/newline/CRLF in attributes normalised to spaces; CDATA-type, no trimming
+ser-text-special	x2x	cases/xml/ser-text-special.xml	-	-	C-02; >, ]]>, quotes in text
+ser-text-special	x2p	cases/xml/ser-text-special.xml	1793102400000	1793102400250	C-02; >, ]]>, quotes in text
+ser-whitespace-text	x2x	cases/xml/ser-whitespace-text.xml	-	-	C-05,K-10; whitespace-only text nodes
+ser-whitespace-text	x2p	cases/xml/ser-whitespace-text.xml	1793102400000	1793102400250	C-05,K-10; whitespace-only text nodes
+ser-crlf	x2x	cases/xml/ser-crlf.xml	-	-	C-02; CRLF and CR normalised to LF
+ser-crlf	x2p	cases/xml/ser-crlf.xml	1793102400000	1793102400250	C-02; CRLF and CR normalised to LF
+ser-empty-elements	x2x	cases/xml/ser-empty-elements.xml	-	-	C-03; self-closing vs start/end empty elements
+ser-empty-elements	x2p	cases/xml/ser-empty-elements.xml	1793102400000	1793102400250	C-03; self-closing vs start/end empty elements
+ser-ns-default-child	x2x	cases/xml/ser-ns-default-child.xml	-	-	C-04; default namespace declared on a detail child
+ser-ns-default-child	x2p	cases/xml/ser-ns-default-child.xml	1793102400000	1793102400250	C-04; default namespace declared on a detail child
+ser-ns-prefixed-child	x2x	cases/xml/ser-ns-prefixed-child.xml	-	-	C-04; prefixed namespace declared on a detail child
+ser-ns-prefixed-child	x2p	cases/xml/ser-ns-prefixed-child.xml	1793102400000	1793102400250	C-04; prefixed namespace declared on a detail child
+ser-ns-declared-on-event	x2x	cases/xml/ser-ns-declared-on-event.xml	-	-	C-04; prefixes declared on event, used in detail children
+ser-ns-declared-on-event	x2p	cases/xml/ser-ns-declared-on-event.xml	1793102400000	1793102400250	C-04; prefixes declared on event, used in detail children
+ser-ns-declared-on-detail	x2x	cases/xml/ser-ns-declared-on-detail.xml	-	-	C-04; prefix declared on detail, used by a child
+ser-ns-declared-on-detail	x2p	cases/xml/ser-ns-declared-on-detail.xml	1793102400000	1793102400250	C-04; prefix declared on detail, used by a child
+ser-ns-multiple-order	x2x	cases/xml/ser-ns-multiple-order.xml	-	-	C-04,C-11; several declarations: order kept relative to attributes
+ser-ns-multiple-order	x2p	cases/xml/ser-ns-multiple-order.xml	1793102400000	1793102400250	C-04,C-11; several declarations: order kept relative to attributes
+ser-ns-undeclare-default	x2x	cases/xml/ser-ns-undeclare-default.xml	-	-	C-04; default namespace undeclared on a child
+ser-ns-undeclare-default	x2p	cases/xml/ser-ns-undeclare-default.xml	1793102400000	1793102400250	C-04; default namespace undeclared on a child
+ser-ns-xml-prefix	x2x	cases/xml/ser-ns-xml-prefix.xml	-	-	C-04,K-33; predeclared xml: prefix
+ser-ns-xml-prefix	x2p	cases/xml/ser-ns-xml-prefix.xml	1793102400000	1793102400250	C-04,K-33; predeclared xml: prefix
+ser-non-ascii	x2x	cases/xml/ser-non-ascii.xml	-	-	C-02; non-ASCII BMP characters in text and attributes (raw or escaped?)
+ser-non-ascii	x2p	cases/xml/ser-non-ascii.xml	1793102400000	1793102400250	C-02; non-ASCII BMP characters in text and attributes (raw or escaped?)
+ser-non-bmp	x2x	cases/xml/ser-non-bmp.xml	-	-	C-02; non-BMP characters raw in text and attribute
+ser-non-bmp	x2p	cases/xml/ser-non-bmp.xml	1793102400000	1793102400250	C-02; non-BMP characters raw in text and attribute
+ser-c1-controls	x2x	cases/xml/ser-c1-controls.xml	-	-	C-02,C-10; DEL and C1 controls (XML 1.0 Chars) in text/attribute
+ser-c1-controls	x2p	cases/xml/ser-c1-controls.xml	1793102400000	1793102400250	C-02,C-10; DEL and C1 controls (XML 1.0 Chars) in text/attribute
+ser-attr-order	x2x	cases/xml/ser-attr-order.xml	-	-	C-11; attribute order preserved on output
+ser-attr-order	x2p	cases/xml/ser-attr-order.xml	1793102400000	1793102400250	C-11; attribute order preserved on output
+ser-tag-whitespace	x2x	cases/xml/ser-tag-whitespace.xml	-	-	C-03,C-02; whitespace inside tags
+ser-tag-whitespace	x2p	cases/xml/ser-tag-whitespace.xml	1793102400000	1793102400250	C-03,C-02; whitespace inside tags
+ser-bom	x2x	cases/xml/ser-bom.xml	-	-	C-01,C-10; leading U+FEFF byte-order mark on a character input
+ser-bom	x2p	cases/xml/ser-bom.xml	1793102400000	1793102400250	C-01,C-10; leading U+FEFF byte-order mark on a character input
+ser-empty-text-element	x2x	cases/xml/ser-empty-text-element.xml	-	-	C-03; element with empty text vs self-closing
+ser-empty-text-element	x2p	cases/xml/ser-empty-text-element.xml	1793102400000	1793102400250	C-03; element with empty text vs self-closing
+reject-doctype	x2p	cases/xml/reject-doctype.xml	1793102400000	1793102400250	K-30; DOCTYPE refused
+reject-doctype	x2x	cases/xml/reject-doctype.xml	-	-	K-30; DOCTYPE refused
+reject-doctype-internal-entity	x2p	cases/xml/reject-doctype-internal-entity.xml	1793102400000	1793102400250	K-30; internal entity declaration refused
+reject-doctype-internal-entity	x2x	cases/xml/reject-doctype-internal-entity.xml	-	-	K-30; internal entity declaration refused
+reject-doctype-entity-expansion	x2p	cases/xml/reject-doctype-entity-expansion.xml	1793102400000	1793102400250	K-30,SI-10; nested entity expansion (billion laughs) refused
+reject-doctype-entity-expansion	x2x	cases/xml/reject-doctype-entity-expansion.xml	-	-	K-30,SI-10; nested entity expansion (billion laughs) refused
+reject-doctype-external-entity	x2p	cases/xml/reject-doctype-external-entity.xml	1793102400000	1793102400250	K-30; external entity refused, never resolved
+reject-doctype-external-entity	x2x	cases/xml/reject-doctype-external-entity.xml	-	-	K-30; external entity refused, never resolved
+reject-doctype-external-dtd	x2p	cases/xml/reject-doctype-external-dtd.xml	1793102400000	1793102400250	K-30; external DTD refused, never fetched
+reject-doctype-external-dtd	x2x	cases/xml/reject-doctype-external-dtd.xml	-	-	K-30; external DTD refused, never fetched
+reject-undefined-entity	x2p	cases/xml/reject-undefined-entity.xml	1793102400000	1793102400250	K-30; undefined entity
+reject-undefined-entity	x2x	cases/xml/reject-undefined-entity.xml	-	-	K-30; undefined entity
+reject-char-ref-zero	x2p	cases/xml/reject-char-ref-zero.xml	1793102400000	1793102400250	K-30; &#0; not a Char
+reject-char-ref-zero	x2x	cases/xml/reject-char-ref-zero.xml	-	-	K-30; &#0; not a Char
+reject-char-ref-surrogate	x2p	cases/xml/reject-char-ref-surrogate.xml	1793102400000	1793102400250	K-30; surrogate char ref
+reject-char-ref-surrogate	x2x	cases/xml/reject-char-ref-surrogate.xml	-	-	K-30; surrogate char ref
+reject-char-ref-too-big	x2p	cases/xml/reject-char-ref-too-big.xml	1793102400000	1793102400250	K-30; char ref above U+10FFFF
+reject-char-ref-too-big	x2x	cases/xml/reject-char-ref-too-big.xml	-	-	K-30; char ref above U+10FFFF
+reject-char-ref-fffe	x2p	cases/xml/reject-char-ref-fffe.xml	1793102400000	1793102400250	K-30; U+FFFE char ref in attribute
+reject-char-ref-fffe	x2x	cases/xml/reject-char-ref-fffe.xml	-	-	K-30; U+FFFE char ref in attribute
+reject-control-char-text	x2p	cases/xml/reject-control-char-text.xml	1793102400000	1793102400250	C-10; raw U+0001 in text
+reject-control-char-text	x2x	cases/xml/reject-control-char-text.xml	-	-	C-10; raw U+0001 in text
+reject-control-char-attr	x2p	cases/xml/reject-control-char-attr.xml	1793102400000	1793102400250	C-10; raw U+001F in attribute
+reject-control-char-attr	x2x	cases/xml/reject-control-char-attr.xml	-	-	C-10; raw U+001F in attribute
+reject-raw-fffe	x2p	cases/xml/reject-raw-fffe.xml	1793102400000	1793102400250	C-10; raw U+FFFE in text
+reject-raw-fffe	x2x	cases/xml/reject-raw-fffe.xml	-	-	C-10; raw U+FFFE in text
+reject-duplicate-attribute	x2p	cases/xml/reject-duplicate-attribute.xml	1793102400000	1793102400250	K-33; duplicate attribute
+reject-duplicate-attribute	x2x	cases/xml/reject-duplicate-attribute.xml	-	-	K-33; duplicate attribute
+reject-duplicate-expanded-attribute	x2p	cases/xml/reject-duplicate-expanded-attribute.xml	1793102400000	1793102400250	K-33; same expanded attribute name via two prefixes
+reject-duplicate-expanded-attribute	x2x	cases/xml/reject-duplicate-expanded-attribute.xml	-	-	K-33; same expanded attribute name via two prefixes
+reject-undeclared-prefix-element	x2p	cases/xml/reject-undeclared-prefix-element.xml	1793102400000	1793102400250	K-33; undeclared element prefix
+reject-undeclared-prefix-element	x2x	cases/xml/reject-undeclared-prefix-element.xml	-	-	K-33; undeclared element prefix
+reject-undeclared-prefix-attr	x2p	cases/xml/reject-undeclared-prefix-attr.xml	1793102400000	1793102400250	K-33; undeclared attribute prefix
+reject-undeclared-prefix-attr	x2x	cases/xml/reject-undeclared-prefix-attr.xml	-	-	K-33; undeclared attribute prefix
+reject-empty-prefixed-ns	x2p	cases/xml/reject-empty-prefixed-ns.xml	1793102400000	1793102400250	K-33; xmlns:p="" is illegal in Namespaces 1.0
+reject-empty-prefixed-ns	x2x	cases/xml/reject-empty-prefixed-ns.xml	-	-	K-33; xmlns:p="" is illegal in Namespaces 1.0
+reject-mismatched-tags	x2p	cases/xml/reject-mismatched-tags.xml	1793102400000	1793102400250	K-30; mismatched end tag
+reject-mismatched-tags	x2x	cases/xml/reject-mismatched-tags.xml	-	-	K-30; mismatched end tag
+reject-unclosed	x2p	cases/xml/reject-unclosed.xml	1793102400000	1793102400250	K-30; missing end tag
+reject-unclosed	x2x	cases/xml/reject-unclosed.xml	-	-	K-30; missing end tag
+reject-two-roots	x2p	cases/xml/reject-two-roots.xml	1793102400000	1793102400250	K-30; two root elements
+reject-two-roots	x2x	cases/xml/reject-two-roots.xml	-	-	K-30; two root elements
+reject-text-after-root	x2p	cases/xml/reject-text-after-root.xml	1793102400000	1793102400250	K-30; text after the root
+reject-text-after-root	x2x	cases/xml/reject-text-after-root.xml	-	-	K-30; text after the root
+reject-empty-input	x2p	cases/xml/reject-empty-input.xml	1793102400000	1793102400250	K-30; empty input
+reject-empty-input	x2x	cases/xml/reject-empty-input.xml	-	-	K-30; empty input
+reject-decl-only	x2p	cases/xml/reject-decl-only.xml	1793102400000	1793102400250	K-30; declaration without root
+reject-decl-only	x2x	cases/xml/reject-decl-only.xml	-	-	K-30; declaration without root
+reject-xml-1-1	x2p	cases/xml/reject-xml-1-1.xml	1793102400000	1793102400250	DEV-01b; XML 1.1 declaration (Java accepts, TAK-RS rejects)
+reject-xml-1-1	x2x	cases/xml/reject-xml-1-1.xml	-	-	DEV-01b; XML 1.1 declaration (Java accepts, TAK-RS rejects)
+reject-invalid-name	x2p	cases/xml/reject-invalid-name.xml	1793102400000	1793102400250	C-10; element name starting with a digit
+reject-invalid-name	x2x	cases/xml/reject-invalid-name.xml	-	-	C-10; element name starting with a digit
+reject-lt-in-attr	x2p	cases/xml/reject-lt-in-attr.xml	1793102400000	1793102400250	K-30; raw < in attribute value
+reject-lt-in-attr	x2x	cases/xml/reject-lt-in-attr.xml	-	-	K-30; raw < in attribute value
+reject-amp-raw	x2p	cases/xml/reject-amp-raw.xml	1793102400000	1793102400250	K-30; raw & in text
+reject-amp-raw	x2x	cases/xml/reject-amp-raw.xml	-	-	K-30; raw & in text
+reject-decl-not-first	x2p	cases/xml/reject-decl-not-first.xml	1793102400000	1793102400250	K-30; XML declaration after whitespace
+reject-decl-not-first	x2x	cases/xml/reject-decl-not-first.xml	-	-	K-30; XML declaration after whitespace
+reject-limit-depth-70	x2p	cases/xml/reject-limit-depth-70.xml	1793102400000	1793102400250	DEV-01a max_depth=64: 72-deep document (Java accepts, TAK-RS rejects)
+reject-limit-depth-70	x2x	cases/xml/reject-limit-depth-70.xml	-	-	DEV-01a max_depth=64: 72-deep document (Java accepts, TAK-RS rejects)
+reject-limit-attributes-257	x2p	cases/xml/reject-limit-attributes-257.xml	1793102400000	1793102400250	DEV-01a max_attributes=256: 257 attributes on one element
+reject-limit-attributes-257	x2x	cases/xml/reject-limit-attributes-257.xml	-	-	DEV-01a max_attributes=256: 257 attributes on one element
+reject-limit-ns-decls-33	x2p	cases/xml/reject-limit-ns-decls-33.xml	1793102400000	1793102400250	DEV-01a max_namespace_decls=32: 33 declarations on one element
+reject-limit-ns-decls-33	x2x	cases/xml/reject-limit-ns-decls-33.xml	-	-	DEV-01a max_namespace_decls=32: 33 declarations on one element
+reject-limit-name-1025	x2p	cases/xml/reject-limit-name-1025.xml	1793102400000	1793102400250	DEV-01a max_name_bytes=1024: 1025-byte element name
+reject-limit-name-1025	x2x	cases/xml/reject-limit-name-1025.xml	-	-	DEV-01a max_name_bytes=1024: 1025-byte element name
+reject-limit-name-1001	x2p	cases/xml/reject-limit-name-1001.xml	1793102400000	1793102400250	C-10,DEV-01a: 1001-byte name (TAK-RS accepts; does Java's 1000-char name limit apply?)
+reject-limit-name-1001	x2x	cases/xml/reject-limit-name-1001.xml	-	-	C-10,DEV-01a: 1001-byte name (TAK-RS accepts; does Java's 1000-char name limit apply?)
+reject-limit-attr-name-1025	x2p	cases/xml/reject-limit-attr-name-1025.xml	1793102400000	1793102400250	DEV-01a max_name_bytes=1024: 1025-byte attribute name
+reject-limit-attr-name-1025	x2x	cases/xml/reject-limit-attr-name-1025.xml	-	-	DEV-01a max_name_bytes=1024: 1025-byte attribute name
+reject-limit-nodes-100100	x2p	cases/xml/reject-limit-nodes-100100.xml	1793102400000	1793102400250	DEV-01a max_nodes=100000: 100100 empty elements under event (outside detail, so the X2P golden stays small)
+reject-limit-attr-value-1mib	x2p	cases/xml/reject-limit-attr-value-1mib.xml	1793102400000	1793102400250	DEV-01a max_attr_value_bytes=1MiB: 1048577-byte attribute value outside detail
+reject-limit-input-8mib	x2p	cases/xml/reject-limit-input-8mib.xml	1793102400000	1793102400250	DEV-01a max_input_bytes=8MiB: 8388609-byte input (event plus trailing spaces; Java drops them)
+reject-limit-input-8mib	x2x	cases/xml/reject-limit-input-8mib.xml	-	-	DEV-01a max_input_bytes=8MiB: 8388609-byte input (event plus trailing spaces; Java drops them)
+pb-all-fields	p2x	cases/proto/pb-all-fields.txtpb	-	-	K-13,K-15,K-17,K-18,K-20,K-22; every TakMessage field set
+pb-all-fields	p2p	cases/proto/pb-all-fields.txtpb	1793102400000	-	K-13,K-15,K-17,K-18,K-20,K-22; every TakMessage field set
+pb-only-takcontrol	p2x	cases/proto/pb-only-takcontrol.txtpb	-	-	C-12; takControl only, no cotEvent -> default CotEvent
+pb-only-takcontrol	p2p	cases/proto/pb-only-takcontrol.txtpb	1793102400000	-	C-12; takControl only, no cotEvent -> default CotEvent
+pb-no-cotevent	p2x	cases/proto/pb-no-cotevent.txtpb	-	-	C-12,K-22; times only, no cotEvent
+pb-no-cotevent	p2p	cases/proto/pb-no-cotevent.txtpb	1793102400000	-	C-12,K-22; times only, no cotEvent
+pb-empty-message	p2x	cases/proto/pb-empty-message.txtpb	-	-	C-12; empty TakMessage (all defaults)
+pb-empty-message	p2p	cases/proto/pb-empty-message.txtpb	1793102400000	-	C-12; empty TakMessage (all defaults)
+pb-empty-cotevent	p2x	cases/proto/pb-empty-cotevent.txtpb	-	-	C-12,K-13,K-17; cotEvent present with every field default
+pb-empty-cotevent	p2p	cases/proto/pb-empty-cotevent.txtpb	1793102400000	-	C-12,K-13,K-17; cotEvent present with every field default
+pb-no-detail	p2x	cases/proto/pb-no-detail.txtpb	-	-	K-17; no Detail -> P2X still writes an empty detail; P2P yields an empty Detail (plan 8.7)
+pb-no-detail	p2p	cases/proto/pb-no-detail.txtpb	1793102400000	-	K-17; no Detail -> P2X still writes an empty detail; P2P yields an empty Detail (plan 8.7)
+pb-empty-detail	p2x	cases/proto/pb-empty-detail.txtpb	-	-	K-17; empty Detail
+pb-empty-detail	p2p	cases/proto/pb-empty-detail.txtpb	1793102400000	-	K-17; empty Detail
+pb-typed-contact	p2x	cases/proto/pb-typed-contact.txtpb	-	-	K-18; Detail with only contact
+pb-typed-contact	p2p	cases/proto/pb-typed-contact.txtpb	1793102400000	-	K-18; Detail with only contact
+pb-typed-contact-no-endpoint	p2x	cases/proto/pb-typed-contact-no-endpoint.txtpb	-	-	K-18; Detail with only contact-no-endpoint
+pb-typed-contact-no-endpoint	p2p	cases/proto/pb-typed-contact-no-endpoint.txtpb	1793102400000	-	K-18; Detail with only contact-no-endpoint
+pb-typed-contact-empty-callsign	p2x	cases/proto/pb-typed-contact-empty-callsign.txtpb	-	-	K-18; Detail with only contact-empty-callsign
+pb-typed-contact-empty-callsign	p2p	cases/proto/pb-typed-contact-empty-callsign.txtpb	1793102400000	-	K-18; Detail with only contact-empty-callsign
+pb-typed-group	p2x	cases/proto/pb-typed-group.txtpb	-	-	K-18; Detail with only group
+pb-typed-group	p2p	cases/proto/pb-typed-group.txtpb	1793102400000	-	K-18; Detail with only group
+pb-typed-precisionlocation	p2x	cases/proto/pb-typed-precisionlocation.txtpb	-	-	K-18; Detail with only precisionlocation
+pb-typed-precisionlocation	p2p	cases/proto/pb-typed-precisionlocation.txtpb	1793102400000	-	K-18; Detail with only precisionlocation
+pb-typed-status	p2x	cases/proto/pb-typed-status.txtpb	-	-	K-18; Detail with only status
+pb-typed-status	p2p	cases/proto/pb-typed-status.txtpb	1793102400000	-	K-18; Detail with only status
+pb-typed-status-zero	p2x	cases/proto/pb-typed-status-zero.txtpb	-	-	K-18; Detail with only status-zero
+pb-typed-status-zero	p2p	cases/proto/pb-typed-status-zero.txtpb	1793102400000	-	K-18; Detail with only status-zero
+pb-typed-takv	p2x	cases/proto/pb-typed-takv.txtpb	-	-	K-18; Detail with only takv
+pb-typed-takv	p2p	cases/proto/pb-typed-takv.txtpb	1793102400000	-	K-18; Detail with only takv
+pb-typed-takv-partial	p2x	cases/proto/pb-typed-takv-partial.txtpb	-	-	K-18; Detail with only takv-partial
+pb-typed-takv-partial	p2p	cases/proto/pb-typed-takv-partial.txtpb	1793102400000	-	K-18; Detail with only takv-partial
+pb-typed-track	p2x	cases/proto/pb-typed-track.txtpb	-	-	K-18; Detail with only track
+pb-typed-track	p2p	cases/proto/pb-typed-track.txtpb	1793102400000	-	K-18; Detail with only track
+pb-typed-track-empty	p2x	cases/proto/pb-typed-track-empty.txtpb	-	-	K-18; Detail with only track-empty
+pb-typed-track-empty	p2p	cases/proto/pb-typed-track-empty.txtpb	1793102400000	-	K-18; Detail with only track-empty
+pb-typed-group-empty	p2x	cases/proto/pb-typed-group-empty.txtpb	-	-	K-18; Detail with only group-empty
+pb-typed-group-empty	p2p	cases/proto/pb-typed-group-empty.txtpb	1793102400000	-	K-18; Detail with only group-empty
+pb-typed-all	p2x	cases/proto/pb-typed-all.txtpb	-	-	K-18; all six typed messages: fixed P2X order contact, __group, precisionlocation, status, takv, track
+pb-typed-all	p2p	cases/proto/pb-typed-all.txtpb	1793102400000	-	K-18; all six typed messages: fixed P2X order contact, __group, precisionlocation, status, takv, track
+pb-xmldetail-override-contact	p2x	cases/proto/pb-xmldetail-override-contact.txtpb	-	-	K-20; xmlDetail contact overrides typed contact and moves to the end (plan 8.7)
+pb-xmldetail-override-contact	p2p	cases/proto/pb-xmldetail-override-contact.txtpb	1793102400000	-	K-20; xmlDetail contact overrides typed contact and moves to the end (plan 8.7)
+pb-xmldetail-two-contacts	p2x	cases/proto/pb-xmldetail-two-contacts.txtpb	-	-	K-20; two xmlDetail contacts: only the last survives
+pb-xmldetail-two-contacts	p2p	cases/proto/pb-xmldetail-two-contacts.txtpb	1793102400000	-	K-20; two xmlDetail contacts: only the last survives
+pb-xmldetail-override-status	p2x	cases/proto/pb-xmldetail-override-status.txtpb	-	-	K-20,K-16; xmlDetail status replaces typed; P2P battery comes from the cache (55)
+pb-xmldetail-override-status	p2p	cases/proto/pb-xmldetail-override-status.txtpb	1793102400000	-	K-20,K-16; xmlDetail status replaces typed; P2P battery comes from the cache (55)
+pb-xmldetail-override-track	p2x	cases/proto/pb-xmldetail-override-track.txtpb	-	-	K-20,K-16; xmlDetail track replaces typed; P2P speed/course from the cache
+pb-xmldetail-override-track	p2p	cases/proto/pb-xmldetail-override-track.txtpb	1793102400000	-	K-20,K-16; xmlDetail track replaces typed; P2P speed/course from the cache
+pb-xmldetail-override-group-no-typed	p2x	cases/proto/pb-xmldetail-override-group-no-typed.txtpb	-	-	K-20,K-07; typed-name element only in xmlDetail -> converted to typed on P2P
+pb-xmldetail-override-group-no-typed	p2p	cases/proto/pb-xmldetail-override-group-no-typed.txtpb	1793102400000	-	K-20,K-07; typed-name element only in xmlDetail -> converted to typed on P2P
+pb-xmldetail-only	p2x	cases/proto/pb-xmldetail-only.txtpb	-	-	K-20; xmlDetail only, three elements
+pb-xmldetail-only	p2p	cases/proto/pb-xmldetail-only.txtpb	1793102400000	-	K-20; xmlDetail only, three elements
+pb-xmldetail-malformed	p2x	cases/proto/pb-xmldetail-malformed.txtpb	-	-	K-21; malformed xmlDetail -> reject
+pb-xmldetail-malformed	p2p	cases/proto/pb-xmldetail-malformed.txtpb	1793102400000	-	K-21; malformed xmlDetail -> reject
+pb-xmldetail-undeclared-prefix	p2x	cases/proto/pb-xmldetail-undeclared-prefix.txtpb	-	-	K-21,K-33; undeclared prefix in xmlDetail -> reject
+pb-xmldetail-undeclared-prefix	p2p	cases/proto/pb-xmldetail-undeclared-prefix.txtpb	1793102400000	-	K-21,K-33; undeclared prefix in xmlDetail -> reject
+pb-xmldetail-text-only	p2x	cases/proto/pb-xmldetail-text-only.txtpb	-	-	K-20; text-only xmlDetail (text dropped?)
+pb-xmldetail-text-only	p2p	cases/proto/pb-xmldetail-text-only.txtpb	1793102400000	-	K-20; text-only xmlDetail (text dropped?)
+pb-xmldetail-doctype	p2x	cases/proto/pb-xmldetail-doctype.txtpb	-	-	K-21,K-30; DOCTYPE inside xmlDetail -> reject
+pb-xmldetail-doctype	p2p	cases/proto/pb-xmldetail-doctype.txtpb	1793102400000	-	K-21,K-30; DOCTYPE inside xmlDetail -> reject
+pb-xmldetail-entity	p2x	cases/proto/pb-xmldetail-entity.txtpb	-	-	K-20,C-02; references inside xmlDetail
+pb-xmldetail-entity	p2p	cases/proto/pb-xmldetail-entity.txtpb	1793102400000	-	K-20,C-02; references inside xmlDetail
+pb-xmldetail-undefined-entity	p2x	cases/proto/pb-xmldetail-undefined-entity.txtpb	-	-	K-21; undefined entity inside xmlDetail -> reject
+pb-xmldetail-undefined-entity	p2p	cases/proto/pb-xmldetail-undefined-entity.txtpb	1793102400000	-	K-21; undefined entity inside xmlDetail -> reject
+pb-xmldetail-comment-pi-cdata	p2x	cases/proto/pb-xmldetail-comment-pi-cdata.txtpb	-	-	K-20,C-05; comment/PI/CDATA in xmlDetail
+pb-xmldetail-comment-pi-cdata	p2p	cases/proto/pb-xmldetail-comment-pi-cdata.txtpb	1793102400000	-	K-20,C-05; comment/PI/CDATA in xmlDetail
+pb-xmldetail-whitespace	p2x	cases/proto/pb-xmldetail-whitespace.txtpb	-	-	K-20,C-05; whitespace between xmlDetail elements
+pb-xmldetail-whitespace	p2p	cases/proto/pb-xmldetail-whitespace.txtpb	1793102400000	-	K-20,C-05; whitespace between xmlDetail elements
+pb-xmldetail-non-ascii	p2x	cases/proto/pb-xmldetail-non-ascii.txtpb	-	-	DEV-02,C-02; non-ASCII xmlDetail decoded as UTF-8
+pb-xmldetail-non-ascii	p2p	cases/proto/pb-xmldetail-non-ascii.txtpb	1793102400000	-	DEV-02,C-02; non-ASCII xmlDetail decoded as UTF-8
+pb-xmldetail-namespaced	p2x	cases/proto/pb-xmldetail-namespaced.txtpb	-	-	K-20,C-04; namespaced xmlDetail element
+pb-xmldetail-namespaced	p2p	cases/proto/pb-xmldetail-namespaced.txtpb	1793102400000	-	K-20,C-04; namespaced xmlDetail element
+pb-xmldetail-closing-detail	p2x	cases/proto/pb-xmldetail-closing-detail.txtpb	-	-	K-21; xmlDetail that tries to close the wrapper -> reject
+pb-xmldetail-closing-detail	p2p	cases/proto/pb-xmldetail-closing-detail.txtpb	1793102400000	-	K-21; xmlDetail that tries to close the wrapper -> reject
+pb-xmldetail-depth-70	p2x	cases/proto/pb-xmldetail-depth-70.txtpb	-	-	DEV-01a; xmlDetail parsed with the same Limits: 70-deep (Java accepts, TAK-RS rejects)
+pb-xmldetail-depth-70	p2p	cases/proto/pb-xmldetail-depth-70.txtpb	1793102400000	-	DEV-01a; xmlDetail parsed with the same Limits: 70-deep (Java accepts, TAK-RS rejects)
+pb-special-strings	p2x	cases/proto/pb-special-strings.txtpb	-	-	K-13,K-18,C-02; strings needing escaping (incl. tab/LF) in event and contact attributes
+pb-special-strings	p2p	cases/proto/pb-special-strings.txtpb	1793102400000	-	K-13,K-18,C-02; strings needing escaping (incl. tab/LF) in event and contact attributes
+pb-optional-attrs	p2x	cases/proto/pb-optional-attrs.txtpb	-	-	K-13,K-04; optional attributes written only when non-empty, releaseableTo -> releasableTo
+pb-optional-attrs	p2p	cases/proto/pb-optional-attrs.txtpb	1793102400000	-	K-13,K-04; optional attributes written only when non-empty, releaseableTo -> releasableTo
+pb-creation-set	p2x	cases/proto/pb-creation-set.txtpb	-	-	K-11,K-22; creationTime carried; manifest creation not applied
+pb-creation-set	p2p	cases/proto/pb-creation-set.txtpb	1793102400000	-	K-11,K-22; creationTime carried; manifest creation not applied
+pb-submission-only	p2x	cases/proto/pb-submission-only.txtpb	-	-	K-22; submissionTime carried, creationTime from manifest
+pb-submission-only	p2p	cases/proto/pb-submission-only.txtpb	1793102400000	-	K-22; submissionTime carried, creationTime from manifest
+pbnum-time-zero	p2x	cases/proto/pbnum-time-zero.txtpb	-	-	K-14,K-16,K-19; sendTime = 0 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-zero	p2p	cases/proto/pbnum-time-zero.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 0 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-999	p2x	cases/proto/pbnum-time-999.txtpb	-	-	K-14,K-16,K-19; sendTime = 999 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-999	p2p	cases/proto/pbnum-time-999.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 999 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-1000	p2x	cases/proto/pbnum-time-1000.txtpb	-	-	K-14,K-16,K-19; sendTime = 1000 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-1000	p2p	cases/proto/pbnum-time-1000.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 1000 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-u64max	p2x	cases/proto/pbnum-time-u64max.txtpb	-	-	K-14,K-16,K-19; sendTime = 18446744073709551615 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-u64max	p2p	cases/proto/pbnum-time-u64max.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 18446744073709551615 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-i64max	p2x	cases/proto/pbnum-time-i64max.txtpb	-	-	K-14,K-16,K-19; sendTime = 9223372036854775807 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-i64max	p2p	cases/proto/pbnum-time-i64max.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 9223372036854775807 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-i64max-plus1	p2x	cases/proto/pbnum-time-i64max-plus1.txtpb	-	-	K-14,K-16,K-19; sendTime = 9223372036854775808 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-i64max-plus1	p2p	cases/proto/pbnum-time-i64max-plus1.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 9223372036854775808 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-millis	p2x	cases/proto/pbnum-time-millis.txtpb	-	-	K-14,K-16,K-19; sendTime = 1761588298123 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-millis	p2p	cases/proto/pbnum-time-millis.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 1761588298123 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-year-10000	p2x	cases/proto/pbnum-time-year-10000.txtpb	-	-	K-14,K-16,K-19; sendTime = 253402300800000 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-year-10000	p2p	cases/proto/pbnum-time-year-10000.txtpb	1793102400000	-	K-14,K-16,K-19; sendTime = 253402300800000 (P2X seconds only; P2P keeps ms; signed rendering, -1 sentinel)
+pbnum-time-all-u64max	p2x	cases/proto/pbnum-time-all-u64max.txtpb	-	-	K-16,K-19; all three times u64::MAX (signed -1): P2P yields u64::MAX-999 per parity map
+pbnum-time-all-u64max	p2p	cases/proto/pbnum-time-all-u64max.txtpb	1793102400000	-	K-16,K-19; all three times u64::MAX (signed -1): P2P yields u64::MAX-999 per parity map
+pbnum-lat-nan	p2x	cases/proto/pbnum-lat-nan.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = nan (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-nan	p2p	cases/proto/pbnum-lat-nan.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = nan (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-inf	p2x	cases/proto/pbnum-lat-inf.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = inf (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-inf	p2p	cases/proto/pbnum-lat-inf.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = inf (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-neg-inf	p2x	cases/proto/pbnum-lat-neg-inf.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = -inf (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-neg-inf	p2p	cases/proto/pbnum-lat-neg-inf.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = -inf (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-neg-zero	p2x	cases/proto/pbnum-lat-neg-zero.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = -0.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-neg-zero	p2p	cases/proto/pbnum-lat-neg-zero.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = -0.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-pos-zero	p2x	cases/proto/pbnum-lat-pos-zero.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 0.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-pos-zero	p2p	cases/proto/pbnum-lat-pos-zero.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 0.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-subnormal	p2x	cases/proto/pbnum-lat-subnormal.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 4.9e-324 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-subnormal	p2p	cases/proto/pbnum-lat-subnormal.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 4.9e-324 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-1e7	p2x	cases/proto/pbnum-lat-1e7.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 1e7 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-1e7	p2p	cases/proto/pbnum-lat-1e7.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 1e7 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-below-1e7	p2x	cases/proto/pbnum-lat-below-1e7.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 9999999.999999998 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-below-1e7	p2p	cases/proto/pbnum-lat-below-1e7.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 9999999.999999998 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-1e-3	p2x	cases/proto/pbnum-lat-1e-3.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 0.001 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-1e-3	p2p	cases/proto/pbnum-lat-1e-3.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 0.001 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-below-1e-3	p2x	cases/proto/pbnum-lat-below-1e-3.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 0.0009999999999999998 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-below-1e-3	p2p	cases/proto/pbnum-lat-below-1e-3.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 0.0009999999999999998 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-minus-one	p2x	cases/proto/pbnum-lat-minus-one.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = -1.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-minus-one	p2p	cases/proto/pbnum-lat-minus-one.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = -1.0 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-max	p2x	cases/proto/pbnum-lat-max.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 1.7976931348623157e308 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-max	p2p	cases/proto/pbnum-lat-max.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 1.7976931348623157e308 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-min-normal	p2x	cases/proto/pbnum-lat-min-normal.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 2.2250738585072014e-308 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-min-normal	p2p	cases/proto/pbnum-lat-min-normal.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 2.2250738585072014e-308 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-third	p2x	cases/proto/pbnum-lat-third.txtpb	-	-	K-15,K-16,DEV-03,C-08; lat = 0.3333333333333333 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-lat-third	p2p	cases/proto/pbnum-lat-third.txtpb	1793102400000	-	K-15,K-16,DEV-03,C-08; lat = 0.3333333333333333 (Double.toString in P2X; -1.0 cache sentinel; -0.0 encoding)
+pbnum-point-all-neg-zero	p2x	cases/proto/pbnum-point-all-neg-zero.txtpb	-	-	C-08,K-15; all five point doubles -0.0
+pbnum-point-all-neg-zero	p2p	cases/proto/pbnum-point-all-neg-zero.txtpb	1793102400000	-	C-08,K-15; all five point doubles -0.0
+pbnum-point-all-minus-one	p2x	cases/proto/pbnum-point-all-minus-one.txtpb	-	-	K-16; all point doubles -1.0 (cache sentinel falls back to the document string)
+pbnum-point-all-minus-one	p2p	cases/proto/pbnum-point-all-minus-one.txtpb	1793102400000	-	K-16; all point doubles -1.0 (cache sentinel falls back to the document string)
+pbnum-point-all-zero-omitted	p2x	cases/proto/pbnum-point-all-zero-omitted.txtpb	-	-	K-15; no point fields (all 0.0)
+pbnum-point-all-zero-omitted	p2p	cases/proto/pbnum-point-all-zero-omitted.txtpb	1793102400000	-	K-15; no point fields (all 0.0)
+pbnum-battery-u32max	p2x	cases/proto/pbnum-battery-u32max.txtpb	-	-	K-19,K-16; battery = 4294967295 (signed rendering)
+pbnum-battery-u32max	p2p	cases/proto/pbnum-battery-u32max.txtpb	1793102400000	-	K-19,K-16; battery = 4294967295 (signed rendering)
+pbnum-battery-2pow31	p2x	cases/proto/pbnum-battery-2pow31.txtpb	-	-	K-19,K-16; battery = 2147483648 (signed rendering)
+pbnum-battery-2pow31	p2p	cases/proto/pbnum-battery-2pow31.txtpb	1793102400000	-	K-19,K-16; battery = 2147483648 (signed rendering)
+pbnum-battery-i32max	p2x	cases/proto/pbnum-battery-i32max.txtpb	-	-	K-19,K-16; battery = 2147483647 (signed rendering)
+pbnum-battery-i32max	p2p	cases/proto/pbnum-battery-i32max.txtpb	1793102400000	-	K-19,K-16; battery = 2147483647 (signed rendering)
+pbnum-battery-one	p2x	cases/proto/pbnum-battery-one.txtpb	-	-	K-19,K-16; battery = 1 (signed rendering)
+pbnum-battery-one	p2p	cases/proto/pbnum-battery-one.txtpb	1793102400000	-	K-19,K-16; battery = 1 (signed rendering)
+pbnum-track-speed-minus-one	p2x	cases/proto/pbnum-track-speed-minus-one.txtpb	-	-	K-16,K-15,C-08; track speed-minus-one
+pbnum-track-speed-minus-one	p2p	cases/proto/pbnum-track-speed-minus-one.txtpb	1793102400000	-	K-16,K-15,C-08; track speed-minus-one
+pbnum-track-course-minus-one	p2x	cases/proto/pbnum-track-course-minus-one.txtpb	-	-	K-16,K-15,C-08; track course-minus-one
+pbnum-track-course-minus-one	p2p	cases/proto/pbnum-track-course-minus-one.txtpb	1793102400000	-	K-16,K-15,C-08; track course-minus-one
+pbnum-track-speed-nan	p2x	cases/proto/pbnum-track-speed-nan.txtpb	-	-	K-16,K-15,C-08; track speed-nan
+pbnum-track-speed-nan	p2p	cases/proto/pbnum-track-speed-nan.txtpb	1793102400000	-	K-16,K-15,C-08; track speed-nan
+pbnum-track-speed-neg-zero	p2x	cases/proto/pbnum-track-speed-neg-zero.txtpb	-	-	K-16,K-15,C-08; track speed-neg-zero
+pbnum-track-speed-neg-zero	p2p	cases/proto/pbnum-track-speed-neg-zero.txtpb	1793102400000	-	K-16,K-15,C-08; track speed-neg-zero
+pbnum-track-speed-tiny	p2x	cases/proto/pbnum-track-speed-tiny.txtpb	-	-	K-16,K-15,C-08; track speed-tiny
+pbnum-track-speed-tiny	p2p	cases/proto/pbnum-track-speed-tiny.txtpb	1793102400000	-	K-16,K-15,C-08; track speed-tiny
+pbnum-submission-u64max	p2x	cases/proto/pbnum-submission-u64max.txtpb	-	-	K-22; submission/creation >= 2^63 are negative as signed -> not carried?
+pbnum-submission-u64max	p2p	cases/proto/pbnum-submission-u64max.txtpb	1793102400000	-	K-22; submission/creation >= 2^63 are negative as signed -> not carried?
+pbnum-submission-i64max	p2x	cases/proto/pbnum-submission-i64max.txtpb	-	-	K-22; submission i64::MAX, creation 1
+pbnum-submission-i64max	p2p	cases/proto/pbnum-submission-i64max.txtpb	1793102400000	-	K-22; submission i64::MAX, creation 1
+enc-canonical	p2x	cases/proto/enc-canonical.pb.hex	-	-	K-24; canonical hand-encoded message (control for the other enc- cases)
+enc-canonical	p2p	cases/proto/enc-canonical.pb.hex	1793102400000	-	K-24; canonical hand-encoded message (control for the other enc- cases)
+enc-fields-reversed	p2x	cases/proto/enc-fields-reversed.pb.hex	-	-	K-24,K-25; fields in reverse tag order (re-encoded in tag order)
+enc-fields-reversed	p2p	cases/proto/enc-fields-reversed.pb.hex	1793102400000	-	K-24,K-25; fields in reverse tag order (re-encoded in tag order)
+enc-repeated-scalar	p2x	cases/proto/enc-repeated-scalar.pb.hex	-	-	K-24; uid repeated: last value wins
+enc-repeated-scalar	p2p	cases/proto/enc-repeated-scalar.pb.hex	1793102400000	-	K-24; uid repeated: last value wins
+enc-split-cotevent	p2x	cases/proto/enc-split-cotevent.pb.hex	-	-	K-24; cotEvent split in two length-delimited records (merged)
+enc-split-cotevent	p2p	cases/proto/enc-split-cotevent.pb.hex	1793102400000	-	K-24; cotEvent split in two length-delimited records (merged)
+enc-split-detail	p2x	cases/proto/enc-split-detail.pb.hex	-	-	K-24; detail and contact split (sub-messages merged)
+enc-split-detail	p2p	cases/proto/enc-split-detail.pb.hex	1793102400000	-	K-24; detail and contact split (sub-messages merged)
+enc-unknown-fields	p2x	cases/proto/enc-unknown-fields.pb.hex	-	-	K-25; unknown varint/len/fixed32 fields in CotEvent and TakMessage are dropped
+enc-unknown-fields	p2p	cases/proto/enc-unknown-fields.pb.hex	1793102400000	-	K-25; unknown varint/len/fixed32 fields in CotEvent and TakMessage are dropped
+enc-unknown-group	p2x	cases/proto/enc-unknown-group.pb.hex	-	-	K-25; unknown field encoded as a (deprecated) group
+enc-unknown-group	p2p	cases/proto/enc-unknown-group.pb.hex	1793102400000	-	K-25; unknown field encoded as a (deprecated) group
+enc-nonminimal-varint	p2x	cases/proto/enc-nonminimal-varint.pb.hex	-	-	K-24; sendTime as a 10-byte non-minimal varint (re-encoded minimal)
+enc-nonminimal-varint	p2p	cases/proto/enc-nonminimal-varint.pb.hex	1793102400000	-	K-24; sendTime as a 10-byte non-minimal varint (re-encoded minimal)
+enc-wrong-wiretype-uid	p2x	cases/proto/enc-wrong-wiretype-uid.pb.hex	-	-	DEV-04; uid (string) sent as varint (Java ignores, TAK-RS rejects)
+enc-wrong-wiretype-uid	p2p	cases/proto/enc-wrong-wiretype-uid.pb.hex	1793102400000	-	DEV-04; uid (string) sent as varint (Java ignores, TAK-RS rejects)
+enc-wrong-wiretype-lat	p2x	cases/proto/enc-wrong-wiretype-lat.pb.hex	-	-	DEV-04; lat (double) sent as fixed32
+enc-wrong-wiretype-lat	p2p	cases/proto/enc-wrong-wiretype-lat.pb.hex	1793102400000	-	DEV-04; lat (double) sent as fixed32
+enc-wrong-wiretype-cotevent	p2x	cases/proto/enc-wrong-wiretype-cotevent.pb.hex	-	-	DEV-04; cotEvent (message) sent as varint
+enc-wrong-wiretype-cotevent	p2p	cases/proto/enc-wrong-wiretype-cotevent.pb.hex	1793102400000	-	DEV-04; cotEvent (message) sent as varint
+enc-invalid-utf8-uid	p2x	cases/proto/enc-invalid-utf8-uid.pb.hex	-	-	K-26; invalid UTF-8 in uid -> reject (both)
+enc-invalid-utf8-uid	p2p	cases/proto/enc-invalid-utf8-uid.pb.hex	1793102400000	-	K-26; invalid UTF-8 in uid -> reject (both)
+enc-invalid-utf8-xmldetail	p2x	cases/proto/enc-invalid-utf8-xmldetail.pb.hex	-	-	K-26; invalid UTF-8 in xmlDetail -> reject
+enc-invalid-utf8-xmldetail	p2p	cases/proto/enc-invalid-utf8-xmldetail.pb.hex	1793102400000	-	K-26; invalid UTF-8 in xmlDetail -> reject
+enc-overlong-utf8	p2x	cases/proto/enc-overlong-utf8.pb.hex	-	-	K-26; overlong UTF-8 encoding of '/' in uid -> reject
+enc-overlong-utf8	p2p	cases/proto/enc-overlong-utf8.pb.hex	1793102400000	-	K-26; overlong UTF-8 encoding of '/' in uid -> reject
+enc-truncated-string	p2x	cases/proto/enc-truncated-string.pb.hex	-	-	K-28,K-26; message truncated inside a string -> reject
+enc-truncated-string	p2p	cases/proto/enc-truncated-string.pb.hex	1793102400000	-	K-28,K-26; message truncated inside a string -> reject
+enc-truncated-varint	p2x	cases/proto/enc-truncated-varint.pb.hex	-	-	K-24; truncated varint at end -> reject
+enc-truncated-varint	p2p	cases/proto/enc-truncated-varint.pb.hex	1793102400000	-	K-24; truncated varint at end -> reject
+enc-length-exceeds-input	p2x	cases/proto/enc-length-exceeds-input.pb.hex	-	-	DEV-01c,K-24; length prefix larger than the remaining bytes -> reject
+enc-length-exceeds-input	p2p	cases/proto/enc-length-exceeds-input.pb.hex	1793102400000	-	DEV-01c,K-24; length prefix larger than the remaining bytes -> reject
+enc-length-4gib	p2x	cases/proto/enc-length-4gib.pb.hex	-	-	DEV-01c; length prefix above u32 (4 GiB + 5) -> reject without allocation
+enc-length-4gib	p2p	cases/proto/enc-length-4gib.pb.hex	1793102400000	-	DEV-01c; length prefix above u32 (4 GiB + 5) -> reject without allocation
+enc-length-varint-11-bytes	p2x	cases/proto/enc-length-varint-11-bytes.pb.hex	-	-	DEV-01c; malformed 11-byte varint length prefix -> reject
+enc-length-varint-11-bytes	p2p	cases/proto/enc-length-varint-11-bytes.pb.hex	1793102400000	-	DEV-01c; malformed 11-byte varint length prefix -> reject
+enc-field-zero	p2x	cases/proto/enc-field-zero.pb.hex	-	-	K-24; field number 0 -> reject (both)
+enc-field-zero	p2p	cases/proto/enc-field-zero.pb.hex	1793102400000	-	K-24; field number 0 -> reject (both)
+enc-wiretype-7	p2x	cases/proto/enc-wiretype-7.pb.hex	-	-	K-24; invalid wire type 7 -> reject
+enc-wiretype-7	p2p	cases/proto/enc-wiretype-7.pb.hex	1793102400000	-	K-24; invalid wire type 7 -> reject
+enc-end-group-unmatched	p2x	cases/proto/enc-end-group-unmatched.pb.hex	-	-	K-24; stray end-group tag -> reject
+enc-end-group-unmatched	p2p	cases/proto/enc-end-group-unmatched.pb.hex	1793102400000	-	K-24; stray end-group tag -> reject
+ser-ns-attr-prefix-from-event	x2p	cases/xml/ser-ns-attr-prefix-from-event.xml	1793102400000	1793102400250	PROTO-003,C-04,K-20; detail child with a prefixed attribute whose prefix is declared on event: placement of the copied xmlns:x
+ser-ns-attr-prefix-from-event	x2x	cases/xml/ser-ns-attr-prefix-from-event.xml	-	-	PROTO-003,C-04,K-20; detail child with a prefixed attribute whose prefix is declared on event: placement of the copied xmlns:x
+ser-pi-empty-data	x2p	cases/xml/ser-pi-empty-data.xml	1793102400000	1793102400250	PROTO-003,C-05; PI with no data inside detail text (written as <?syn-pi?> or <?syn-pi ?>?)
+ser-pi-empty-data	x2x	cases/xml/ser-pi-empty-data.xml	-	-	PROTO-003,C-05; PI with no data inside detail text (written as <?syn-pi?> or <?syn-pi ?>?)
+ser-name5-element-u3400	x2p	cases/xml/ser-name5-element-u3400.xml	1793102400000	1793102400250	PROTO-005,C-10; detail child element named U+3400 (5th-edition NameStartChar, not 4th-edition Letter): accepted?
+ser-name5-element-u3400	x2x	cases/xml/ser-name5-element-u3400.xml	-	-	PROTO-005,C-10; detail child element named U+3400 (5th-edition NameStartChar, not 4th-edition Letter): accepted?
+ser-name5-element-u10000	x2p	cases/xml/ser-name5-element-u10000.xml	1793102400000	1793102400250	PROTO-005,C-10; detail child element named U+10000 (non-BMP, 5th edition only): accepted?
+ser-name5-element-u10000	x2x	cases/xml/ser-name5-element-u10000.xml	-	-	PROTO-005,C-10; detail child element named U+10000 (non-BMP, 5th edition only): accepted?
+ser-name5-attribute-u3400	x2p	cases/xml/ser-name5-attribute-u3400.xml	1793102400000	1793102400250	PROTO-005,C-10; attribute named U+3400 on a detail child (5th edition only): accepted?
+ser-name5-attribute-u3400	x2x	cases/xml/ser-name5-attribute-u3400.xml	-	-	PROTO-005,C-10; attribute named U+3400 on a detail child (5th edition only): accepted?
+evattr-dup-local-uid	x2p	cases/xml/evattr-dup-local-uid.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:uid then uid (which value reaches proto uid and the X2X output?)
+evattr-dup-local-uid	x2x	cases/xml/evattr-dup-local-uid.xml	-	-	SEC-003,C-06,K-01; p:uid then uid (which value reaches proto uid and the X2X output?)
+evattr-dup-local-uid-reversed	x2p	cases/xml/evattr-dup-local-uid-reversed.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; uid then p:uid (first match or no-namespace match?)
+evattr-dup-local-uid-reversed	x2x	cases/xml/evattr-dup-local-uid-reversed.xml	-	-	SEC-003,C-06,K-01; uid then p:uid (first match or no-namespace match?)
+evattr-dup-local-type	x2p	cases/xml/evattr-dup-local-type.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:type then type
+evattr-dup-local-type	x2x	cases/xml/evattr-dup-local-type.xml	-	-	SEC-003,C-06,K-01; p:type then type
+evattr-dup-local-how	x2p	cases/xml/evattr-dup-local-how.xml	1793102400000	1793102400250	SEC-003,C-06,K-01; p:how then how
+evattr-dup-local-how	x2x	cases/xml/evattr-dup-local-how.xml	-	-	SEC-003,C-06,K-01; p:how then how
+evattr-root-foo-minimal	x2p	cases/xml/evattr-root-foo-minimal.xml	1793102400000	1793102400250	SEC-004,K-01,K-12; minimal non-event root <foo uid type/> with no point or detail: accepted or rejected?
+evattr-root-foo-minimal	x2x	cases/xml/evattr-root-foo-minimal.xml	-	-	SEC-004,K-01,K-12; minimal non-event root <foo uid type/> with no point or detail: accepted or rejected?
+evattr-root-prefixed-minimal	x2p	cases/xml/evattr-root-prefixed-minimal.xml	1793102400000	1793102400250	SEC-004,C-06,K-12; minimal namespaced root p:event with no point or detail: accepted or rejected?
+evattr-root-prefixed-minimal	x2x	cases/xml/evattr-root-prefixed-minimal.xml	-	-	SEC-004,C-06,K-12; minimal namespaced root p:event with no point or detail: accepted or rejected?
+enc-nonchar-uid-nul	p2x	cases/proto/enc-nonchar-uid-nul.pb.hex	-	-	PROTO-001,K-13; uid is U+0000 (valid UTF-8, not an XML 1.0 Char): Java relays it, TAK-RS rejects (P2X form &#0;?)
+enc-nonchar-uid-nul	p2p	cases/proto/enc-nonchar-uid-nul.pb.hex	1793102400000	-	PROTO-001,K-13; uid is U+0000 (valid UTF-8, not an XML 1.0 Char): Java relays it, TAK-RS rejects (P2X form &#0;?)
+enc-nonchar-callsign-bel	p2x	cases/proto/enc-nonchar-callsign-bel.pb.hex	-	-	PROTO-001,K-18; contact callsign is U+0007: does the sender still reach XML and proto receivers?
+enc-nonchar-callsign-bel	p2p	cases/proto/enc-nonchar-callsign-bel.pb.hex	1793102400000	-	PROTO-001,K-18; contact callsign is U+0007: does the sender still reach XML and proto receivers?
+enc-nonchar-endpoint-us	p2x	cases/proto/enc-nonchar-endpoint-us.pb.hex	-	-	PROTO-001,K-18; contact endpoint is U+001F
+enc-nonchar-endpoint-us	p2p	cases/proto/enc-nonchar-endpoint-us.pb.hex	1793102400000	-	PROTO-001,K-18; contact endpoint is U+001F
+enc-nonchar-how-fffe	p2x	cases/proto/enc-nonchar-how-fffe.pb.hex	-	-	PROTO-001,K-13; how is U+FFFE (noncharacter, not an XML 1.0 Char)
+enc-nonchar-how-fffe	p2p	cases/proto/enc-nonchar-how-fffe.pb.hex	1793102400000	-	PROTO-001,K-13; how is U+FFFE (noncharacter, not an XML 1.0 Char)
+evattr-dup-local-time	x2p	cases/xml/evattr-dup-local-time.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:time (12:01) then time (12:00): which value reaches proto sendTime and the X2X output?
+evattr-dup-local-time	x2x	cases/xml/evattr-dup-local-time.xml	-	-	SEC-008,C-06,D-18,K-02; p:time (12:01) then time (12:00): which value reaches proto sendTime and the X2X output?
+evattr-dup-local-stale	x2p	cases/xml/evattr-dup-local-stale.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:stale (12:10) then stale (12:05): which value reaches proto staleTime and the X2X output?
+evattr-dup-local-stale	x2x	cases/xml/evattr-dup-local-stale.xml	-	-	SEC-008,C-06,D-18,K-02; p:stale (12:10) then stale (12:05): which value reaches proto staleTime and the X2X output?
+evattr-dup-local-start	x2p	cases/xml/evattr-dup-local-start.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-02; p:start (12:01) then start (12:00): completes the D-18 identity set (uid/type/how/time/start/stale)
+evattr-dup-local-start	x2x	cases/xml/evattr-dup-local-start.xml	-	-	SEC-008,C-06,D-18,K-02; p:start (12:01) then start (12:00): completes the D-18 identity set (uid/type/how/time/start/stale)
+typed-group-dup-local-name	x2p	cases/xml/typed-group-dup-local-name.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B, no role (finding's form): typed or xmlDetail, and which name?
+typed-group-dup-local-name	x2x	cases/xml/typed-group-dup-local-name.xml	-	-	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B, no role (finding's form): typed or xmlDetail, and which name?
+typed-group-dup-local-name-role	x2p	cases/xml/typed-group-dup-local-name-role.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B with role: does the duplicate break exact-set eligibility, and which name reaches proto group.name?
+typed-group-dup-local-name-role	x2x	cases/xml/typed-group-dup-local-name-role.xml	-	-	SEC-008,C-06,D-18,K-07; __group p:name=A then name=B with role: does the duplicate break exact-set eligibility, and which name reaches proto group.name?
+typed-contact-dup-local-callsign	x2p	cases/xml/typed-contact-dup-local-callsign.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B (finding's form): typed or xmlDetail, and which callsign?
+typed-contact-dup-local-callsign	x2x	cases/xml/typed-contact-dup-local-callsign.xml	-	-	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B (finding's form): typed or xmlDetail, and which callsign?
+typed-contact-dup-local-callsign-endpoint	x2p	cases/xml/typed-contact-dup-local-callsign-endpoint.xml	1793102400000	1793102400250	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B with endpoint: eligibility and which callsign reaches proto contact.callsign?
+typed-contact-dup-local-callsign-endpoint	x2x	cases/xml/typed-contact-dup-local-callsign-endpoint.xml	-	-	SEC-008,C-06,D-18,K-06; contact p:callsign=A then callsign=B with endpoint: eligibility and which callsign reaches proto contact.callsign?
+numbers-doubles	dbl-fmt	cases/numbers/doubles.tsv	-	-	K-34,DEV-03; Double.toString: 420 curated (gated), 16 JDK17 probes and 4096 seeded random (measured)
+numbers-double-strings	dbl-parse	cases/numbers/double-strings.txt	-	-	K-34; parseDoubleOrDefault grammar, 100 strings
+numbers-int-strings	int-parse	cases/numbers/int-strings.txt	-	-	K-34; parseIntOrDefault grammar, 40 strings
+numbers-times-ms	time-fmt	cases/numbers/times-ms.txt	-	-	K-35,C-07,K-14; DateUtil.toCotTime, 60 ms values
+numbers-time-strings	time-parse	cases/numbers/time-strings.txt	-	-	K-36,C-07; DateUtil.millisFromCotTimeStr, 86 strings

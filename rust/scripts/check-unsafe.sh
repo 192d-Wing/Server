@@ -18,7 +18,7 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 root=${RUST_ROOT:-$(cd "$here/.." && pwd)}
 
 dirs=""
-for d in crates services web; do
+for d in crates services web fuzz/fuzz_targets; do
   [ -d "$root/$d" ] && dirs="$dirs $root/$d"
 done
 if [ -z "$dirs" ]; then

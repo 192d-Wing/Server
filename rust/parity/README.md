@@ -6,7 +6,8 @@ JUnit results. Later phases point the same suites at the Rust server.
 
 Phase 0 exit criterion: TAKCL `StartupTests` passes against the Java reference
 in this harness. That run happens in CI only (`rust-parity.yml`; see
-[What is verified where](#what-is-verified-where)).
+[What is verified where](#what-is-verified-where)). Phase 1a adds the
+[golden corpus](#golden-corpus) commands.
 
 ## Topology
 
@@ -63,13 +64,22 @@ exits 2 without starting anything.
 | `logs` | Saves compose logs to `<results>/<UTC>-compose-logs/` |
 | `down` | Runs `compose down --volumes` (removes the DB volume) |
 | `clean` | Runs `down`, then removes `.work/`, which deletes the password file. Results are kept |
-| `selftest` | Checks fixtures, the exit-code contract, pin validation, and wrapper integrity. Needs no containers |
+| `capture-corpus` | Runs the golden-corpus driver against the built reference's jars, twice, in the JRE 17 image with no network. Fails unless both runs are identical. Writes `<results>/<UTC>-corpus/` with `PROVENANCE.json`. Needs `build-java` and `image`. See [Golden corpus](#golden-corpus) |
+| `verify-corpus [<dir>]` | Compares a capture with `corpus/golden/` byte for byte: every file except `PROVENANCE.json` and `DEVIATIONS.tsv`, with no missing or extra files. Without `<dir>`, it uses the capture made earlier in the same chain. Drift exits 1, and having no goldens exits 3 |
+| `import-corpus <dir>` | Validates a capture (layout, no special files, and pins, driver and input hashes equal to the checkout's, else exit 4). Then replaces `corpus/golden/`, keeping `DEVIATIONS.tsv` |
+| `selftest` | Checks fixtures, the exit-code contract, pin validation, wrapper integrity, and the corpus extractor, layout, verify and import checks. Needs no containers |
 
 Typical run:
 
 ```sh
 rust/parity/harness.sh preflight build-java image up test StartupTests
 rust/parity/harness.sh logs down
+```
+
+Golden corpus (also `make parity-capture-corpus` from `rust/`):
+
+```sh
+rust/parity/harness.sh preflight build-java image capture-corpus verify-corpus
 ```
 
 Exit codes: `0` ok · `1` test or build failure · `2` unsupported command or
@@ -83,6 +93,7 @@ target, or bad usage · `3` missing prerequisite · `4` integrity check failed.
 | `TAKCL_MEM_LIMIT` | takcl container memory limit (default `10g`) |
 | `TAK_PARITY_PINS` | Alternate pins file. It is validated like `pins.env` and its SHA-256 is recorded in `build-info.json`. Used by the local integrity negative test |
 | `TAK_PARITY_ENGINE_BIN` | Test only: overrides the engine binary name (selftest "missing engine" case) |
+| `TAK_PARITY_CORPUS_DIR` | Test only: alternate corpus root (selftest), validated like `corpus/` |
 
 ## Pins
 
@@ -113,7 +124,70 @@ the change in the CM-2 pin inventory (`rust/docs/compliance/ATO_EVIDENCE.md`).
 | `verify-junit` fixtures (pass, fail, error, empty, forged counts, DTD) | yes (`selftest`) | yes |
 | Pin validation and wrapper integrity (synthetic trees plus real `src/`) | yes (`selftest`) | yes |
 | `build-java` with a wrong wrapper pin exits 4 before any download | yes (`TAK_PARITY_PINS=<scratch>`) | — |
+| Corpus war extractor negatives (zip-slip, absolute path, symlink, duplicate, oversize, not a zip), classpath probe | yes (`selftest`) | yes |
+| `verify-corpus` pass, drift, missing, extra, symlink, layout errors; `import-corpus` pins, inputs and provenance mismatches; `DEVIATIONS.tsv` kept | yes (`selftest`, fixtures in `tests/fixtures/corpus/`) | yes |
 | Gradle build, image build, DB, `StartupTests` | no | yes |
+| `capture-corpus` twice-identical against the real reference, then `verify-corpus` | no | yes |
+
+## Golden corpus
+
+Phase 1a's exit criterion is that the CoT XML and TAK Protocol v1
+conversion is byte-equivalent to the Java server's in all four directions
+(`x2p`, `x2x`, `p2x`, `p2p`), plus the number and time formatting tables.
+The evidence is a golden corpus in `corpus/`. Its inputs, output format,
+byte-equivalence rules, licence and update procedure are in
+[corpus/README.md](corpus/README.md). `corpus/MANIFEST.tsv` is the list of
+cases (one row per id and direction); this file gives no counts.
+
+**Status: inputs only.** `corpus/golden/` does not exist yet: no capture has
+been run against the reference, so the exit criterion is not met. Until the
+first capture is imported:
+
+- `verify-corpus` exits 3 ("no committed goldens"). The scheduled and
+  pull-request `rust-parity` runs therefore fail at the corpus step; the
+  TAKCL suite step still runs and reports on its own.
+- The first capture is a `workflow_dispatch` run with
+  `verify_corpus: false`, followed by `import-corpus` on its
+  `parity-corpus-<run>` artifact and a reviewed PR with the goldens (see
+  [corpus/README.md](corpus/README.md)).
+
+`capture-corpus` adds no network access and no new image. It reuses the two
+pinned images:
+
+- **Builder image** (`tak-parity-java-build:local`, JDK 17): runs
+  `javac --release 17` on `corpus/driver/CorpusDriver.java`.
+- **Reference image** (`tak-parity-java:<src sha>`, JRE 17): runs the driver
+  with `--entrypoint java` against the `WEB-INF/lib` jars extracted from
+  `.work/tester/takserver.war`.
+
+Both containers run under the same sandbox:
+
+- `--network none`, `--read-only`, a `noexec` tmpfs `/tmp`, `--cap-drop ALL`,
+  `no-new-privileges`, 4 GB memory and 512 pids;
+- the invoking non-root uid, the same choice as `build-java`. With uid 10001
+  the bind-mounted output directory would not be writable without
+  world-writable modes.
+
+The corpus and the classpath are mounted read-only. Each run writes only to
+its own directory under `.work/corpus/`. That directory goes through
+`reject_special` before the host reads it (SEC-003, SEC-009). The two runs
+must be byte-identical.
+
+`rust-parity.yml` runs `capture-corpus verify-corpus` after the Java build
+(`capture-corpus` only when dispatched with `verify_corpus: false`). It
+uploads the capture as its own `parity-corpus-<run>` artifact, which is the
+input to `import-corpus`.
+
+### Fuzz seeds from the corpus inputs
+
+The corpus inputs also seed the fuzz targets in `rust/fuzz/`:
+`rust/scripts/fuzz-seeds.sh` (`make fuzz-seeds`, and per target through
+`make fuzz-run FUZZ_TARGET=<t>`) builds `fuzz/seeds/<target>/` from
+`corpus/cases/`. Inputs over `FUZZ_SEED_MAX_BYTES` (64 KiB, the same value as
+libFuzzer's `-max_len`) are skipped and counted (the 8 MiB, 1 MiB and 400 KB
+limit cases). Goldens are not used as seeds. `rust-fuzz.yml` also runs on
+pull requests that change `corpus/cases/`, and new inputs are picked up
+without any change to the fuzz workspace.
 
 ## How TAKCL runs StartupTests (findings)
 

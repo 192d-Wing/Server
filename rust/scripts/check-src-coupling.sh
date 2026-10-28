@@ -27,6 +27,20 @@
 # string joins) is not seen; review and the tak-proto build.rs header are the
 # backstop.
 #
+# Known reference (Phase 1a): rust/crates/tak-proto/build.rs reads the .proto
+# schemas in place through its literal SCHEMA_DIR
+# `../../../src/takserver-protobuf/src/main/proto` (joined to
+# CARGO_MANIFEST_DIR at build time). Rule (r) sees the literal and judges it
+# against the `^src/takserver-protobuf/` entry in ci-changes.sh `rust_inputs`.
+# If that build script ever builds the path from pieces instead, keep a
+# literal of the full path in its header so this check still sees it.
+# This check covers only WHETHER the Rust jobs run on a src/ change. WHAT
+# changed is checked by build.rs against the committed SHA-256 manifest
+# rust/crates/tak-proto/schema.sha256 (SEC-005: file list and contents, fail
+# closed, manifest updates reviewed by tak-protocol-reviewer). That manifest
+# holds file names and digests, no parent-relative path, so rule (r) does
+# not apply to it.
+#
 # COMPLIANCE MAPPING:
 # - NIST 800-53: CM-3 (Configuration Change Control), SA-11 (Developer
 #   Testing and Evaluation)
@@ -56,7 +70,11 @@ dots='\.\./'
 ref_re="(${dots})+(src|utils)(/[A-Za-z0-9_.+-]+)*"
 
 scan_files() {
+  # fuzz/ generated output (build, working corpus, seeds, crash inputs) is
+  # data, not build inputs; seeds hold arbitrary bytes from parity/.
   find "$root" \( -path "$root/target" -o -path "$root/docs" -o -path "$root/parity" \
+    -o -path "$root/fuzz/target" -o -path "$root/fuzz/corpus" -o -path "$root/fuzz/seeds" \
+    -o -path "$root/fuzz/artifacts" -o -path "$root/fuzz/coverage" \
     -o -name node_modules -o -name .git \) -prune -o \
     -type f ! -name '*.md' ! -name 'NOTICE*' ! -name 'LICENSE*' -print
 }
@@ -121,7 +139,7 @@ while IFS= read -r l; do
     status=1
   fi
 done <<EOF
-$(find "$root" \( -path "$root/target" -o -path "$root/parity/.work" -o -path "$root/parity/results" \
+$(find "$root" \( -path "$root/target" -o -path "$root/fuzz/target" -o -path "$root/parity/.work" -o -path "$root/parity/results" \
   -o -name node_modules -o -name .git \) -prune -o -type l -print)
 EOF
 

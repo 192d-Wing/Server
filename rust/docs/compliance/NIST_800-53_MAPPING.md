@@ -1,11 +1,11 @@
 # NIST SP 800-53 Rev 5 Security Control Mapping
 
-**Document Version:** 0.5
-**Date:** 2026-10-27
-**TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
+**Document Version:** 0.8
+**Date:** 2026-10-28
+**TAK-RS Version:** 0.0.1 (Phase 1a, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run. 12 of 42 detailed blocks are Partially Implemented from local evidence (QA Rounds 1 and 2), now also backed by the PR 7 CI run (2026-10-27); none is Implemented. No status changed with the CI run (rule 2 still needs a nightly run).
-**Run:** `20261026-210255-phase0-foundations`
+**Status:** Phase 1a build run, before its gate. 17 of 47 detailed blocks are Partially Implemented, 30 Planned, none Implemented. The Phase 1a statuses rest on the local QA run of 2026-10-28; no CI run exists for this branch, and the golden parity tests (the Phase 1a exit criterion) are NOT RUN.
+**Run:** `20261027-180458-phase1-protocol-config`
 
 ## Document Control
 
@@ -29,10 +29,20 @@ which maps mechanically to OSCAL IDs (`cm-2.2`).
 
 ### Scope
 
-Phase 0 covers the **development environment only**: the Cargo workspace,
-supply-chain policy, CI, compliance documents and the parity harness. There is
-no TAK-RS runtime (TOE) yet. Every Phase 0 entry carries the scope note
-"development environment / CI; no TOE runtime yet".
+Phase 0 covered the **development environment only**: the Cargo workspace,
+supply-chain policy, CI, compliance documents and the parity harness. Every
+Phase 0 entry carries the scope note "development environment / CI; no TOE
+runtime yet", and the developer-process blocks keep it.
+
+Phase 1a adds the first **TOE library components**: the `tak-proto` and
+`tak-cot` crates (TAK Protocol v1 types, framing, the CoT XML parser and
+serializer, and the XML ↔ protobuf conversion). They are libraries with no
+network I/O, no listener and no logging, and no shipped binary links them
+until Phase 3. Blocks for their functions carry the scope note "TOE library
+component (`tak-proto`, `tak-cot`); no network wiring until Phase 3". Two
+Phase 1a pieces stay **outside the TOE**: the `tak-proto` build script
+(build host only; its schema digest is SA-10(1), not SI-7 or SC-13) and the
+excluded `rust/fuzz/` workspace (development only).
 
 ### Vocabulary
 
@@ -69,7 +79,18 @@ Every Inherited or Not Applicable entry gives a reason.
 
 ### Status at this revision
 
-This revision records the Phase 0 build run **before its gate**. The local
+This revision records the **Phase 1a build run before its gate** (run
+`20261027-180458-phase1-protocol-config`). Its evidence is the local QA run
+of 2026-10-28 on macOS against the uncommitted working tree (base `main`
+`df6a4662`, `HEAD` `04774cc0`), plus the results that fix rounds 1 and 2
+report after it ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, "Phase 1a"
+records). Rules 6 and 7 below govern that evidence. Line numbers in the
+Phase 1a cells were verified with `grep -n` on 2026-10-28 against that
+working tree. The orchestrator is still to add the POA&M IDs to the markers
+in `limits.rs`, `xml/serialize.rs` and the fuzz workspace, which may shift
+lines after those markers.
+
+The Phase 0 record below is unchanged. Phase 0 was a build run whose local
 gates ran on macOS on 2026-10-26: QA Round 1 after fix round 1, and QA
 Round 2 after fix round 2 (both in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3).
 On 2026-10-27 the first GitHub Actions runs were recorded for PR 7 (head
@@ -85,7 +106,8 @@ POAM-2026-10-26-09 for development, pending AO review
 Rules applied at this revision:
 
 1. A status is raised only when a recorded local PASS exercises the mechanism
-   the block claims, and never above the block's "Phase 0 target".
+   the block claims, and never above the block's target ("Phase 0 target",
+   or "Phase 1a target" where the block has one).
 2. A claim that is true only when GitHub runs it (a CI job, the nightly
    schedule, Dependabot, a ruleset) stays **Planned** until a green
    `rust-ci-gate` run and a nightly run are recorded.
@@ -106,6 +128,20 @@ Rules applied at this revision:
    recorded at this revision, so its results are the release-engineer's own
    runs, not QA evidence, and raise no status.
    Line numbers are given only for files outside fix rounds 2 and 3.
+6. **Phase 1a fix rounds.** Fix rounds 1 and 2 ran after the Phase 1a QA
+   run. Their results are the fixers' own runs plus the reviewers'
+   re-verification (`findings-*-round1.md`, `findings-*-round2.md`), not a QA
+   re-run. They may narrow a gap in a block whose status QA evidence already
+   supports (for example the SC-5 CPU bound), but on their own they raise no
+   status. SA-10(1) therefore stays Planned.
+7. **Phase 1a NOT RUN.** GitHub Actions is disabled for the repository
+   ("Actions has been disabled for this repository"). No CI run exists for
+   this branch: no `rust-ci-gate`, no `rust-fuzz` run, no corpus capture.
+   WU7 (golden capture) and WU8 (golden test) are NOT RUN, so no
+   byte-equivalence with the Java reference is shown and the Phase 1a exit
+   criterion is **not met**. Nothing is committed after `04774cc0` (commit
+   signing temporarily unavailable). No claim in this revision rests on a CI
+   run, a golden result or a commit.
 
 How the rules apply to the PR 7 CI run (2026-10-27): rule 2 has two
 conditions. The first, a green `rust-ci-gate` run, is now met (run
@@ -127,16 +163,48 @@ evidence. It covers all 20 Rev 5 control families. Organizational and physical
 families are marked Inherited or Not Applicable with a reason rather than
 omitted.
 
-Phase 0 addresses only developer-process controls (CM, SA, SR, RA, SI, CA)
-that the workspace and CI satisfy. There are 42 detailed control blocks.
-Status at this revision:
+Phase 0 addressed only developer-process controls (CM, SA, SR, RA, SI, CA)
+that the workspace and CI satisfy. Phase 1a adds the first TOE library
+components (`tak-proto`, `tak-cot`) and five blocks: SC-5, SI-10, SI-10(3),
+SI-11 and SA-10(1). SI-10 and SI-11 were rows before. There are 47 detailed
+control blocks. Status at this revision:
 
 | Status (this revision) | Controls | Count |
 |------------------------|----------|-------|
 | Implemented | — | 0 |
-| Partially Implemented | CA-5, CM-2, CM-6, CM-10, SA-10, SA-11, SA-11(1), SA-15, SA-22, SR-3, SR-4, SR-11 | 12 |
-| Planned | CA-2, CA-7, CM-2(2), CM-3, CM-3(2), CM-5, CM-7, CM-8, CM-14, PL-8, RA-5, RA-5(2), SA-3, SA-8, SA-11(2), SA-11(8), SA-15(7), SA-15(13), SA-17, SA-24, SC-13, SI-2, SI-2(2), SI-2(7), SI-7, SI-7(12), SI-7(15), SR-2, SR-5, SR-6 | 30 |
-| **Total** | | **42** |
+| Partially Implemented | CA-5, CM-2, CM-6, CM-10, SA-10, SA-11, SA-11(1), SA-11(8), SA-15, SA-22, SC-5, SI-10, SI-10(3), SI-11, SR-3, SR-4, SR-11 | 17 |
+| Planned | CA-2, CA-7, CM-2(2), CM-3, CM-3(2), CM-5, CM-7, CM-8, CM-14, PL-8, RA-5, RA-5(2), SA-3, SA-8, SA-10(1), SA-11(2), SA-15(7), SA-15(13), SA-17, SA-24, SC-13, SI-2, SI-2(2), SI-2(7), SI-7, SI-7(12), SI-7(15), SR-2, SR-5, SR-6 | 30 |
+| **Total** | | **47** |
+
+Phase 1a transitions: SA-11(8) Planned → Partially Implemented (recorded
+local fuzz run). New blocks: SC-5, SI-10, SI-10(3) and SI-11 at Partially
+Implemented, and SA-10(1) at Planned (rule 6). Before: 12 + 30 = 42. After:
+12 + 1 + 4 = 17 Partially Implemented; 30 − 1 + 1 = 30 Planned; 17 + 30 =
+47.
+
+Phase 1a targets (plan §7.1 of the Phase 1a run, as amended by the
+nist-800-53-reviewer for CM-6 and SA-10(1)), for the blocks Phase 1a
+touches. The other blocks keep their Phase 0 target.
+
+| Control | Phase 1a target | Status at this revision |
+|---------|-----------------|-------------------------|
+| SI-10 | Partially Implemented (library; network wiring Phase 3) | Partially Implemented |
+| SI-10(3) | Partially Implemented | Partially Implemented |
+| SC-5 | Partially Implemented (component; rate limiting Phase 3/7) | Partially Implemented |
+| SI-11 | Partially Implemented | Partially Implemented |
+| SA-11 | Partially Implemented (already; evidence added) | Partially Implemented |
+| SA-11(8) | Partially Implemented after a recorded fuzz run | Partially Implemented |
+| SA-10 | Partially Implemented (already) | Partially Implemented |
+| SA-10(1) | Partially Implemented (reviewer proposal; not in plan §7.1) | Planned (rule 6: only fix-round and reviewer runs exercise it) |
+| SA-15 | Partially Implemented (already) | Partially Implemented |
+| SR-3 | Partially Implemented (already) | Partially Implemented |
+| SR-4 | Partially Implemented (already) | Partially Implemented |
+| CM-10 | Partially Implemented (already) | Partially Implemented |
+| CM-6 | Partially Implemented (library defaults; NIST-006) | Partially Implemented |
+| CA-5 | Partially Implemented (already) | Partially Implemented |
+| CM-3, CM-3(2) | Planned until a nightly run is recorded (rule 2) | Planned |
+| CM-7 | Planned | Planned |
+| SC-13 | Planned (Phase 2) | Planned |
 
 Phase 0 targets (the ceiling for this run; plan §7.1 as amended by the
 nist-800-53-reviewer findings NIST-003, NIST-004, NIST-006 and NIST-009):
@@ -152,13 +220,14 @@ Not claimed in Phase 0: AC-6 (CI-token least privilege is recorded as CM-6,
 SA-15 and SR-3 evidence, not as a TOE AC-6 implementation) and CA-2 as an
 independent assessment (agent reviews are SA-11 evidence).
 
-Every status above is a **component** status for the TAK-RS development
-environment. It is not a system-level determination; that is made for the
-system at the ATO boundary.
+Every status above is a **component** status: for the TAK-RS development
+environment, and for SC-5, SI-10, SI-10(3) and SI-11 also for the TOE library
+components `tak-proto` and `tak-cot`. It is not a system-level determination;
+that is made for the system at the ATO boundary.
 
 ## Family Coverage
 
-| Family | Origination | Phase 0 status | Phase 0 target | Reason / planned phase |
+| Family | Origination | Status (this revision) | Phase 0 target | Reason / planned phase |
 |--------|-------------|----------------|----------------|------------------------|
 | AC Access Control | System-specific | Planned | Planned | Phases 2–4 (`tak-auth`, route→role table, group isolation) |
 | AT Awareness and Training | Inherited (system level; provider TBD) | Not Applicable (component) | Not Applicable (component) | Organizational training; no product function (the DoD banner is AC-8) |
@@ -176,9 +245,9 @@ system at the ATO boundary.
 | PS Personnel Security | Inherited (system level; provider TBD) | Not Applicable (component) | Not Applicable (component) | Personnel screening by the organization |
 | PT Personally Identifiable Information Processing and Transparency | Hybrid | Planned | Planned | **Applicable:** TAK processes PII (user identities, callsigns, position tracks). Authority and purpose (PT-2, PT-3) are organizational; software support (retention, minimisation) in Phases 4–7 |
 | RA Risk Assessment | Hybrid | Planned | Partially Implemented (RA-5, RA-5(2)) | RA blocks below |
-| SA System and Services Acquisition | System-specific | Partially Implemented (SA-10, SA-11, SA-11(1), SA-15, SA-22) | Partially Implemented | Developer-side controls; SA blocks below |
-| SC System and Communications Protection | System-specific | Planned | Planned | Phases 2–3 (SC-8, SC-13, SC-23, SC-28) |
-| SI System and Information Integrity | Hybrid | Planned | Partially Implemented (SI-2, SI-2(2)) | SI-10 from Phase 1 (`tak-cot`) |
+| SA System and Services Acquisition | System-specific | Partially Implemented (SA-10, SA-11, SA-11(1), SA-11(8), SA-15, SA-22) | Partially Implemented | Developer-side controls; SA blocks below |
+| SC System and Communications Protection | System-specific | Partially Implemented (SC-5, TOE library component) | Planned (Phase 1a: SC-5 Partially Implemented) | SC-5 from Phase 1a; Phases 2–3 (SC-8, SC-13, SC-23, SC-28) |
+| SI System and Information Integrity | Hybrid | Partially Implemented (SI-10, SI-10(3), SI-11, TOE library component) | Partially Implemented (SI-2, SI-2(2)); Phase 1a: SI-10, SI-10(3), SI-11 | SI-10, SI-10(3), SI-11 from Phase 1a (`tak-proto`, `tak-cot`) |
 | SR Supply Chain Risk Management | Hybrid | Partially Implemented (SR-3, SR-4, SR-11) | Partially Implemented | SR blocks below |
 
 Coverage: 20 of 20 Rev 5 families have a section below.
@@ -188,7 +257,9 @@ Coverage: 20 of 20 Rev 5 families have a section below.
 Each detailed block uses the same fields, so the document converts cleanly to
 an OSCAL component definition later (see [OSCAL](#oscal)):
 Control, 800-53B baseline, Origination, Status, Phase 0 target, Scope,
-Implementation, Evidence, Gaps, POA&M, Phase, Annotation locations.
+Implementation, Evidence, Gaps, POA&M, Phase, Annotation locations. Blocks
+that Phase 1a touches also carry **Phase 1a target**; blocks added in Phase
+1a give "— (block added in Phase 1a)" as the Phase 0 target.
 
 Baseline column values: `L`, `M`, `H` for membership in the LOW, MODERATE and
 HIGH baselines; `—` means the control is not in any 800-53B security
@@ -201,7 +272,11 @@ exists but no recorded PASS exercises it. "NOT RUN (CI only)" means the
 evidence can come only from a GitHub run that has not happened. "PR 7 CI"
 evidence is the GitHub Actions run record in
 [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3 (rust-ci 40539495255 and rust-parity
-40539495328, 2026-10-27).
+40539495328, 2026-10-27). "Phase 1a QA" evidence is the local run recorded in
+[TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, "2026-10-28 Phase 1a QA" (macOS,
+uncommitted working tree before fix round 1). "Phase 1a fix round 1" and
+"fix round 2" are the fixers' runs and the reviewers' re-verification in the
+same section (rule 6).
 
 ---
 
@@ -285,13 +360,14 @@ developer evidence and its POA&M register (CA-5).
 | Origination | Hybrid |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (developer register and its checks; the organizational POA&M process and authorizing-official decisions are outside TAK-RS) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | TAK-RS keeps its POA&M register in [POAM.md](POAM.md): weakness, controls, proposed risk, mitigation, milestones, owner role, status and code locations. Every POA&M ID referenced under `rust/` or in `.github/workflows/rust-*.yml` must have a register entry (`scripts/check-poam-ids.sh`, run by `make policy`). Every advisory ignore must carry a POA&M ID and be identical in `deny.toml` and `.cargo/audit.toml` (`scripts/check-advisory-sync.sh`) |
-| Evidence | [POAM.md](POAM.md) (10 open entries, 0 closed). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make policy` PASS (`check-poam-ids`: 9 IDs referenced, 9 entries at that time); `make check-advisory-sync` PASS (2 IDs, each with a POA&M); `make policy-selftest` PASS (199 passed, 0 failed). PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `policy` job `check-poam-ids: ok (10 referenced ID(s), 10 entr(ies) in POAM.md)`; `supply-chain` job `check-advisory-sync: ok (2 ignored advisory ID(s), lists identical, each with a POA&M)` |
-| Gaps | Risk ratings are proposed, not confirmed by the ISSO. No entry is accepted by the authorizing official. POAM-2026-10-26-09 is accepted for development by the system owner (2026-10-27), pending AO review; it stays Open. The organizational POA&M process (PM-4) and the update frequency are Inherited, TBD (ATO boundary). Both checks ran in CI on PR 7; they are not yet a required check (POAM-2026-10-26-04) |
+| Implementation | TAK-RS keeps its POA&M register in [POAM.md](POAM.md): weakness, controls, proposed risk, mitigation, milestones, owner role, status and code locations. Every POA&M ID referenced under `rust/` or in `.github/workflows/rust-*.yml` must have a register entry (`scripts/check-poam-ids.sh`, run by `make policy`). Every advisory ignore must carry a POA&M ID and be identical in `deny.toml` and `.cargo/audit.toml` (`scripts/check-advisory-sync.sh`). Since Phase 1a fix round 2 (NIST-010), every `POAM:` marker comment must cite a `POAM-YYYY-MM-DD-NN` ID (`scripts/check-poam-markers.sh`). Since the Phase 1a WU10 follow-up it is in `POLICY_CHECKS` ([Makefile](../../Makefile) lines 26–28), so `make policy` runs it, as does `make check-annotations-strict` |
+| Evidence | Phase 1a: [POAM.md](POAM.md) now has 13 open entries, 0 closed (POAM-2026-10-27-01 to -03 added). Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make policy` PASS with `check-poam-ids` 10/10 and `check-advisory-sync` PASS. Phase 1a fix round 2 (release-engineer, rule 6): `make policy-selftest` 419 passed, 0 failed, including 17 `check-poam-markers` cases and a ratchet case that fails once the tree passes the rule but `POLICY_CHECKS` lacks it; `make check-poam-markers` exits 2 (script exit 1) on exactly the two bare markers, `crates/tak-cot/src/limits.rs:18` and `crates/tak-cot/src/xml/serialize.rs:45`, and 11 of the 13 markers it finds carry an ID. The security-reviewer and the nist-800-53-reviewer re-ran it with the same result. Phase 1a WU10 follow-up, 2026-10-28 (compliance-scribe's local runs after the orchestrator added the IDs, not QA evidence, rule 6): `make policy` exit 0 with `check-poam-markers: ok (15 marker(s), each with a POA&M ID)`, i.e. 15/15 (14 markers in code, CI and Dependabot files plus the `POAM-YYYY-MM-DD-NN` format example at `.cargo/audit.toml` line 21), and `check-poam-ids: ok (13 referenced ID(s), 13 entr(ies) in POAM.md)`; `make check-annotations-strict` exit 0. Phase 0: [POAM.md](POAM.md) (10 open entries, 0 closed). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make policy` PASS (`check-poam-ids`: 9 IDs referenced, 9 entries at that time); `make check-advisory-sync` PASS (2 IDs, each with a POA&M); `make policy-selftest` PASS (199 passed, 0 failed). PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `policy` job `check-poam-ids: ok (10 referenced ID(s), 10 entr(ies) in POAM.md)`; `supply-chain` job `check-advisory-sync: ok (2 ignored advisory ID(s), lists identical, each with a POA&M)` |
+| Gaps | Risk ratings are proposed, not confirmed by the ISSO. No entry is accepted by the authorizing official. POAM-2026-10-26-09 is accepted for development by the system owner (2026-10-27), pending AO review; it stays Open. The organizational POA&M process (PM-4) and the update frequency are Inherited, TBD (ATO boundary). Both checks ran in CI on PR 7; they are not yet a required check (POAM-2026-10-26-04). Phase 1a: `check-poam-markers` is now required through `make policy`, but no QA or CI run has exercised it (rule 7); only the fixers', reviewers' and compliance-scribe's local runs exist. It scans only `*.rs *.sh *.toml *.yml *.yaml Makefile` (NIST-013), so for example `parity/pins.env` and the POAM-2026-10-27-01 marker in `fuzz/native-allowlist.txt` are not checked; `check-poam-ids` still sees every referenced ID |
 | POA&M | — |
-| Phase | 0 |
-| Annotation locations | [scripts/check-poam-ids.sh](../../scripts/check-poam-ids.sh) and [scripts/check-advisory-sync.sh](../../scripts/check-advisory-sync.sh) header comments |
+| Phase | 0; 1a (`check-poam-markers`) |
+| Annotation locations | [scripts/check-poam-ids.sh](../../scripts/check-poam-ids.sh), [scripts/check-advisory-sync.sh](../../scripts/check-advisory-sync.sh) and [scripts/check-poam-markers.sh](../../scripts/check-poam-markers.sh) (line 26) header comments |
 
 ### CA-7 Continuous Monitoring
 
@@ -359,13 +435,14 @@ review records are its intended evidence, but no run has passed a gate yet.
 | Origination | Hybrid (repository administrator) |
 | Status | Planned |
 | Phase 0 target | Partially Implemented (ruleset not configured or verified; POAM-2026-10-26-04) |
+| Phase 1a target | Planned until a nightly run is recorded (rule 2) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | Pull-request workflow, `rust-ci-gate` required check, `/tak-rs-workflow` run records, `CHANGELOG.md`, [CONTRIBUTING.md](../../CONTRIBUTING.md) |
+| Implementation | Pull-request workflow, `rust-ci-gate` required check, `/tak-rs-workflow` run records, `CHANGELOG.md`, [CONTRIBUTING.md](../../CONTRIBUTING.md). Phase 1a: the `tak-proto` build script fails closed when the in-place schema set or any schema's content changes without a reviewed update of [crates/tak-proto/schema.sha256](../../crates/tak-proto/schema.sha256) (see SA-10(1)); the change detector runs the Rust jobs for `src/takserver-protobuf/` changes; `check-fuzz-policy.sh` rule F9 requires every `rust_inputs` prefix in `ci-changes.sh` to be in the `rust-fuzz.yml` pull-request paths |
 | Evidence | Present: [CONTRIBUTING.md](../../CONTRIBUTING.md), [CHANGELOG.md](../../CHANGELOG.md), [rust-ci.yml](../../../.github/workflows/rust-ci.yml). Local helpers pass (QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3)): `ci-changes.sh` allow-list and `ci-gate.sh` selftests within `make policy-selftest` (199/0); detector linear on every upstream merge (12335 paths in 0.06 s). PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `changes` gave `rust=true`; `rust-ci-gate` printed `ci-gate: PASS (rust=true)`. Earlier PR 7 heads `77beace3` and `0c56b62a` failed the `policy` job and `rust-ci-gate` went red (runs 40525846385, 40536002508) |
-| Gaps | `rust-ci-gate` ran (green on PR 7, red on two earlier heads) but is not a required check: PR 7 was merged with all checks green by the user's decision, with nothing enforcing it. No nightly run, so the status stays Planned (rule 2). No `src/**`-only PR has tested the `rust=false` path end to end. Branch ruleset (required check, required review, code-owner review) not configured; no `CODEOWNERS`; repository Actions policy allows any action and does not require SHA pinning (POAM-2026-10-26-04). QA-001 (change detector super-linear: 16 s on 170 paths, more than 300 s on 668) was found and fixed in this run; QA-002 and QA-006 showed that the line-based `check-workflows` rules could be bypassed (QA-002 fixed; QA-006 fixed in fix round 2 by parsing the YAML, verified at QA Round 2). Since fix round 2 the detector also runs the Rust jobs for `src/takserver-protobuf/` changes (SEC-008), so 9 of the 14 upstream merges would now run them (QA Round 2 confirmed 9 of 14, each explained by a `src/takserver-protobuf/` path). QA-008 (`..` segments after a covered prefix pass `check-src-coupling` rule (r)) was open at QA Round 2; fix round 3 addresses it, not QA-verified |
+| Gaps | `rust-ci-gate` ran (green on PR 7, red on two earlier heads) but is not a required check: PR 7 was merged with all checks green by the user's decision, with nothing enforcing it. No nightly run, so the status stays Planned (rule 2). No `src/**`-only PR has tested the `rust=false` path end to end. Branch ruleset (required check, required review, code-owner review) not configured; no `CODEOWNERS`; repository Actions policy allows any action and does not require SHA pinning (POAM-2026-10-26-04). QA-001 (change detector super-linear: 16 s on 170 paths, more than 300 s on 668) was found and fixed in this run; QA-002 and QA-006 showed that the line-based `check-workflows` rules could be bypassed (QA-002 fixed; QA-006 fixed in fix round 2 by parsing the YAML, verified at QA Round 2). Since fix round 2 the detector also runs the Rust jobs for `src/takserver-protobuf/` changes (SEC-008), so 9 of the 14 upstream merges would now run them (QA Round 2 confirmed 9 of 14, each explained by a `src/takserver-protobuf/` path). QA-008 (`..` segments after a covered prefix pass `check-src-coupling` rule (r)) was open at QA Round 2; fix round 3 addresses it, not QA-verified. Phase 1a: no CI run exists for this branch (rule 7), so neither the schema-change path nor F9 has run in CI; the schema digest check was exercised only by fix-round runs (rule 6); nothing after `04774cc0` is committed. No nightly corpus re-capture exists yet (WU7 NOT RUN) |
 | POA&M | POAM-2026-10-26-04 |
 | Phase | 0 |
-| Annotation locations | [scripts/ci-changes.sh](../../scripts/ci-changes.sh), [scripts/ci-gate.sh](../../scripts/ci-gate.sh), [scripts/check-src-coupling.sh](../../scripts/check-src-coupling.sh) (added in fix round 2), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [dependabot.yml](../../../.github/dependabot.yml) header comments |
+| Annotation locations | [scripts/ci-changes.sh](../../scripts/ci-changes.sh), [scripts/ci-gate.sh](../../scripts/ci-gate.sh), [scripts/check-src-coupling.sh](../../scripts/check-src-coupling.sh) (added in fix round 2), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [dependabot.yml](../../../.github/dependabot.yml) header comments; Phase 1a: [crates/tak-proto/build.rs](../../crates/tak-proto/build.rs) (line 50), [scripts/check-fuzz-policy.sh](../../scripts/check-fuzz-policy.sh) (line 48) |
 
 ### CM-3(2) Testing, Validation, and Documentation of Changes
 
@@ -376,10 +453,11 @@ review records are its intended evidence, but no run has passed a gate yet.
 | Origination | System-specific |
 | Status | Planned |
 | Phase 0 target | Partially Implemented (gate not yet required; POAM-2026-10-26-04) |
+| Phase 1a target | Planned until a nightly run is recorded (rule 2) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | CI gates before merge; run records (`plan.md`, `qa-report.md`, findings, `gate.md`) |
-| Evidence | Present: [rust-ci.yml](../../../.github/workflows/rust-ci.yml). First local run record: [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3. Pre-merge CI gates: PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): 13 of 13 jobs `success`, `ci-gate: PASS (rust=true)`; the two earlier failing heads were fixed before the merge |
-| Gaps | `rust-ci-gate` ran on PR 7 but is not a required check, so testing before merge is not enforced (POAM-2026-10-26-04). No nightly run, so the status stays Planned (rule 2). QA-001 (super-linear change detector) fixed in this run. QA-002 (job-level `continue-on-error` and permission escalation not caught) fixed; QA-006 (quoted or spaced keys bypass the same rules) fixed in fix round 2 and verified at QA Round 2 |
+| Implementation | CI gates before merge; run records (`plan.md`, `qa-report.md`, findings, `gate.md`). Phase 1a: `rust-fuzz.yml` runs on pull requests that touch `tak-cot`, `tak-proto`, the fuzz workspace or `src/takserver-protobuf/**` (the schemas `tak-proto` compiles in place; NIST-009), and `check-fuzz-policy.sh` F9 keeps that path list in step with the change detector (NIST-012) |
+| Evidence | Present: [rust-ci.yml](../../../.github/workflows/rust-ci.yml). First local run record: [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3. Pre-merge CI gates: PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): 13 of 13 jobs `success`, `ci-gate: PASS (rust=true)`; the two earlier failing heads were fixed before the merge. Phase 1a: present, not run in CI: [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) `pull_request.paths`; F9 has 9 self-test cases in `make policy-selftest` (419/0, fix round 2, release-engineer; rule 6) |
+| Gaps | `rust-ci-gate` ran on PR 7 but is not a required check, so testing before merge is not enforced (POAM-2026-10-26-04). No nightly run, so the status stays Planned (rule 2). QA-001 (super-linear change detector) fixed in this run. QA-002 (job-level `continue-on-error` and permission escalation not caught) fixed; QA-006 (quoted or spaced keys bypass the same rules) fixed in fix round 2 and verified at QA Round 2. Phase 1a: no CI run for this branch (rule 7); `rust-fuzz.yml` is never a required check; no nightly corpus re-capture |
 | POA&M | POAM-2026-10-26-04 |
 | Phase | 0 |
 | Annotation locations | [rust-ci.yml](../../../.github/workflows/rust-ci.yml) header comment |
@@ -410,13 +488,14 @@ review records are its intended evidence, but no run has passed a gate yet.
 | Origination | System-specific |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (no product configuration yet) |
-| Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | Workspace lints (`unsafe_code = "forbid"`, strict clippy); `.cargo/config.toml` build pins `AWS_LC_FIPS_SYS_USE_SYSTEM=0`, `GOTOOLCHAIN=local`, `GOPROXY=off` (all `force = true`); least-privilege CI token (`permissions: contents: read`) |
-| Evidence | [Cargo.toml](../../Cargo.toml) `[workspace.lints.rust]` (line 32; `unsafe_code = "forbid"` at line 35) and `[workspace.lints.clippy]` (line 42), [.cargo/config.toml](../../.cargo/config.toml), top-level `permissions: contents: read` in each `.github/workflows/rust-*.yml`. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make clippy` and `make clippy-wasm` PASS (0 warnings with `-D warnings`); `make policy` PASS (`check-manifests`: 2 members with `[lints] workspace = true`; `check-unsafe`: 0 uses); `grep -L 'contents: read'` over the three workflows prints nothing, so each contains `contents: read` (grep alone does not show the setting is top-level). QA Round 2, 2026-10-26, local (same section): the same gates PASS; `make policy` `check-workflows` ok on 3 parsed files, whose rule W3 requires top-level `permissions` to be exactly `contents: read` and rule W3b allows job-level `permissions` only absent or exactly `contents: read`; the QA-006 permission mutations (quoted key, spaced key, `write-all`, added `id-token: write`) each fail. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): the runner logged `GITHUB_TOKEN Permissions` as `Contents: read`, `Metadata: read` for all 13 `rust-ci` jobs and the `rust-parity` job |
-| Gaps | No product configuration settings yet (Phase 1 `tak-config`). The `.cargo/config.toml` FIPS build pins are inert until Phase 2, so no gate exercises them. The CI-token setting takes effect only in CI; it was observed in the PR 7 runs. At QA Round 1 the `check-workflows` permission rules were line-based and could be bypassed (QA-006); the parsed-YAML rules are verified at QA Round 2. Fix round 3 adds `checks: write`, `statuses: write` and `write-all` rejection in every workflow file (SEC-010); not QA-verified. The parity fixture containers do not set a read-only root filesystem and use non-UBI bases (open POA&M POAM-2026-10-26-03) |
+| Phase 1a target | Partially Implemented (library defaults; NIST-006) |
+| Scope | Development environment / CI; for the Phase 1a limits, TOE library component (`tak-cot`, `tak-proto`) |
+| Implementation | Workspace lints (`unsafe_code = "forbid"`, strict clippy); `.cargo/config.toml` build pins `AWS_LC_FIPS_SYS_USE_SYSTEM=0`, `GOTOOLCHAIN=local`, `GOPROXY=off` (all `force = true`); least-privilege CI token (`permissions: contents: read`). Phase 1a: secure library defaults for the input bounds, documented in rustdoc and the Phase 1a plan §3.4: `tak_cot::Limits::default()` (8 MiB input, depth 64, 100 000 nodes, 256 attributes and 32 namespace declarations per element, 1 024-byte names, 1 MiB attribute values, text bounded by the input, `xmlDetail` 8 MiB) and `tak_proto::MAX_MESSAGE_BYTES_DEFAULT` (8 MiB). Since fix round 1 the proto `xmlDetail` cap is exactly `max_xml_detail_bytes` (QA-002). They are library defaults only: no CoreConfig key, no operator setting and no ceiling until Phase 3 |
+| Evidence | [Cargo.toml](../../Cargo.toml) `[workspace.lints.rust]` (line 32; `unsafe_code = "forbid"` at line 35) and `[workspace.lints.clippy]` (line 42), [.cargo/config.toml](../../.cargo/config.toml), top-level `permissions: contents: read` in each `.github/workflows/rust-*.yml`. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make clippy` and `make clippy-wasm` PASS (0 warnings with `-D warnings`); `make policy` PASS (`check-manifests`: 2 members with `[lints] workspace = true`; `check-unsafe`: 0 uses); `grep -L 'contents: read'` over the three workflows prints nothing, so each contains `contents: read` (grep alone does not show the setting is top-level). QA Round 2, 2026-10-26, local (same section): the same gates PASS; `make policy` `check-workflows` ok on 3 parsed files, whose rule W3 requires top-level `permissions` to be exactly `contents: read` and rule W3b allows job-level `permissions` only absent or exactly `contents: read`; the QA-006 permission mutations (quoted key, spaced key, `write-all`, added `id-token: write`) each fail. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): the runner logged `GITHUB_TOKEN Permissions` as `Contents: read`, `Metadata: read` for all 13 `rust-ci` jobs and the `rust-parity` job. Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): every default limit accepted at its value and refused one past it with a typed code (QA §3 table); at QA time the effective `xmlDetail` cap was 8 MiB − 55 bytes (QA-002). Phase 1a fix round 1 (rule 6): `p2x_xml_detail_cap_is_exact_at_default_limits` and `p2x_xml_detail_cap_does_not_depend_on_max_input_bytes` in `crates/tak-cot/tests/qa_boundaries.rs` pass in `make test` 223/0; re-verified by the nist-800-53-reviewer (NIST-006) |
+| Gaps | No product configuration settings yet (CoreConfig model in Phase 1b `tak-config`). Phase 1a limits have no operator setting and no upper bound until Phase 3; the exact `xmlDetail` cap is not QA re-verified. The `.cargo/config.toml` FIPS build pins are inert until Phase 2, so no gate exercises them. The CI-token setting takes effect only in CI; it was observed in the PR 7 runs. At QA Round 1 the `check-workflows` permission rules were line-based and could be bypassed (QA-006); the parsed-YAML rules are verified at QA Round 2. Fix round 3 adds `checks: write`, `statuses: write` and `write-all` rejection in every workflow file (SEC-010); not QA-verified. The parity fixture containers do not set a read-only root filesystem and use non-UBI bases (open POA&M POAM-2026-10-26-03) |
 | POA&M | POAM-2026-10-26-03 (parity fixture containers) |
-| Phase | 0 (build settings); 1+ (product settings) |
-| Annotation locations | [.cargo/config.toml](../../.cargo/config.toml), [Cargo.toml](../../Cargo.toml), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-toolchain.sh](../../scripts/check-toolchain.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml) header comments |
+| Phase | 0 (build settings); 1a (library defaults); 1b (CoreConfig model); 3 (operator settings and ceilings) |
+| Annotation locations | [.cargo/config.toml](../../.cargo/config.toml), [Cargo.toml](../../Cargo.toml), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-toolchain.sh](../../scripts/check-toolchain.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml) header comments; Phase 1a: [crates/tak-cot/src/limits.rs](../../crates/tak-cot/src/limits.rs) (line 13) |
 
 ### CM-7 Least Functionality
 
@@ -427,13 +506,14 @@ review records are its intended evidence, but no run has passed a gate yet.
 | Origination | System-specific |
 | Status | Planned |
 | Phase 0 target | Planned |
+| Phase 1a target | Planned (plan §7.1: noted, not raised) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | None in Phase 0. Pre-mapped because rustls 0.23 `fips` also builds the non-FIPS `aws-lc-sys`, which would be linked but unused code |
-| Evidence | — |
-| Gaps | Linked-but-unused `aws-lc-sys` from Phase 2. Yew `csr` brings all of `gloo` (81 wasm32 crates), including `gloo-worker` and `gloo-file`, which create `blob:` URLs; nothing uses them today, and the Phase 4 plan keeps `blob:` out of the CSP (WEB-005) |
-| POA&M | POAM-2026-10-26-08 |
+| Implementation | None in Phase 0. Pre-mapped because rustls 0.23 `fips` also builds the non-FIPS `aws-lc-sys`, which would be linked but unused code. Phase 1a: the libFuzzer native code is confined to the excluded `rust/fuzz/` workspace (own lockfile, `deny.toml`, native allow-list), and `scripts/check-fuzz-policy.sh` (in `make policy`) fails if `libfuzzer-sys` or `cc` reaches the product graph; `tak-proto` generates message types only (no gRPC service stubs), and neither Phase 1a crate does I/O |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make policy` PASS including `check-fuzz-policy` (the product-graph exclusion); `make fuzz-deny` PASS (cargo-deny with `fuzz/deny.toml`, cargo audit on `fuzz/Cargo.lock`, native allow-list; it printed `libfuzzer-sys (native) allow-listed for aarch64-apple-darwin, not in graph`). Recorded as evidence only; the status stays at its target |
+| Gaps | Linked-but-unused `aws-lc-sys` from Phase 2. Yew `csr` brings all of `gloo` (81 wasm32 crates), including `gloo-worker` and `gloo-file`, which create `blob:` URLs; nothing uses them today, and the Phase 4 plan keeps `blob:` out of the CSP (WEB-005). Phase 1a: the development-only libFuzzer exception (open POA&M POAM-2026-10-27-01) |
+| POA&M | POAM-2026-10-26-08, POAM-2026-10-27-01 |
 | Phase | 2 |
-| Annotation locations | — (fix round 3 removed CM-7 from the [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh) header, which cites SR-3 and SA-15; NIST-019) |
+| Annotation locations | Phase 1a: [fuzz/Cargo.toml](../../fuzz/Cargo.toml) (line 13), [fuzz/deny.toml](../../fuzz/deny.toml) (line 18), [scripts/check-fuzz-policy.sh](../../scripts/check-fuzz-policy.sh) (line 48) header comments. Fix round 3 of Phase 0 removed CM-7 from the [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh) header, which cites SR-3 and SA-15 (NIST-019) |
 
 ### CM-8 System Component Inventory
 
@@ -461,13 +541,14 @@ review records are its intended evidence, but no run has passed a gate yet.
 | Origination | Hybrid |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (legal review POAM-2026-10-26-05) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | Apache-2.0 workspace licence; cargo-deny licence allow-list without copyleft (denied by absence); OpenSSL exception scoped to `aws-lc-fips-sys` with NOTICE attribution; provenance rule against the GPLv3 Java reference |
-| Evidence | [Cargo.toml](../../Cargo.toml) `license = "Apache-2.0"`, [LICENSE](../../LICENSE), [NOTICE](../../NOTICE), [deny.toml](../../deny.toml) `[licenses]`, [CONTRIBUTING.md](../../CONTRIBUTING.md) §Licence and §Provenance. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): member licence set is exactly `Apache-2.0` PASS; `LICENSE` is the Apache text, `NOTICE` has the OpenSSL attribution, CONTRIBUTING has §Provenance (PASS); no GPL, AGPL or MPL in the locked graph (PASS); `make deny` `licenses ok`; `make policy` `check-manifests` ok |
-| Gaps | Derivative-work and schema-reuse questions not reviewed by counsel; the provenance rule has not yet been exercised by a port |
+| Implementation | Apache-2.0 workspace licence; cargo-deny licence allow-list without copyleft (denied by absence); OpenSSL exception scoped to `aws-lc-fips-sys` with NOTICE attribution; provenance rule against the GPLv3 Java reference. Phase 1a: the `.proto` schemas are read in place from `src/` at build time and never copied into `rust/`; corpus inputs are synthetic and Apache-2.0 ([parity/corpus/MANIFEST.tsv](../../parity/corpus/MANIFEST.tsv) line 2); the corpus driver is Apache-2.0; the fuzz workspace allows the NCSA licence for `libfuzzer-sys` only |
+| Evidence | [Cargo.toml](../../Cargo.toml) `license = "Apache-2.0"`, [LICENSE](../../LICENSE), [NOTICE](../../NOTICE), [deny.toml](../../deny.toml) `[licenses]`, [CONTRIBUTING.md](../../CONTRIBUTING.md) §Licence and §Provenance. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): member licence set is exactly `Apache-2.0` PASS; `LICENSE` is the Apache text, `NOTICE` has the OpenSSL attribution, CONTRIBUTING has §Provenance (PASS); no GPL, AGPL or MPL in the locked graph (PASS); `make deny` `licenses ok`; `make policy` `check-manifests` ok. Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `licenses ok` on the Phase 1a graph; `make fuzz-deny` PASS; `git status --porcelain src/` empty (nothing in `src/` changed). The tak-protocol-reviewer found no Java comments, identifiers or structure carried over (provenance check, D11) |
+| Gaps | Derivative-work and schema-reuse questions not reviewed by counsel. Per decision Q9 (2026-10-27) Phase 1a merges without waiting for the opinion; the build-time schema read, the Java-generated goldens (none committed yet, WU7 NOT RUN) and the Apache-2.0 Java driver linked against the GPLv3 jars at capture time are added to POAM-2026-10-26-05's scope |
 | POA&M | POAM-2026-10-26-05 |
 | Phase | 0; legal opinion before the first release (Phase 3) |
-| Annotation locations | [Cargo.toml](../../Cargo.toml), [deny.toml](../../deny.toml), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [rust-supply-chain.yml](../../../.github/workflows/rust-supply-chain.yml) header comments |
+| Annotation locations | [Cargo.toml](../../Cargo.toml), [deny.toml](../../deny.toml), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [rust-supply-chain.yml](../../../.github/workflows/rust-supply-chain.yml) header comments; Phase 1a: [fuzz/deny.toml](../../fuzz/deny.toml) (line 18) |
 
 ### CM-14 Signed Components
 
@@ -695,7 +776,7 @@ organizational; per-run threat sketches in `plan.md` are SA-11(2) evidence.
 ## SA System and Services Acquisition
 
 Origination: System-specific (developer). Status: Partially Implemented
-(SA-10, SA-11, SA-11(1), SA-15, SA-22).
+(SA-10, SA-11, SA-11(1), SA-11(8), SA-15, SA-22). SA-10(1) is Planned.
 
 ### SA-3 System Development Life Cycle
 
@@ -740,13 +821,34 @@ Origination: System-specific (developer). Status: Partially Implemented
 | Origination | System-specific |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (change approval not enforced until POAM-2026-10-26-04 closes) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | git, `Cargo.lock`, `CHANGELOG.md`, Dependabot, SPDX header and provenance rules |
-| Evidence | [Cargo.lock](../../Cargo.lock), [CHANGELOG.md](../../CHANGELOG.md), [CONTRIBUTING.md](../../CONTRIBUTING.md), [POAM.md](POAM.md) (flaw tracking). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `cargo metadata --locked` PASS and every `make` cargo target runs `--locked`; `make policy` PASS (`check-annotations` SPDX rule (c) and mapping-block rules ok); `make deny` `sources ok`. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): the cargo jobs ran `--locked`; `make policy` (SPDX and mapping-block rules) and `make deny` (`sources ok`) PASS |
-| Gaps | Change approval not enforced by a ruleset (POAM-2026-10-26-04): PR 7 was merged to `main` as `9f754245` with green checks but no required check or review. Dependabot has not run |
+| Implementation | git, `Cargo.lock`, `CHANGELOG.md`, Dependabot, SPDX header and provenance rules. Phase 1a: the schema digest manifest [crates/tak-proto/schema.sha256](../../crates/tak-proto/schema.sha256), checked fail-closed by the `tak-proto` build script (SA-10(1)); corpus inputs under version control with one [MANIFEST.tsv](../../parity/corpus/MANIFEST.tsv) row per (id, direction); a separate lockfile for the fuzz workspace ([fuzz/Cargo.lock](../../fuzz/Cargo.lock)) |
+| Evidence | [Cargo.lock](../../Cargo.lock), [CHANGELOG.md](../../CHANGELOG.md), [CONTRIBUTING.md](../../CONTRIBUTING.md), [POAM.md](POAM.md) (flaw tracking). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `cargo metadata --locked` PASS and every `make` cargo target runs `--locked`; `make policy` PASS (`check-annotations` SPDX rule (c) and mapping-block rules ok); `make deny` `sources ok`. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): the cargo jobs ran `--locked`; `make policy` (SPDX and mapping-block rules) and `make deny` (`sources ok`) PASS. Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `sources ok`; `make policy` PASS (SPDX rule, mapping-block rules, 50 blocks); no generated code committed (`git ls-files rust \| grep -E 'tak_proto_includes\|atakmap\.commoncommo'` empty) |
+| Gaps | Change approval not enforced by a ruleset (POAM-2026-10-26-04): PR 7 was merged to `main` as `9f754245` with green checks but no required check or review. Dependabot has not run. Phase 1a: nothing after `04774cc0` is committed (commit signing temporarily unavailable), so the WU3–WU5 and WU9 work, both fix rounds and `schema.sha256` exist only in the working tree; `schema.sha256` must be committed together with `build.rs`. No goldens and no `PROVENANCE.json` exist yet (WU7 NOT RUN) |
 | POA&M | POAM-2026-10-26-04 |
 | Phase | 0 |
 | Annotation locations | [deny.toml](../../deny.toml), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml) header comments |
+
+### SA-10(1) Software and Firmware Integrity Verification
+
+New in Phase 1a.
+
+| Field | Value |
+|-------|-------|
+| Control | SA-10(1) Software and Firmware Integrity Verification |
+| 800-53B baseline | — |
+| Origination | System-specific |
+| Status | Planned |
+| Phase 0 target | — (block added in Phase 1a) |
+| Phase 1a target | Partially Implemented (nist-800-53-reviewer proposal, fix round 2; not in plan §7.1) |
+| Scope | Build host (developer configuration management), outside the TOE |
+| Implementation | The `tak-proto` build script checks the 15 `.proto` schemas it compiles in place from `src/takserver-protobuf/` against the committed manifest [crates/tak-proto/schema.sha256](../../crates/tak-proto/schema.sha256) before compiling them. The build fails if the manifest is unreadable or malformed, if it does not list exactly the build script's `SCHEMAS`, or if any SHA-256 digest differs (with a CRLF hint when the file has CRLF line endings). It also fails if any file in the compiled descriptor set is neither in `SCHEMAS` nor one of the 12 bundled `google/protobuf/*.proto` names, or if a local file shadows a bundled one. The schema directory scan is recursive, matches the extension case-insensitively, does not follow symlinks and fails closed past depth 8. SHA-256 is written in the build script (FIPS 180-4) and self-tested against the standard's test vectors before use. It is a change detector over files already in the repository, unkeyed and linked into no artifact: not an SC-13 cryptographic function and not an SI-7 mechanism (CRY-001; [FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md)) |
+| Evidence | Phase 1a fix round 1 (rust-coder, rule 6): a tampered digest and a truncated manifest each fail the build (exit 101) with the expected message; manifest restored. Phase 1a fix round 2 (rust-coder, scratch copy outside the repository, rule 6): cases A to F, each with the manifest digest recomputed so only the new check could fire: nested import in a real subdirectory, the same through a symlink, a well-known import shadowed by a symlinked local file, CRLF checkout and an `EXTRA.PROTO` file each exit 101 with the expected message; a bundled well-known import exits 0. crypto-tls-reviewer: in its first review (`findings-crypto.md`) `shasum` of the 15 schemas equals `schema.sha256` and a differential test against Python `hashlib` matched on 1102 of 1102 inputs; in its re-verification (`findings-crypto-round2.md`) `cargo build -p tak-proto --offline` exit 0. None of these is a QA or CI run |
+| Gaps | No QA run and no CI run has exercised the check (rules 6 and 7); the Phase 1a QA gates ran before it existed. The manifest is protected only by review: whoever can change a schema can change the manifest, and change approval is not enforced (POAM-2026-10-26-04). No signature. The build-script checks are proven by one manual scratch run only (CRY-004). `schema.sha256` is untracked until committed with `build.rs`. If the check is ever relied on against a malicious upstream, or reused in product code, it moves to the aws-lc-rs FIPS provider |
+| POA&M | POAM-2026-10-26-04 |
+| Phase | 1a |
+| Annotation locations | [crates/tak-proto/build.rs](../../crates/tak-proto/build.rs) (line 50) |
 
 ### SA-11 Developer Testing and Evaluation
 
@@ -757,13 +859,14 @@ Origination: System-specific (developer). Status: Partially Implemented
 | Origination | System-specific |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented |
+| Phase 1a target | Partially Implemented (already; evidence added) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | CI `fmt`, `clippy` (native and wasm32), `test`, `doc`; policy self-tests; parity harness v0 running TAKCL `StartupTests` against the Java reference |
-| Evidence | [Makefile](../../Makefile), `rust/scripts/`, [parity/harness.sh](../../parity/harness.sh). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 5 passed, 0 failed; `make test-doc` 2 passed; `make fmt-check`, `make clippy`, `make clippy-wasm`, `make build-wasm`, `make doc` PASS; `make policy-selftest` 199 passed, 0 failed; `parity/harness.sh selftest` 39 passed, 0 failed; harness integrity negative (wrong wrapper-jar pin) exits 4 before any engine step. QA Round 2, 2026-10-26, local (same section): the same gates PASS with the same test counts; `make policy-selftest` 269/0 before and 281/0 after 12 QA cases; harness selftest 44/0. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 5 passed, 0 failed; doc tests 2 passed; `fmt`, `lint (native)`, `lint (wasm32)`, `doc` PASS; `make policy-selftest` 331 passed, 0 failed; `ci-gate: PASS (rust=true)`. [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328): harness selftest 44/0; TAKCL `StartupTests` against the Java reference PASS (`verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`) |
-| Gaps | QA-007 (rule (d) of `check-annotations.sh` treated every `Not Applicable (component)` row as mapped) was open at QA Round 2; fix round 3 addresses it, not QA-verified (its self-tests pass in PR 7 CI). TAKCL `StartupTests` against the Java reference ran once (PR 7); it is a Java baseline, not a comparison. No nightly run yet. No wasm runtime tests, and CI builds wasm32 in dev mode only with no bundle-size baseline; the Phase 4 plan adds a headless `wasm-bindgen-test` job, a release wasm build with `--all-features` and a size report (WEB-003, WEB-006). TAKCL cannot yet target the Rust server (POAM-2026-10-26-06) |
+| Implementation | CI `fmt`, `clippy` (native and wasm32), `test`, `doc`; policy self-tests; parity harness v0 running TAKCL `StartupTests` against the Java reference. Phase 1a: unit, negative, property (proptest, fixed seeds) and integration tests for `tak-proto` and `tak-cot`; golden-corpus inputs and an Apache-2.0 Java capture driver (`harness.sh capture-corpus`, `verify-corpus`, `import-corpus`); the golden test itself (WU8) is not written yet |
+| Evidence | [Makefile](../../Makefile), `rust/scripts/`, [parity/harness.sh](../../parity/harness.sh). QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 5 passed, 0 failed; `make test-doc` 2 passed; `make fmt-check`, `make clippy`, `make clippy-wasm`, `make build-wasm`, `make doc` PASS; `make policy-selftest` 199 passed, 0 failed; `parity/harness.sh selftest` 39 passed, 0 failed; harness integrity negative (wrong wrapper-jar pin) exits 4 before any engine step. QA Round 2, 2026-10-26, local (same section): the same gates PASS with the same test counts; `make policy-selftest` 269/0 before and 281/0 after 12 QA cases; harness selftest 44/0. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 5 passed, 0 failed; doc tests 2 passed; `fmt`, `lint (native)`, `lint (wasm32)`, `doc` PASS; `make policy-selftest` 331 passed, 0 failed; `ci-gate: PASS (rust=true)`. [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328): harness selftest 44/0; TAKCL `StartupTests` against the Java reference PASS (`verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`). Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 220 passed, 0 failed, 0 ignored in 19 test binaries (198 before 22 QA tests were added; property tests 512 fixed-seed cases each); `make test-doc` 2 passed; `make fmt-check`, `make clippy`, `make clippy-wasm`, `make build-wasm` (now including `tak-proto` and `tak-cot`), `make doc` PASS; `make policy-selftest` 381 passed, 0 failed; `parity/harness.sh selftest` 97 passed, 0 failed; shellcheck on 15 files PASS. Phase 1a fix round 1 (rule 6): `make test` 223 passed, 0 failed, 0 ignored; `make policy-selftest` 392/0. Phase 1a fix round 2 (rule 6): `make test` exit 0 (count not reported); `make policy-selftest` 419/0 |
+| Gaps | Phase 1a: the golden parity tests, which are the Phase 1a exit criterion, are NOT RUN: GitHub Actions is disabled, so the corpus capture (WU7) could not run and the golden test (WU8) was not written (rule 7). No CI run exists for this branch. No performance regression guard: tests cannot time themselves (`Instant::now` is banned for wasm32) and fuzzing stops at 64 KiB (QA-004). QA-007 (rule (d) of `check-annotations.sh` treated every `Not Applicable (component)` row as mapped) was open at QA Round 2; fix round 3 addresses it, not QA-verified (its self-tests pass in PR 7 CI). TAKCL `StartupTests` against the Java reference ran once (PR 7); it is a Java baseline, not a comparison. No nightly run yet. No wasm runtime tests, and CI builds wasm32 in dev mode only with no bundle-size baseline; the Phase 4 plan adds a headless `wasm-bindgen-test` job, a release wasm build with `--all-features` and a size report (WEB-003, WEB-006). TAKCL cannot yet target the Rust server (POAM-2026-10-26-06) |
 | POA&M | POAM-2026-10-26-06 |
 | Phase | 0 |
-| Annotation locations | [Makefile](../../Makefile), [scripts/check-unsafe.sh](../../scripts/check-unsafe.sh), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [scripts/ci-changes.sh](../../scripts/ci-changes.sh), [scripts/ci-gate.sh](../../scripts/ci-gate.sh), [scripts/check-src-coupling.sh](../../scripts/check-src-coupling.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml) header comments |
+| Annotation locations | [Makefile](../../Makefile), [scripts/check-unsafe.sh](../../scripts/check-unsafe.sh), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [scripts/ci-changes.sh](../../scripts/ci-changes.sh), [scripts/ci-gate.sh](../../scripts/ci-gate.sh), [scripts/check-src-coupling.sh](../../scripts/check-src-coupling.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml) header comments; Phase 1a: [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) (line 33) |
 
 ### SA-11(1) Static Code Analysis
 
@@ -806,15 +909,16 @@ Origination: System-specific (developer). Status: Partially Implemented
 | Control | SA-11(8) Dynamic Code Analysis |
 | 800-53B baseline | — |
 | Origination | System-specific |
-| Status | Planned |
+| Status | Partially Implemented |
 | Phase 0 target | Planned (fuzzing, Phase 1) |
-| Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | None; `rust/fuzz/` arrives with `tak-cot` |
-| Evidence | — |
-| Gaps | No parsers yet |
-| POA&M | — |
-| Phase | 1 |
-| Annotation locations | — |
+| Phase 1a target | Partially Implemented after a recorded fuzz run |
+| Scope | Development environment (the excluded `rust/fuzz/` workspace), exercising the TOE library components `tak-proto` and `tak-cot` |
+| Implementation | Seven cargo-fuzz (libFuzzer) targets: `cot_parse`, `cot_to_proto`, `proto_decode`, `proto_to_cot`, `proto_roundtrip`, `stream_frame`, `javafmt`. They live in the excluded `rust/fuzz/` workspace (own `Cargo.lock`, `deny.toml`, native allow-list, toolchain pinned to `nightly-2026-10-23`) and run under AddressSanitizer with debug assertions, `-timeout=1`, `-rss_limit_mb=2048` and `-max_len=65536`, seeded from the corpus inputs (`scripts/fuzz-seeds.sh`). [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) runs them for 60 s on pull requests, 600 s nightly, and for the `max_total_time` input (default 300 s) on dispatch; it is never a required check. Property tests (proptest, 512 fixed-seed cases each) run in `make test` |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, "Fuzz runs"): `make fuzz-build` PASS (7 binaries); `make fuzz-seeds` PASS; each target ran 300 s from 2026-10-28T06:11:01Z, all seven exit 0 with 0 crashes, 0 timeouts and 0 OOMs, and `fuzz/artifacts/` stayed empty; 125 419 498 executions in total; peak RSS 557 to 818 MB against the 2048 MB limit. `make fuzz-deny`, fuzz `cargo fmt --check` and `cargo clippy -D warnings` PASS. Phase 1a fix round 1 (release-engineer, rule 6): two concurrent `make fuzz-run` calls (20 s each) exit 0 and each regenerated only its own seeds (QA-003 fix) |
+| Gaps | No CI or nightly fuzz run is recorded: GitHub Actions is disabled (rules 2 and 7). Inputs are capped at 64 KiB, so size-dependent cost is not explored; QA-001 was missed this way (QA-004). libFuzzer is C++ built by `libfuzzer-sys`, a development-only native-code exception (open POA&M POAM-2026-10-27-01). `cargo-fuzz`'s own dependency graph is installed with `--locked` but not checked by cargo-deny. Fuzzing finds crashes, not differences from the Java reference |
+| POA&M | POAM-2026-10-27-01 |
+| Phase | 1a |
+| Annotation locations | The seven targets under [fuzz/fuzz_targets/](../../fuzz/fuzz_targets/) (`cot_parse.rs`, `proto_decode.rs`, `proto_roundtrip.rs`, `proto_to_cot.rs` line 14; `cot_to_proto.rs` line 16; `javafmt.rs` line 18; `stream_frame.rs` line 19); [fuzz/Cargo.toml](../../fuzz/Cargo.toml) (line 13); [fuzz/deny.toml](../../fuzz/deny.toml) (line 18); [scripts/fuzz-seeds.sh](../../scripts/fuzz-seeds.sh) (line 33); [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) (line 33) |
 
 ### SA-15 Development Process, Standards, and Tools
 
@@ -825,13 +929,14 @@ Origination: System-specific (developer). Status: Partially Implemented
 | Origination | System-specific |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (SA-15b review cadence is organization-defined, TBD) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | Pinned toolchain, `Makefile` as the single entry point (CI runs the same targets), lint policy, checksum-verified CI tools (`taiki-e/install-action`, `fallback: none`), least-privilege CI token, [CONTRIBUTING.md](../../CONTRIBUTING.md) |
-| Evidence | [rust-toolchain.toml](../../rust-toolchain.toml), [Cargo.toml](../../Cargo.toml), [rustfmt.toml](../../rustfmt.toml), [clippy.toml](../../clippy.toml), [Makefile](../../Makefile), [CONTRIBUTING.md](../../CONTRIBUTING.md); tool pins in [ATO_EVIDENCE.md](ATO_EVIDENCE.md) §Pin inventory. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): toolchain 1.99.1 from the pin; every gate ran through its `make` target; `make fmt-check`, `make clippy`, `make policy` PASS. Checksum-verified tool installation in PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `taiki-e/install-action` logged "verifying sha256 checksum" for zizmor, shellcheck, cargo-cyclonedx, cargo-deny and cargo-audit; the actionlint tarball passed `sha256sum --check --strict` ("OK"); every job's token was `Contents: read`, `Metadata: read` |
-| Gaps | SA-15b review cadence not defined |
+| Implementation | Pinned toolchain, `Makefile` as the single entry point (CI runs the same targets), lint policy, checksum-verified CI tools (`taiki-e/install-action`, `fallback: none`), least-privilege CI token, [CONTRIBUTING.md](../../CONTRIBUTING.md). Phase 1a: pure-Rust schema compilation (`protox` + `prost-build`, no `protoc`); a separate fuzz workspace with a pinned dated nightly and `cargo-fuzz` 0.13.2; the POA&M-marker rule (`check-poam-markers.sh`) |
+| Evidence | [rust-toolchain.toml](../../rust-toolchain.toml), [Cargo.toml](../../Cargo.toml), [rustfmt.toml](../../rustfmt.toml), [clippy.toml](../../clippy.toml), [Makefile](../../Makefile), [CONTRIBUTING.md](../../CONTRIBUTING.md); tool pins in [ATO_EVIDENCE.md](ATO_EVIDENCE.md) §Pin inventory. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): toolchain 1.99.1 from the pin; every gate ran through its `make` target; `make fmt-check`, `make clippy`, `make policy` PASS. Checksum-verified tool installation in PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `taiki-e/install-action` logged "verifying sha256 checksum" for zizmor, shellcheck, cargo-cyclonedx, cargo-deny and cargo-audit; the actionlint tarball passed `sha256sum --check --strict` ("OK"); every job's token was `Contents: read`, `Metadata: read`. Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): toolchain 1.99.1 for the product, `nightly-2026-10-23` (rustc 1.101.0-nightly) and cargo-fuzz 0.13.2 for the fuzz workspace; every gate ran through its `make` target; `make policy` PASS including `check-toolchain` and `check-fuzz-policy` |
+| Gaps | SA-15b review cadence not defined. Phase 1a: the fuzz toolchain is a nightly (dated and pinned, but not a stable release); its pins are in [ATO_EVIDENCE.md](ATO_EVIDENCE.md) §Pin inventory |
 | POA&M | — |
 | Phase | 0 |
-| Annotation locations | [rust-toolchain.toml](../../rust-toolchain.toml), [Cargo.toml](../../Cargo.toml), [Makefile](../../Makefile), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh), [scripts/check-toolchain.sh](../../scripts/check-toolchain.sh), [scripts/check-unsafe.sh](../../scripts/check-unsafe.sh), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml) header comments |
+| Annotation locations | [rust-toolchain.toml](../../rust-toolchain.toml), [Cargo.toml](../../Cargo.toml), [Makefile](../../Makefile), [scripts/check-annotations.sh](../../scripts/check-annotations.sh), [scripts/check-manifests.sh](../../scripts/check-manifests.sh), [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh), [scripts/check-toolchain.sh](../../scripts/check-toolchain.sh), [scripts/check-unsafe.sh](../../scripts/check-unsafe.sh), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml) header comments; Phase 1a: [crates/tak-proto/build.rs](../../crates/tak-proto/build.rs) (line 50), [fuzz/Cargo.toml](../../fuzz/Cargo.toml) (line 13), [fuzz/deny.toml](../../fuzz/deny.toml) (line 18), [scripts/check-fuzz-policy.sh](../../scripts/check-fuzz-policy.sh) (line 48), [scripts/fuzz-seeds.sh](../../scripts/fuzz-seeds.sh) (line 33), [scripts/check-poam-markers.sh](../../scripts/check-poam-markers.sh) (line 26) |
 
 ### SA-15(7) Automated Vulnerability Analysis
 
@@ -924,8 +1029,9 @@ New in Release 5.2.0.
 
 ## SC System and Communications Protection
 
-Origination: System-specific. Status: Planned. Phase 0 contains no crypto code
-and no crypto dependency.
+Origination: System-specific. Status: Partially Implemented (SC-5 only, TOE
+library component); the rest Planned. Phase 0 and Phase 1a contain no crypto
+code in the product and no crypto dependency.
 
 | Control | Baseline | Origination | Status | Phase | Note |
 |---------|----------|-------------|--------|-------|------|
@@ -934,6 +1040,26 @@ and no crypto dependency.
 | SC-17 Public Key Infrastructure Certificates | M H | Hybrid | Planned | 2, 4 | Certificate validation and CRL in `tak-auth` (Phase 2); TAK CA operations (Phase 4); the issuing PKI is organizational |
 | SC-23 Session Authenticity | M H | System-specific | Planned | 4 | Admin sessions |
 | SC-28 Protection of Information at Rest | M H | Hybrid | Planned | 2 | Keystores and secrets; disk encryption organizational |
+
+### SC-5 Denial-of-service Protection
+
+New in Phase 1a.
+
+| Field | Value |
+|-------|-------|
+| Control | SC-5 Denial-of-service Protection |
+| 800-53B baseline | L M H |
+| Origination | Hybrid (per-message resource bounds are TAK-RS; network-level and boundary protection is the hosting organization's, Inherited, TBD (ATO boundary)) |
+| Status | Partially Implemented |
+| Phase 0 target | — (block added in Phase 1a) |
+| Phase 1a target | Partially Implemented (component; rate limiting Phase 3/7) |
+| Scope | TOE library component (`tak-proto`, `tak-cot`); no network wiring until Phase 3 |
+| Implementation | Every message is bounded before it can cost memory or CPU, and a breach fails closed with a typed error. `tak_cot::Limits` defaults (CM-6) are checked by the streaming parser as it reads: 8 MiB input, depth 64, 100 000 nodes, 256 attributes and 32 namespace declarations per element, 1 024-byte names, 1 MiB attribute values, text bounded by the input. A proto `xmlDetail` longer than 8 MiB is refused before parsing, and its parsed copy counts against the event's depth and node limits. `tak_proto` refuses a TakMessage or stream frame over `MAX_MESSAGE_BYTES_DEFAULT` (8 MiB); the frame length is checked before the payload arrives, and the varint length prefix is limited to 5 bytes and the u32 range. prost's recursion limit (100) bounds nested groups. Parsing, copying and serializing use no recursion. CPU: since fix round 1 the proto-to-XML `xmlDetail` merge is linear in the element count (`merge_xml_detail` with one queue per typed name; QA-001, SEC-001, NIST-001), and `merge_xml_detail` drops its intermediate copies early (SEC-002). The X2P `xmlDetail` output is capped (`write_subtree_bounded`) |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): every limit accepted at its value and refused one past it with a typed code (`crates/tak-cot/tests/xml_limits.rs`, `qa_boundaries.rs`, `crates/tak-proto/tests/decode_hostile.rs`, `framing.rs` unit tests, `schema.rs`), in `make test` 220/0; a million-deep XML document, `xmlDetail` and protobuf group nesting are each refused without stack overflow; fuzz 7 × 300 s with 0 crashes, timeouts or OOMs and peak RSS 557 to 818 MB of the 2048 MB limit. CPU bound, Phase 1a fix round 1 (rust-coder, rule 6): `convert::tests::xml_detail_merge_is_linear_in_the_element_count` ([crates/tak-cot/src/convert.rs](../../crates/tak-cot/src/convert.rs) line 701) asserts at most 8·n child steps at n = 1 000 and 4 000 through a test-only step counter, and fails (1 002 999 steps at n = 1 000) with the old scan restored; the QA reproducer (49 000 non-typed then 49 000 `contact` elements, 686 000 bytes) took 4.31 s before and 15.0 ms after in a release build; `make test` 223/0. Re-verified by the nist-800-53-reviewer (NIST-001), the security-reviewer (SEC-001) and the tak-protocol-reviewer (output unchanged, 20 000-case differential test). Not re-run by QA |
+| Gaps | No rate limiting or connection limits until Phase 3 (connections) and Phase 7 (QoS). No process-wide memory budget: one conversion can hold about 23 times its input (measured 193.6 MB through `from_tak_message`), and nothing caps the conversions in flight (open POA&M POAM-2026-10-27-02). `write_document` and `write_subtree` output is unbounded, and namespace re-declaration in fragments amplifies it (open POA&M POAM-2026-10-27-03). The limits have no ceiling and no operator setting until Phase 3 (CM-6). Fuzzing is capped at 64 KiB and tests cannot time themselves, so a new size-dependent CPU path would go unnoticed (QA-004). The CPU fix is not QA re-verified (rule 6). Network-level denial-of-service protection is the hosting organization's |
+| POA&M | POAM-2026-10-27-02, POAM-2026-10-27-03 |
+| Phase | 1a (per-message bounds); 3 (ingest budget, connection limits); 7 (QoS and rate limiting) |
+| Annotation locations | [crates/tak-cot/src/lib.rs](../../crates/tak-cot/src/lib.rs) (line 23), [limits.rs](../../crates/tak-cot/src/limits.rs) (13), [event.rs](../../crates/tak-cot/src/event.rs) (16), [convert.rs](../../crates/tak-cot/src/convert.rs) (21, 216, 364, 572), [xml/mod.rs](../../crates/tak-cot/src/xml/mod.rs) (20), [xml/parse.rs](../../crates/tak-cot/src/xml/parse.rs) (23), [xml/document.rs](../../crates/tak-cot/src/xml/document.rs) (15), [xml/scope.rs](../../crates/tak-cot/src/xml/scope.rs) (17), [xml/serialize.rs](../../crates/tak-cot/src/xml/serialize.rs) (80, `write_subtree_bounded` only); [crates/tak-proto/src/lib.rs](../../crates/tak-proto/src/lib.rs) (22, 87), [framing.rs](../../crates/tak-proto/src/framing.rs) (18, 98): 16 sites. The fuzz targets do not cite SC-5; fuzzing is evidence here |
 
 ### SC-13 Cryptographic Protection
 
@@ -947,19 +1073,16 @@ and no crypto dependency.
 | Scope | Development environment / CI; no TOE runtime yet |
 | Implementation | None. Pre-positioned: `.cargo/config.toml` forces the bundled FIPS module (`AWS_LC_FIPS_SYS_USE_SYSTEM=0`); `deny.toml` limits native code to the AWS-LC family |
 | Evidence | Present, inert until Phase 2: [.cargo/config.toml](../../.cargo/config.toml) (no crate depends on `aws-lc-rs`, so no gate exercises these settings) |
-| Gaps | No crypto in Phase 0; rustls `fips` also builds non-FIPS `aws-lc-sys`; the FIPS graph will fail `[bans.build]` on two `libloading` test DLLs until Phase 2 adds a checksum-pinned bypass ([FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md) §Known issues, QA-004) |
+| Gaps | No crypto in Phase 0 or in the Phase 1a crates. The SHA-256 in the `tak-proto` build script is a build-host change detector (SA-10(1)), not an SC-13 function (CRY-001; [FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md)). rustls `fips` also builds non-FIPS `aws-lc-sys`; the FIPS graph will fail `[bans.build]` on two `libloading` test DLLs until Phase 2 adds a checksum-pinned bypass ([FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md) §Known issues, QA-004) |
 | POA&M | POAM-2026-10-26-08 |
 | Phase | 2 (`tak-crypto`) |
 | Annotation locations | [.cargo/config.toml](../../.cargo/config.toml) header comment (pre-positioned settings; the file says they are inert until Phase 2) |
 
 ## SI System and Information Integrity
 
-Origination: Hybrid. Status: Planned.
-
-| Control | Baseline | Origination | Status | Phase | Note |
-|---------|----------|-------------|--------|-------|------|
-| SI-10 Information Input Validation | M H | System-specific | Planned | 1 | `tak-cot` parser with size and depth limits, and fuzzing |
-| SI-11 Error Handling | M H | System-specific | Planned | 3–4 | No internal detail in client-facing errors (streaming inputs, REST API); details only in logs |
+Origination: Hybrid. Status: Partially Implemented (SI-10, SI-10(3) and
+SI-11, TOE library component); the rest Planned. SI-10 and SI-11 were table
+rows until Phase 1a and are now blocks below.
 
 ### SI-2 Flaw Remediation
 
@@ -1024,7 +1147,7 @@ New in Release 5.2.0.
 | Status | Planned |
 | Phase 0 target | Planned (Phase 9) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | None for the TOE. CI-tool integrity (checksums, SHA pins) is mapped to SR-11 and SA-15, not to TOE SI-7 |
+| Implementation | None for the TOE. CI-tool integrity (checksums, SHA pins) is mapped to SR-11 and SA-15, not to TOE SI-7. The Phase 1a schema digest in the `tak-proto` build script is SA-10(1) (build host), not SI-7 |
 | Evidence | — |
 | Gaps | No integrity verification of shipped software |
 | POA&M | — |
@@ -1067,6 +1190,66 @@ Revised in Release 5.2.0.
 | Phase | 9 |
 | Annotation locations | — |
 
+### SI-10 Information Input Validation
+
+Row until Phase 1a; block since Phase 1a.
+
+| Field | Value |
+|-------|-------|
+| Control | SI-10 Information Input Validation |
+| 800-53B baseline | M H |
+| Origination | System-specific |
+| Status | Partially Implemented |
+| Phase 0 target | Planned (Phase 1) |
+| Phase 1a target | Partially Implemented (library; network wiring Phase 3) |
+| Scope | TOE library component (`tak-proto`, `tak-cot`); no network wiring until Phase 3 |
+| Implementation | `tak-cot` bounded streaming XML parser: DOCTYPE refused, so no DTD, no external entities and no entity expansion; only the predefined entities and character references; XML 1.0 `Char` and `Name` checks; namespace well-formedness (an undeclared prefix is refused); duplicate attributes, mismatched end tags, multiple roots and text after the root refused; `version="1.1"` refused (DEV-01b); the SC-5 limits. A proto `xmlDetail` is parsed again under the same rules inside a `<detail>` wrapper, so a stray `</detail>` or a second root cannot break out, and its copy counts against the event's limits. `tak-proto`: size cap before decoding, proto3 UTF-8 check on every `string` field, a known field with the wrong wire type refused (DEV-04), stream-frame magic, varint and length checked before the payload, mesh version check. `javafmt`: the Java grammars for numbers and CoT times. The serializer has a supporting role: its output is well-formed and every value is escaped, so nothing a sender wrote can break out of its element at a receiver |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make test` 220 passed, 0 failed, including `crates/tak-cot/tests/xml_wellformed.rs`, `xml_limits.rs`, `xml_props.rs`, `convert.rs`, `convert_props.rs`, `javafmt.rs`, `qa_boundaries.rs` (11 tests, among them `p2x_xml_detail_hostile_constructs_rejected`: billion laughs and a SYSTEM entity, an undefined entity, a `</detail><event/><detail>` break-out, a stray `</detail>`, an inner XML declaration, control characters, `&#0;`, duplicate attributes and undeclared prefixes inside `xmlDetail`, each refused with its own code) and `crates/tak-proto/tests/decode_hostile.rs` (11 tests: hostile group nesting, length prefixes up to `u64::MAX` without allocation, over-long varints, the 8 MiB caps); property tests 512 fixed-seed cases each; fuzz 7 × 300 s, 0 crashes. Security review (`findings-security.md`, "Checked, no finding"): DOCTYPE and entities, `xmlDetail` escape attempts, serializer escaping, edit APIs refusing non-`Char` text and non-NCName names. Phase 1a fix round 2 (rule 6): `crates/tak-cot/tests/identity_accessors.rs` pins that `CotEvent::uid`/`type_`/`how` equal the converter's values on a duplicated local name (SEC-008) |
+| Gaps | Not wired to any network input until Phase 3: stream splitting (D-01) and connection-level reactions (D-06) are Phase 3. No XSD validation (K-31, Phase 3 decision). Equivalence with the Java reference's accept and reject decisions is unproven: the golden tests are NOT RUN (rule 7). DEV-01c (mesh), DEV-01d, DEV-05 and DEV-07 (PROTO-001 option (b): P2X refuses proto strings that are not XML 1.0 characters) were approved by the user on 2026-10-28 ([PROTOCOL_PARITY.md](PROTOCOL_PARITY.md) Table C); they are pinned by Rust tests, but no golden yet shows them against the Java output (WU7, WU8 NOT RUN). An event carrying both `p:uid` and `uid` is accepted and both are kept on output (D-18, Phase 3 decision; SEC-003); the root element name is not checked (D-19; SEC-004). Fuzz inputs stop at 64 KiB |
+| POA&M | — (memory per process: POAM-2026-10-27-02, under SC-5) |
+| Phase | 1a (library); 3 (network wiring, XSD decision, D-18, D-19) |
+| Annotation locations | `tak-cot`: [lib.rs](../../crates/tak-cot/src/lib.rs) (line 23), [error.rs](../../crates/tak-cot/src/error.rs) (7), [limits.rs](../../crates/tak-cot/src/limits.rs) (13), [event.rs](../../crates/tak-cot/src/event.rs) (16), [javafmt.rs](../../crates/tak-cot/src/javafmt.rs) (21), [convert.rs](../../crates/tak-cot/src/convert.rs) (21, 215, 363, 572), [xml/mod.rs](../../crates/tak-cot/src/xml/mod.rs) (19), [xml/parse.rs](../../crates/tak-cot/src/xml/parse.rs) (22), [xml/names.rs](../../crates/tak-cot/src/xml/names.rs) (13), [xml/document.rs](../../crates/tak-cot/src/xml/document.rs) (15), [xml/serialize.rs](../../crates/tak-cot/src/xml/serialize.rs) (42, supporting role). `tak-proto`: [lib.rs](../../crates/tak-proto/src/lib.rs) (22, 87), [framing.rs](../../crates/tak-proto/src/framing.rs) (18, 98, 165). 19 sites. `rust/fuzz/**` and `rust-fuzz.yml` do not cite SI-10; fuzzing is evidence here |
+
+### SI-10(3) Predictable Behavior
+
+New in Phase 1a.
+
+| Field | Value |
+|-------|-------|
+| Control | SI-10(3) Predictable Behavior |
+| 800-53B baseline | — |
+| Origination | System-specific |
+| Status | Partially Implemented |
+| Phase 0 target | — (block added in Phase 1a) |
+| Phase 1a target | Partially Implemented |
+| Scope | TOE library component (`tak-proto`, `tak-cot`); no network wiring until Phase 3 |
+| Implementation | On invalid input every entry point returns a typed error with a stable code (`XmlErrorKind`, `ConvertErrorKind`, `DecodeErrorKind`, `FrameError`) and no partial value: `Document::parse` and `CotEvent::parse` return no partial document, `to_tak_message` no partial TakMessage, `from_tak_message` no partial event; `append_copy` rolls back on failure. Input cannot cause a panic: `#![forbid(unsafe_code)]` in both crates, `clippy::arithmetic_side_effects` denied in `tak-cot`, checked arithmetic, no recursion on input |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): every rejection is a typed error and no case returns a partial document or event; each error case in `qa_boundaries.rs` asserts the kind it expects; `xml_limits.rs::append_copy_respects_limits_and_leaves_nothing_on_failure`; 10^6-deep XML, `xmlDetail` and protobuf group nesting refused without stack overflow; fuzz 7 × 300 s under AddressSanitizer with debug assertions (overflows and `debug_assert!` failures count as crashes), 0 crashes, timeouts or OOMs in 125 419 498 executions |
+| Gaps | The behaviour is "refuse the whole message". What the server then does (drop, audit, close the connection) is Phase 3 (D-06), and the audit events are Planned (AU-2, AU-12). At QA time an `xmlDetail` just under 8 MiB was refused with `xml.limit.input_bytes` instead of `xml.limit.xml_detail_bytes` (QA-002); fix round 1 made the cap exact, not QA re-verified (rule 6). Fuzz inputs stop at 64 KiB. Agreement with the Java reference's ok/reject outcome is NOT RUN (rule 7) |
+| POA&M | — |
+| Phase | 1a |
+| Annotation locations | [crates/tak-cot/src/convert.rs](../../crates/tak-cot/src/convert.rs) (lines 215, 363), [xml/mod.rs](../../crates/tak-cot/src/xml/mod.rs) (19), [xml/parse.rs](../../crates/tak-cot/src/xml/parse.rs) (22): 4 sites |
+
+### SI-11 Error Handling
+
+Row until Phase 1a; block since Phase 1a.
+
+| Field | Value |
+|-------|-------|
+| Control | SI-11 Error Handling |
+| 800-53B baseline | M H |
+| Origination | System-specific |
+| Status | Partially Implemented |
+| Phase 0 target | Planned (Phases 3–4) |
+| Phase 1a target | Partially Implemented |
+| Scope | TOE library component (`tak-proto`, `tak-cot`); no network wiring until Phase 3 |
+| Implementation | Error messages carry the error kind and a byte offset or a length, never input content. `Debug` of `CotEvent`, `Document`, `ElementRef` and `AttributeRef` prints no content (`AttributeRef` no longer prints the attribute name since fix round 1, SEC-006) |
+| Evidence | Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): with the marker `Qz7Mark` in every name, value and text, the marker never appears in `Display`, `Debug` or the `source()` chain of 25 XML error and limit kinds (through `Document::parse`, `CotEvent::parse` and a proto `xmlDetail`), of every `ConvertErrorKind`, or of `DecodeError`: `crates/tak-cot/tests/qa_boundaries.rs` `every_xml_error_kind_is_free_of_input_content` (line 384), `every_conversion_error_kind_is_free_of_input_content` (409), `cot_event_and_element_debug_output_is_content_free` (465); `crates/tak-proto/tests/decode_hostile.rs` `decode_error_debug_has_no_payload_text` (218). Phase 1a fix round 1 (rule 6): the `AttributeRef` assertion added to the `Debug` test; re-verified by the security-reviewer |
+| Gaps | `FrameError` has no content test: its messages hold fixed text and lengths only, which is known from reading `framing.rs`, not from a test. No client-facing error responses and no logging exist yet: streaming inputs are Phase 3, the REST API Phase 4, and who may see error details is designed there (ASD STIG APSC-DV-002580, Phase 3) |
+| POA&M | — |
+| Phase | 1a (library errors); 3–4 (client-facing errors and logs) |
+| Annotation locations | [crates/tak-cot/src/error.rs](../../crates/tak-cot/src/error.rs) (line 7), [crates/tak-proto/src/lib.rs](../../crates/tak-proto/src/lib.rs) (296, `DecodeError`), [crates/tak-proto/src/framing.rs](../../crates/tak-proto/src/framing.rs) (231, `FrameError`) |
+
 ## SR Supply Chain Risk Management
 
 Origination: Hybrid. Status: Partially Implemented (SR-3, SR-4, SR-11).
@@ -1097,13 +1280,14 @@ Origination: Hybrid. Status: Partially Implemented (SR-3, SR-4, SR-11).
 | Origination | Hybrid |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (Rust graph controls in place; parity-tooling residual POAM-2026-10-26-02; SCRM plan organizational) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | cargo-deny sources, licences and bans; three-layer pure-Rust gate (`[bans]` wrappers; `check-native-deps.sh` per target, which also rejects crypto crate names on wasm32; `[bans.build]` with `executables = "deny"`, `include-archives = true` and an `allow-build-scripts` list of 15 crates); native code only through `aws-lc-rs` (`aws-lc-fips-sys`, and `aws-lc-sys` under POAM-2026-10-26-08); provenance rule |
-| Evidence | [deny.toml](../../deny.toml) `[bans]` (line 116), `[bans.build]` (lines 179–191), `[sources]` (lines 212–216); [scripts/native-allowlist.txt](../../scripts/native-allowlist.txt); [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance and §Supply chain. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `bans ok, sources ok`; `make check-native-deps` PASS on 3 targets (wasm32: only the `prettyplease` and `wasm-bindgen-shared` markers; no crypto names); negative check: removing `zmij` from `allow-build-scripts` gives `error[build-script-not-allowed]`, `bans FAILED` (exit 2). PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `bans ok, sources ok`; `check-native-deps: ok` on x86_64 and aarch64 Linux and wasm32 (wasm32: the two markers only); job tokens `Contents: read` |
-| Gaps | Parity job downloads unverified Maven, Gradle-plugin, Node and npm artifacts (POAM-2026-10-26-02); parity fixture images are Docker Hub `eclipse-temurin` and community `postgis/postgis`, not UBI or Iron Bank (POAM-2026-10-26-03, extended by NIST-021); non-FIPS `aws-lc-sys` from Phase 2 (POAM-2026-10-26-08). `allow-build-scripts` names crates, not versions, so a new build script in an allowed crate relies on `Cargo.lock` and Dependabot review. The `links` check is a heuristic. One CI run (PR 7); no nightly run yet. The parity Dockerfiles are not linted (hadolint in no workflow) |
-| POA&M | POAM-2026-10-26-02, POAM-2026-10-26-03, POAM-2026-10-26-08 |
+| Implementation | cargo-deny sources, licences and bans; three-layer pure-Rust gate (`[bans]` wrappers; `check-native-deps.sh` per target, which also rejects crypto crate names on wasm32 and since Phase 1a judges that rule on the shipped (normal-edge) closure, while the `links` rule keeps the full graph; `[bans.build]` with `executables = "deny"`, `include-archives = true` and an `allow-build-scripts` list of 20 crates since Phase 1a added `anyhow`, `getrandom`, `num-traits`, `rustix` and `tak-proto`); native code only through `aws-lc-rs` (`aws-lc-fips-sys`, and `aws-lc-sys` under POAM-2026-10-26-08); provenance rule. Phase 1a: the libFuzzer C++ exception is confined to the excluded `rust/fuzz/` workspace with its own `deny.toml`, lockfile and native allow-list (`libfuzzer-sys` only), and `scripts/check-fuzz-policy.sh` (in `make policy`) keeps `libfuzzer-sys` and `cc` out of the product graph; the `tak-proto` build script checks the in-place schemas (SA-10(1)) |
+| Evidence | [deny.toml](../../deny.toml) `[bans]` (line 116), `[bans.build]` (lines 179–215, `allow-build-scripts` 194–215), `[sources]` (lines 220–224); [scripts/native-allowlist.txt](../../scripts/native-allowlist.txt); [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance and §Supply chain. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `bans ok, sources ok`; `make check-native-deps` PASS on 3 targets (wasm32: only the `prettyplease` and `wasm-bindgen-shared` markers; no crypto names); negative check: removing `zmij` from `allow-build-scripts` gives `error[build-script-not-allowed]`, `bans FAILED` (exit 2). PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `bans ok, sources ok`; `check-native-deps: ok` on x86_64 and aarch64 Linux and wasm32 (wasm32: the two markers only); job tokens `Contents: read`. Phase 1a QA, 2026-10-28, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `advisories ok, bans ok, licenses ok, sources ok`; `make audit` 143 crates, 1380 advisories, no findings (with the two POAM-2026-10-26-09 ignores, rule 3); `make check-native-deps` ok on the wasm32 closure of `tak-api-types`, `tak-web-components`, `tak-proto` and `tak-cot`; `make fuzz-deny` PASS (cargo-deny with `fuzz/deny.toml`, cargo audit on `fuzz/Cargo.lock`, native allow-list); `make policy` PASS including `check-fuzz-policy` |
+| Gaps | Phase 1a: libFuzzer native code in the development-only fuzz workspace (open POA&M POAM-2026-10-27-01); `cargo-fuzz` itself is installed with `--locked` but its graph is not checked by cargo-deny; the corpus capture builds and runs the same unverified Java reference build (POAM-2026-10-26-02); no CI run for this branch (rule 7). Parity job downloads unverified Maven, Gradle-plugin, Node and npm artifacts (POAM-2026-10-26-02); parity fixture images are Docker Hub `eclipse-temurin` and community `postgis/postgis`, not UBI or Iron Bank (POAM-2026-10-26-03, extended by NIST-021); non-FIPS `aws-lc-sys` from Phase 2 (POAM-2026-10-26-08). `allow-build-scripts` names crates, not versions, so a new build script in an allowed crate relies on `Cargo.lock` and Dependabot review. The `links` check is a heuristic. One CI run (PR 7); no nightly run yet. The parity Dockerfiles are not linted (hadolint in no workflow) |
+| POA&M | POAM-2026-10-26-02, POAM-2026-10-26-03, POAM-2026-10-26-08, POAM-2026-10-27-01 |
 | Phase | 0 |
-| Annotation locations | [.cargo/config.toml](../../.cargo/config.toml), [deny.toml](../../deny.toml), [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml), [rust-supply-chain.yml](../../../.github/workflows/rust-supply-chain.yml), [dependabot.yml](../../../.github/dependabot.yml) header comments |
+| Annotation locations | [.cargo/config.toml](../../.cargo/config.toml), [deny.toml](../../deny.toml), [scripts/check-native-deps.sh](../../scripts/check-native-deps.sh), [scripts/check-workflows.sh](../../scripts/check-workflows.sh), [rust-ci.yml](../../../.github/workflows/rust-ci.yml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml), [rust-supply-chain.yml](../../../.github/workflows/rust-supply-chain.yml), [dependabot.yml](../../../.github/dependabot.yml) header comments; Phase 1a: [crates/tak-proto/build.rs](../../crates/tak-proto/build.rs) (line 50), [fuzz/Cargo.toml](../../fuzz/Cargo.toml) (13), [fuzz/deny.toml](../../fuzz/deny.toml) (18), [scripts/check-fuzz-policy.sh](../../scripts/check-fuzz-policy.sh) (48), [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) (33) |
 
 ### SR-4 Provenance
 
@@ -1114,10 +1298,11 @@ Origination: Hybrid. Status: Partially Implemented (SR-3, SR-4, SR-11).
 | Origination | Hybrid |
 | Status | Partially Implemented |
 | Phase 0 target | Partially Implemented (no signed build provenance until Phase 9; POAM-2026-10-26-05) |
+| Phase 1a target | Partially Implemented (already) |
 | Scope | Development environment / CI; no TOE runtime yet |
-| Implementation | crates.io-only sources; SHA-pinned actions; image digests; first-party provenance rule (`Derived from` per ported item) |
-| Evidence | [deny.toml](../../deny.toml) `[sources]` (lines 212–216: unknown registries and git denied, `allow-git = []`); SHA-pinned actions and digest-pinned images listed in [ATO_EVIDENCE.md](ATO_EVIDENCE.md) §Pin inventory; [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `sources ok`; `make policy` `check-workflows` ok (SHA-pin rule); `parity/harness.sh selftest` PASS (rejects an image pin without `@sha256:`). QA Round 2, 2026-10-26, local (same section): the same gates PASS; `check-workflows` ok on 3 parsed files (rule W1, 40-hex SHA with a version comment); QA re-resolved the `actions/checkout` and `Swatinem/rust-cache` tags and re-hashed the OSCAL files, all matching. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `sources ok`; `check-workflows` ok |
-| Gaps | At QA Round 1, `check-workflows` was line-based and could be bypassed (QA-006); the parsed-YAML version is verified at QA Round 2; fix round 3 changes it again, not QA-verified. No signed build provenance; SBOM not required, generated once (PR 7 CI, `rust-sbom`) and not signed (POAM-2026-10-26-01); the parity build's transitive downloads are unverified (POAM-2026-10-26-02); legal review open (POAM-2026-10-26-05) |
+| Implementation | crates.io-only sources; SHA-pinned actions; image digests; first-party provenance rule (`Derived from` per ported item). Phase 1a: schemas read in place from `src/takserver-protobuf/` (never copied); corpus inputs synthetic, Apache-2.0, one [MANIFEST.tsv](../../parity/corpus/MANIFEST.tsv) row per (id, direction); goldens are to be imported only through `harness.sh import-corpus` with a `PROVENANCE.json` |
+| Evidence | Phase 1a: corpus inputs present, 715 manifest rows for 471 case IDs and 472 files under `parity/corpus/cases/`, including `REUSE.toml` (counted 2026-10-28 from the working tree); the run's `parity-map.md` records `Derived from` for every Phase 1a row; Phase 1a QA `make deny` `sources ok`. [deny.toml](../../deny.toml) `[sources]` (lines 220–224: unknown registries and git denied, `allow-git = []`); SHA-pinned actions and digest-pinned images listed in [ATO_EVIDENCE.md](ATO_EVIDENCE.md) §Pin inventory; [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance. QA Round 1, 2026-10-26, local ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `sources ok`; `make policy` `check-workflows` ok (SHA-pin rule); `parity/harness.sh selftest` PASS (rejects an image pin without `@sha256:`). QA Round 2, 2026-10-26, local (same section): the same gates PASS; `check-workflows` ok on 3 parsed files (rule W1, 40-hex SHA with a version comment); QA re-resolved the `actions/checkout` and `Swatinem/rust-cache` tags and re-hashed the OSCAL files, all matching. PR 7 CI, 2026-10-27, [rust-ci 40539495255](https://github.com/192d-Wing/Server/actions/runs/40539495255) on head `ce9caf79` ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3): `make deny` `sources ok`; `check-workflows` ok |
+| Gaps | At QA Round 1, `check-workflows` was line-based and could be bypassed (QA-006); the parsed-YAML version is verified at QA Round 2; fix round 3 changes it again, not QA-verified. No signed build provenance; SBOM not required, generated once (PR 7 CI, `rust-sbom`) and not signed (POAM-2026-10-26-01); the parity build's transitive downloads are unverified (POAM-2026-10-26-02); legal review open (POAM-2026-10-26-05, widened in Phase 1a to the build-time schema read, the goldens and the corpus driver). Phase 1a: no goldens and no `PROVENANCE.json` exist (WU7 NOT RUN), so provenance is recorded for the inputs only |
 | POA&M | POAM-2026-10-26-01, POAM-2026-10-26-02, POAM-2026-10-26-05 |
 | Phase | 0; 9 (signed provenance) |
 | Annotation locations | [deny.toml](../../deny.toml), [rust-parity.yml](../../../.github/workflows/rust-parity.yml), [rust-supply-chain.yml](../../../.github/workflows/rust-supply-chain.yml) header comments |
@@ -1184,7 +1369,8 @@ stable fields.
 
 Reasons for deferring:
 
-1. There is no TOE component yet. The Phase 0 claims are developer-process
+1. There was no TOE component in Phase 0, and Phase 1a adds only two
+   libraries with no runtime of their own. Most claims are developer-process
    controls (CM, SA, SR), which belong in the SSP's system and organizational
    parts rather than in a component definition.
 2. Hand-maintained Markdown and JSON would drift. A generator pays off only
@@ -1202,6 +1388,9 @@ recorded as Planned in [ATO_EVIDENCE.md](ATO_EVIDENCE.md).
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-28 | 0.8 | Phase 1a gate decisions. SI-10 Gaps: the "pending the user's decision" sentence replaced by the 2026-10-28 approvals of DEV-01c (mesh), DEV-01d, DEV-05 and DEV-07 (PROTO-001 option (b)); the option (a) caveat on the serializer's well-formed-output property removed because option (a) was not chosen. No status changed: 17 of 47 detailed blocks Partially Implemented, 30 Planned, none Implemented | `20261027-180458-phase1-protocol-config` (gate decisions) |
+| 2026-10-28 | 0.7 | Phase 1a WU10 follow-up (pre-gate). CA-5 only: Implementation (`check-poam-markers` is in `POLICY_CHECKS`, Makefile lines 26–28), Evidence (compliance-scribe's local runs, not QA: `make policy` exit 0 with `check-poam-markers` 15/15 and `check-poam-ids` 13/13; `make check-annotations-strict` exit 0) and Gaps (no QA or CI run of the check; `.txt` marker in `fuzz/native-allowlist.txt` outside its scan). No status changed: 17 of 47 detailed blocks Partially Implemented, 30 Planned, none Implemented | `20261027-180458-phase1-protocol-config` (WU10 follow-up) |
+| 2026-10-28 | 0.6 | Phase 1a (WU10, pre-gate). Scope: TOE library components `tak-proto` and `tak-cot` (no network wiring until Phase 3); build script and fuzz workspace outside the TOE. "Status at this revision": Phase 1a evidence, rule 1 extended to Phase 1a targets, new rules 6 (fix rounds 1 and 2 are not QA re-verification) and 7 (Actions disabled: no CI run, WU7 and WU8 NOT RUN, exit criterion not met, nothing committed after `04774cc0`). New blocks SC-5, SI-10, SI-10(3), SI-11 (Partially Implemented) and SA-10(1) (Planned, rule 6); SI-10 and SI-11 rows removed from the SI table. SA-11(8) Planned → Partially Implemented (Phase 1a QA fuzz run). 0 Implemented, 17 Partially Implemented, 30 Planned, 47 blocks (was 0 / 12 / 30, 42). Phase 1a targets table. Evidence, gaps and annotation locations updated in CA-5 (`check-poam-markers`), CM-3, CM-3(2) (F9, `rust-fuzz.yml` paths; still Planned), CM-6 (`Limits` library defaults, exact `xmlDetail` cap; NIST-006), CM-7 (fuzz isolation; still Planned), CM-10 and SR-4 (POAM-2026-10-26-05 widened per Q9), SA-10, SA-11 (golden parity NOT RUN), SA-15, SR-3 (fuzz workspace, POAM-2026-10-27-01), SC-13 and SI-7 (build-script SHA-256 is SA-10(1), CRY-001). `deny.toml` line numbers re-verified with `grep -n` after WU2: `[bans.build]` 179–215, `[sources]` 220–224, 20 build-script crates. New POA&M references POAM-2026-10-27-01, -02, -03 | `20261027-180458-phase1-protocol-config` (Phase 5, WU10) |
 | 2026-10-27 | 0.5 | PR 7 CI evidence (rust-ci 40539495255, rust-parity 40539495328; head `ce9caf79`, merged as `9f754245`). "Status at this revision": the first GitHub Actions runs recorded; how rules 2 to 4 apply to them (rule 2's green-gate condition met, its nightly condition not). Evidence cells updated in CA-5, CA-7, CM-2, CM-2(2), CM-3, CM-3(2), CM-6, CM-8, RA-5, RA-5(2), SA-10, SA-11, SA-11(1), SA-15, SA-15(7), SI-2, SR-3, SR-4, SR-11; gaps that said "no CI run" corrected in those blocks and in CM-5, SA-3, SA-22. hadolint recorded as a gap in SA-11(1) and SR-3 (in no workflow; never run). No status changed: 0 Implemented, 12 Partially Implemented, 30 Planned | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.4 | Gate: POAM-2026-10-26-09 accepted for development by the system owner (John Edward Willman V) on 2026-10-27, pending AO review; still Open, not Risk Accepted. Text updated in "Status at this revision", CA-5 gaps, RA-5 gaps and POA&M, SA-22 gaps and POA&M, SI-2 POA&M. No status changed (12 Partially Implemented, 30 Planned, 0 Implemented); rule 3 unchanged, the pass with ignores is still not evidence. Line numbers re-verified with `grep -n` after the 2026-10-27 `deny.toml` and `.cargo/audit.toml` comment edits: SA-22 evidence (deny 49–52, 54–55; audit 31, 39, 34, 42), RA-5(2) `maximum-db-staleness` (57), SR-3 `[bans]` (116), `[bans.build]` (179–191), `[sources]` (212–216), SR-4 `[sources]` (212–216) | `20261026-210255-phase0-foundations` (gate) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs). No status changed (12 Partially Implemented, 30 Planned, 0 Implemented). "Status at this revision": QA Round 2 added as evidence; rule 3 now covers SA-22 with the carve-out "detection evidence only; the pass with ignores is not evidence" (NIST-018); rule 5 says fix round 3 is not QA-verified. SA-22 evidence is the QA Round 2 POAM-09 detection negative gate (NIST-018). CM-2, CM-6, SR-4: QA Round 2 evidence for the parsed-YAML `check-workflows` and the QA-006 caveat for Round 1; CM-6 permission evidence reworded (grep shows presence, W3 checks top level) (NIST-017). CM-2(2), CM-3, CM-3(2), SA-11(1): QA-006 verified at Round 2. CM-6 and SR-3 cite the extended POAM-2026-10-26-03 (NIST-021). SA-11 and CM-3 note QA-007 and QA-008. CM-7 annotation location removed with the fix round 3 annotation change (NIST-019); CM-7 stays Planned | `20261026-210255-phase0-foundations` (fix round 3) |

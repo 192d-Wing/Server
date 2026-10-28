@@ -1,0 +1,5 @@
+{
+  "default_charset": "UTF-8",
+  "java.version": "17.0.0-selftest",
+  "sax_parser_factory": "selftest.SAXParserFactory"
+}

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<event version="2.0" uid="SYN-UID-0001" type="a-f-G-U-C" how="m-g" time="2026-10-27T12:00:00.000Z" start="2026-10-27T12:00:00.000Z" stale="2026-10-27T12:05:00.000Z"><detail><contact callsign="SYN-ALPHA" endpoint="*:-1:stcp"/><__group name="Cyan" role="Team Member"/><precisionlocation geopointsrc="GPS" altsrc="DTED0"/><status battery="87"/><takv device="SYN-DEVICE-01" platform="SYN-PLATFORM" os="34" version="0.0.1-syn"/><track speed="1.25" course="270.5"/></detail></event>

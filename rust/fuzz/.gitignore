@@ -1,0 +1,8 @@
+# cargo-fuzz build output, working corpora, crash artifacts and coverage
+# data are local and never committed. Seeds come from
+# rust/parity/corpus/cases/ via scripts/fuzz-seeds.sh.
+/target/
+/corpus/
+/artifacts/
+/coverage/
+/seeds/

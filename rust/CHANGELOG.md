@@ -60,6 +60,69 @@ may contain breaking changes. Nothing has been released yet.
   derived from the GPLv3 Java reference (behaviour, schemas and black-box
   tests only; no line-by-line translation; SPDX headers;
   POAM-2026-10-26-05).
+- Phase 1a crate `tak-proto`: Rust types for TAK Protocol v1 and the related
+  messages, generated at build time from the 15 `.proto` schemas read in
+  place from `src/takserver-protobuf` by `protox` and `prost-build` (pure
+  Rust; no `protoc` binary, nothing copied from `src/`). Bounded
+  `decode_tak_message`/`encode_tak_message` (8 MiB default), TAK stream
+  framing (`0xbf`, varint length, prefix capped at 5 bytes) and mesh
+  framing, with typed, content-free `DecodeError` and `FrameError`. Builds
+  for native and `wasm32-unknown-unknown`.
+- `crates/tak-proto/schema.sha256`: `build.rs` fails the build when a schema
+  is added, removed or changed, or when the compiled descriptor set holds a
+  file the manifest does not cover (CRLF checkouts get a hint). A schema
+  change from an upstream merge stays red until the manifest gets a reviewed
+  update (tak-protocol-reviewer). The digest is a build-host change
+  detector, outside the TOE; it is not an SI-7 or FIPS claim.
+- Phase 1a crate `tak-cot`: CoT XML event model (`CotEvent`), bounded XML
+  parser and serializer, Java-compatible number and time formatting
+  (`javafmt`), and CoT XML ↔ TAK Protocol v1 conversion (`to_tak_message`,
+  `from_tak_message`), including the `<detail>` split into typed
+  sub-messages plus `xmlDetail`. Builds for native and
+  `wasm32-unknown-unknown`. Unit, property (proptest), limit-boundary and
+  hostile-input tests for both crates.
+- Golden corpus inputs in `parity/corpus/`: synthetic Apache-2.0 cases
+  (`MANIFEST.tsv`, one row per id and direction over `x2p`, `x2x`, `p2x`,
+  `p2p` and five number tables; `cases/REUSE.toml`; `.gitattributes` with
+  `* -text`), the Apache-2.0 Java capture driver `CorpusDriver.java`, and
+  the harness commands `capture-corpus`, `verify-corpus` and
+  `import-corpus` (`make parity-capture-corpus`). **The goldens are not
+  captured yet**, so byte equivalence with the Java reference is not shown
+  and the Phase 1a exit criterion is not met.
+- Coverage-guided fuzzing in the excluded workspace `rust/fuzz/` (7 targets:
+  `cot_parse`, `cot_to_proto`, `proto_decode`, `proto_to_cot`,
+  `proto_roundtrip`, `stream_frame`, `javafmt`) with its own `Cargo.lock`,
+  `deny.toml`, native allow-list and pinned `nightly-2026-10-23`;
+  `cargo-fuzz` 0.13.2. Make targets `fuzz-build`, `fuzz-seeds`, `fuzz-run`,
+  `fuzz-smoke` and `fuzz-deny`; `scripts/fuzz-seeds.sh` builds per-target
+  seeds from the corpus inputs (inputs over 64 KiB skipped). Development
+  only: libFuzzer is C++ (POAM-2026-10-27-01).
+- Non-required workflow `rust-fuzz.yml`: a `fuzz-deny` job (fuzz policy,
+  cargo-deny, cargo-audit, native allow-list) and one job per target under
+  AddressSanitizer with debug assertions, `-timeout=1`,
+  `-rss_limit_mb=2048` and `-max_len=65536`; 60 s per target on pull
+  requests, 600 s nightly, 30–3600 s on dispatch. Crash inputs are
+  uploaded. Dependabot also covers `/rust/fuzz`.
+- `rust-parity.yml` captures the golden corpus after the Java build and
+  compares it with `parity/corpus/golden/` (dispatch input `verify_corpus`,
+  `false` only for the first capture), uploads the capture as
+  `parity-corpus-<run>`, and also runs on changes to `tak-cot` and
+  `tak-proto`.
+- Policy checks in `make policy`: `check-fuzz-policy` (F1–F9: fuzz
+  workspace excluded and complete, no `libfuzzer-sys` in the product graph,
+  `fuzz/deny.toml` equal to `deny.toml` except three approved delta lines,
+  a single allow-list row, a dated nightly, targets equal across manifest,
+  CI matrix and seed script, and every `rust_inputs` prefix of
+  `ci-changes.sh` in the `rust-fuzz.yml` pull-request paths) and
+  `check-poam-markers` (every `POAM:` marker cites a
+  `POAM-YYYY-MM-DD-NN` ID; NIST-010).
+- Compliance documents for Phase 1a: mapping blocks SC-5, SI-10, SI-10(3),
+  SI-11 (Partially Implemented) and SA-10(1) (Planned), SA-11(8) to
+  Partially Implemented; six ASD STIG rows; `PROTOCOL_PARITY.md` Table C
+  with the six deviations approved on 2026-10-27 (DEV-01a, DEV-01b, DEV-01c
+  stream part, DEV-02, DEV-03, DEV-04) and the four approved on 2026-10-28
+  (DEV-01c mesh part, DEV-01d, DEV-05, DEV-07); local QA and fuzz records in
+  `TEST_EVIDENCE.md` (no CI evidence yet).
 
 ### Changed
 
@@ -74,6 +137,27 @@ may contain breaking changes. Nothing has been released yet.
   `rust-ci-gate`. Rule (d) of `check-annotations` no longer counts a mapping
   block that disclaims its control, and a pending ID that the mapping
   disclaims always fails (NIST-013, NIST-014).
+- Workspace members `tak-cot` and `tak-proto`, with `exclude = ["fuzz"]`.
+  New workspace dependencies, all with default features off: `prost`,
+  `quick-xml`, `ryu`, `thiserror` (linked); `prost-build`, `protox`
+  (build only); `proptest` (tests only).
+- `deny.toml` `allow-build-scripts` grows from 15 to 20 crates: `anyhow`,
+  `getrandom`, `num-traits`, `rustix` (rustc and cfg probes only; build or
+  dev graph) and `tak-proto` (first party, compiles the schemas).
+- `tak-proto` and `tak-cot` are wasm32 roots: `make build-wasm`,
+  `clippy-wasm` and `check-native-deps` cover them. Each has a
+  `clippy.toml` copy of the web bans, guarded by a drift test.
+- `check-unsafe` and the SPDX scan of `check-annotations` also cover
+  `fuzz/fuzz_targets`; `check-annotations` and `check-src-coupling` skip
+  fuzz build output, working corpus, seeds and crash inputs.
+- `make check-annotations-strict` also runs `check-poam-markers`; both
+  always run, and the target fails if either fails.
+- `markdownlint` covers `fuzz/*.md`.
+- `check-native-deps` judges the wasm32 crypto-crate rule on normal edges
+  only, which is what ships (orchestrator decision, Phase 1a WU2): crypto or
+  RNG crates that a wasm32 root reaches only through dev or build edges
+  (such as `proptest`'s `rand`) no longer fail it. The `links` rule still
+  checks the full graph.
 
 ### Fixed
 
@@ -147,3 +231,40 @@ may contain breaking changes. Nothing has been released yet.
   paths (SEC-010).
 - `check-workflows`: case variants of known workflow keys (`Name:`, `Uses:`,
   `Permissions:`) fail (SEC-012).
+- `tak-cot` parser limits (CM-6, SC-5, SI-10; library defaults, no operator
+  setting until Phase 3): 8 MiB input, depth 64, 100 000 nodes, 256
+  attributes and 32 namespace declarations per element, 1024-byte names,
+  1 MiB attribute values, 8 MiB text and an exact 8 MiB `xmlDetail` cap.
+  DTDs, external entities and XML 1.1 are refused. Errors are typed and
+  content-free, and the `Debug` output of events, elements and attributes
+  holds no input data. Hostile input fails with an error, not a panic
+  (tested; 7 fuzz targets run locally for 300 s each with 0 crashes; no CI
+  fuzz run yet). Merging `xmlDetail` into the event is linear in the
+  element count.
+- `tak-proto` decoding is bounded: a message over the caller's limit, a
+  length prefix over 5 bytes or above `u32`, and a known field with the
+  wrong wire type are refused. The last two and the XML limits deviate from
+  the Java reference on purpose; the user approved them on 2026-10-27
+  (DEV-01a, DEV-01b, DEV-01c stream part, DEV-04) and on 2026-10-28 (DEV-01c
+  mesh part, DEV-01d).
+- `tak-cot` conversion rejects, where the Java reference relays or wraps: a
+  proto string that XML 1.0 cannot carry (DEV-07) and a CoT time outside the
+  64-bit millisecond range (DEV-05). Both approved by the user on 2026-10-28.
+- `CotEvent::uid`, `type_` and `how` document that identity attributes
+  match by local name, first match wins (`p:uid` and `uid` both present);
+  Phase 3 must route authorization, filtering and persistence through these
+  accessors or reject duplicates (D-18).
+- No new native code in the product graph: the schemas compile without
+  `protoc`, and `libfuzzer-sys` and `cc` exist only in `rust/fuzz/`, which
+  is excluded from the workspace, the product lockfile and the SBOM.
+  `check-fuzz-policy` fails if either reaches the product graph. The fuzz
+  workflow has a read-only token, no caches and no secrets
+  (POAM-2026-10-27-01: development-only libFuzzer exception, approved by
+  the user 2026-10-27, Open).
+- New POA&M entries for TOE code, both for Phase 3: POAM-2026-10-27-02 (one
+  conversion can hold about 23 times its input in memory, and nothing caps
+  conversions in flight) and POAM-2026-10-27-03 (serializer output is
+  unbounded). POAM-2026-10-26-05 now also covers the build-time schema read,
+  the Java-generated goldens and the Java driver (decision Q9);
+  POAM-2026-10-26-02 also covers the corpus capture's unverified Java build
+  downloads.

@@ -90,10 +90,16 @@ parity milestone. "Exit" says what must be true before the next phase starts.
 
 ### Phase 1 — Protocol and config crates (no network yet)
 
-- `tak-proto`, `tak-cot` (with fuzz targets), `tak-config` with round-trip
-  tests on every `CoreConfig.example*.xml`.
-- Exit: golden-fixture tests show XML↔proto conversion is byte-equivalent to
-  Java's `StreamingProtoBufHelper` on a corpus captured from the Java server.
+Split into two parts with separate gates; Phase 1 exits when both pass.
+
+- **Phase 1a — protocol crates (in progress, gate pending):** `tak-proto`,
+  `tak-cot` (with fuzz targets) and the golden corpus.
+  - Exit: golden-fixture tests show XML↔proto conversion is byte-equivalent
+    to Java's `StreamingProtoBufHelper` on a corpus captured from the Java
+    server.
+- **Phase 1b — config crate (planned):** `tak-config` with round-trip tests
+  on every `CoreConfig.example*.xml`.
+  - Exit: round trip on all five examples and an XSD-coverage test pass.
 
 ### Phase 2 — Data and identity
 

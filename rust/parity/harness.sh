@@ -30,11 +30,17 @@ readonly FIXTURES_DIR="$PARITY_DIR/tests/fixtures"
 readonly COMPOSE_PROJECT="tak-parity"
 readonly BUILDER_IMAGE="tak-parity-java-build:local"
 readonly MIN_FREE_GB=25
+readonly MAX_WAR_ENTRY_BYTES=$((256 * 1024 * 1024))
+readonly CORPUS_CLASS_PROBE="tak/server/proto/StreamingProtoBufHelper.class"
 
 # Pins file override (used by the local integrity negative test; the file is
 # still fully validated, and its SHA-256 is recorded in build-info.json).
 PINS_FILE="${TAK_PARITY_PINS:-$PARITY_DIR/pins.env}"
 RESULTS_DIR="$PARITY_DIR/results"
+# Golden corpus root (plan §1.4.3). The override is for selftest only; the
+# tree it names is validated like the real one.
+CORPUS_DIR="${TAK_PARITY_CORPUS_DIR:-$PARITY_DIR/corpus}"
+LAST_CORPUS=""
 ENGINE="${CONTAINER_ENGINE:-docker}"
 ENGINE_BIN=""
 PINS_LOADED=0
@@ -132,8 +138,20 @@ Commands run in order and stop at the first failure.
   logs                      Save compose logs under <results>/.
   down                      Stop containers and remove the DB volume.
   clean                     down, then remove .work/ (results are kept).
-  selftest                  Check verify-junit and the exit-code contract with
-                            fixtures; needs no containers.
+  capture-corpus            Run the golden-corpus driver (corpus/driver) against
+                            the built reference's jars, twice, in the JRE 17
+                            image with no network; fail unless both runs are
+                            identical; write <results>/<UTC>-corpus/ with
+                            PROVENANCE.json. Needs build-java and image.
+  verify-corpus [<dir>]     Compare a captured tree (default: the capture made
+                            earlier in this chain) byte for byte with
+                            corpus/golden/ (all files except PROVENANCE.json
+                            and DEVIATIONS.tsv; no missing or extra files).
+  import-corpus <dir>       Validate a capture (layout, no special files, pins
+                            and input hashes equal the current ones) and
+                            replace corpus/golden/ with it (DEVIATIONS.tsv kept).
+  selftest                  Check verify-junit, the corpus commands and the
+                            exit-code contract with fixtures; needs no containers.
 
 Options:
   --engine docker|podman    Container engine (default: $CONTAINER_ENGINE or docker).
@@ -146,13 +164,14 @@ Options:
                             newest such merge. Never touches the real checkout.
   -h, --help                Show this help.
 
-Exit codes: 0 ok, 1 test or build failure, 2 unsupported command/target or
-bad usage, 3 missing prerequisite, 4 integrity check failed.
+Exit codes: 0 ok, 1 test, build or corpus-drift failure, 2 unsupported
+command/target or bad usage, 3 missing prerequisite, 4 integrity check failed.
 
 Environment:
   CONTAINER_ENGINE          Default engine.
   TAKCL_MEM_LIMIT           Memory limit of the takcl container (default 10g).
   TAK_PARITY_PINS           Alternate pins file (validated like pins.env).
+  TAK_PARITY_CORPUS_DIR     Test only: alternate corpus root (validated like corpus/).
   TAK_PARITY_ENGINE_BIN     Test only: engine binary name override.
 EOF
 }
@@ -424,6 +443,387 @@ print("verify-junit: PASS: " + summary)
 verify_junit() {
   require_tool python3
   python3 -I -c "$VERIFY_JUNIT_PY" "$1"
+}
+
+# ---------------------------------------------------------------------------
+# Golden corpus (Phase 1a, plan §1.4). Python stdlib only, run with -I.
+# Modes (exit 0 ok, 1 difference, 3 missing prerequisite, 4 integrity):
+#   extract <war> <dest> <max-entry-bytes>  WEB-INF/lib/*.jar out of the war
+#   find-class <libdir> <entry>             which jar holds <entry> (3: none)
+#   argfiles <libdir> <argsdir>             javac.args / run.args (sorted -cp)
+#   digest <corpus> [<out.json>]            SHA-256 of MANIFEST, driver, cases
+#   provenance <tree> <build-info> <corpus> <digest.json> <libdir>
+#              <ref-image> <ref-id> <builder-image> <builder-id> KEY=VALUE...
+#   check-provenance <tree> <corpus> KEY=VALUE...
+#   check-tree <dir> capture|golden          layout, results.tsv, no specials
+#   compare <expected> <actual> [<top-level name to skip>...]
+# Untrusted input everywhere: symlinks and special files are rejected and
+# never followed; sizes and counts are capped; war entries with absolute
+# paths, `..` segments, symlink modes or duplicate names are refused.
+readonly CORPUS_PY='
+import hashlib, json, os, re, stat, sys, time, zipfile
+
+EX_DIFF, EX_PREREQ, EX_INTEGRITY = 1, 3, 4
+ID = r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}"
+JAR = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+~-]{0,199}\.jar")
+DIRS = {"x2p": ".pb.hex", "p2p": ".pb.hex", "x2x": ".xml", "p2x": ".xml"}
+NUMBERS = {"dbl-fmt.tsv", "dbl-parse.tsv", "int-parse.tsv", "time-fmt.tsv", "time-parse.tsv"}
+PIN_KEYS = ["JDK_BUILD_IMAGE", "JRE_RUN_IMAGE", "POSTGIS_IMAGE", "GRADLE_VERSION",
+            "GRADLE_DIST_SHA256", "GRADLE_WRAPPER_JAR_SHA256"]
+MAX_FILE = 64 * 1024 * 1024
+MAX_FILES = 200000
+FORMAT = "tak-rs-corpus v1"
+
+def die(code, msg):
+    print("corpus: " + msg, file=sys.stderr)
+    sys.exit(code)
+
+def regular(p):
+    try:
+        m = os.lstat(p).st_mode
+    except OSError as e:
+        die(EX_PREREQ, "missing: %s (%s)" % (p, e.strerror))
+    if not stat.S_ISREG(m):
+        die(EX_INTEGRITY, p + ": not a regular file (symlink or special file)")
+
+def real_dir(p, code=EX_PREREQ):
+    try:
+        m = os.lstat(p).st_mode
+    except OSError:
+        die(code, "missing directory: " + p)
+    if not stat.S_ISDIR(m):
+        die(EX_INTEGRITY, p + ": not a directory (or a symlink)")
+
+def walk(top):
+    """Relative paths of regular files under top; any other entry is fatal."""
+    real_dir(top)
+    out = []
+    def err(e):
+        die(EX_INTEGRITY, "cannot read %s (%s)" % (getattr(e, "filename", "?"), e))
+    for d, dirs, names in os.walk(top, onerror=err, followlinks=False):
+        for n in sorted(dirs + names):
+            p = os.path.join(d, n)
+            m = os.lstat(p).st_mode
+            if stat.S_ISDIR(m):
+                continue
+            if not stat.S_ISREG(m):
+                die(EX_INTEGRITY, p + ": symlink or special file is not accepted")
+            out.append(os.path.relpath(p, top).replace(os.sep, "/"))
+            if len(out) > MAX_FILES:
+                die(EX_INTEGRITY, top + ": more than %d files" % MAX_FILES)
+    return sorted(out)
+
+def read(p, cap=MAX_FILE):
+    fd = os.open(p, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    with os.fdopen(fd, "rb") as fh:
+        if not stat.S_ISREG(os.fstat(fh.fileno()).st_mode):
+            die(EX_INTEGRITY, p + ": not a regular file")
+        data = fh.read(cap + 1)
+    if len(data) > cap:
+        die(EX_INTEGRITY, p + ": larger than %d bytes" % cap)
+    return data
+
+def sha256(p):
+    h = hashlib.sha256()
+    fd = os.open(p, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(fd, "rb") as fh:
+        for b in iter(lambda: fh.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+def pins(args):
+    d = {}
+    for a in args:
+        k, _, v = a.partition("=")
+        d[k] = v
+    if sorted(d) != sorted(PIN_KEYS):
+        die(2, "internal: pins must be exactly " + ",".join(PIN_KEYS))
+    return d
+
+def bad_member(name):
+    if not name or "\\" in name or "\0" in name or name.startswith("/"):
+        return True
+    if re.match(r"[A-Za-z]:", name):
+        return True
+    return ".." in name.split("/")
+
+def extract(war, dest, cap):
+    regular(war)
+    real_dir(dest)
+    try:
+        zf = zipfile.ZipFile(war)
+    except (zipfile.BadZipFile, OSError) as e:
+        die(EX_INTEGRITY, "%s: not a readable zip (%s)" % (war, e))
+    seen, lower, total, n = set(), set(), 0, 0
+    with zf:
+        infos = zf.infolist()
+        if len(infos) > MAX_FILES:
+            die(EX_INTEGRITY, war + ": too many entries")
+        for i in infos:
+            name = i.filename
+            if bad_member(name):
+                die(EX_INTEGRITY, "%s: unsafe entry name %r (absolute or ..)" % (war, name))
+            if name in seen:
+                die(EX_INTEGRITY, "%s: duplicate entry %r" % (war, name))
+            seen.add(name)
+            kind = (i.external_attr >> 16) & 0o170000
+            if kind not in (0, stat.S_IFREG, stat.S_IFDIR):
+                die(EX_INTEGRITY, "%s: entry %r is a symlink or special file" % (war, name))
+            if i.file_size > cap:
+                die(EX_INTEGRITY, "%s: entry %r is larger than %d bytes" % (war, name, cap))
+        for i in infos:
+            name = i.filename
+            if not name.startswith("WEB-INF/lib/") or name.endswith("/"):
+                continue
+            base = name[len("WEB-INF/lib/"):]
+            if "/" in base:
+                continue
+            if not JAR.fullmatch(base):
+                die(EX_INTEGRITY, "%s: unexpected library name %r" % (war, base))
+            if base.lower() in lower:
+                die(EX_INTEGRITY, "%s: duplicate library name %r (case-insensitive)" % (war, base))
+            lower.add(base.lower())
+            fd = os.open(os.path.join(dest, base), os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+            size = 0
+            with zf.open(i) as src, os.fdopen(fd, "wb") as dst:
+                for b in iter(lambda: src.read(1 << 20), b""):
+                    size += len(b)
+                    total += len(b)
+                    if size > cap:
+                        die(EX_INTEGRITY, "%s: entry %r expands beyond %d bytes" % (war, name, cap))
+                    if total > 8 * cap:
+                        die(EX_INTEGRITY, "%s: libraries expand beyond %d bytes in total" % (war, 8 * cap))
+                    dst.write(b)
+            n += 1
+    if n == 0:
+        die(EX_PREREQ, war + ": no WEB-INF/lib/*.jar entries")
+    print("corpus: extracted %d libraries from %s" % (n, os.path.basename(war)), file=sys.stderr)
+
+def jars(libdir):
+    real_dir(libdir)
+    names = sorted(n for n in os.listdir(libdir) if n.endswith(".jar"))
+    for n in names:
+        if not JAR.fullmatch(n):
+            die(EX_INTEGRITY, "unexpected library name " + n)
+        regular(os.path.join(libdir, n))
+    return names
+
+def find_class(libdir, entry):
+    for n in jars(libdir):
+        try:
+            with zipfile.ZipFile(os.path.join(libdir, n)) as z:
+                if entry in z.namelist():
+                    print(n)
+                    return
+        except zipfile.BadZipFile:
+            die(EX_INTEGRITY, n + ": not a zip")
+    die(EX_PREREQ, "%s is not on the reference classpath (%s)" % (entry, libdir))
+
+def argfiles(libdir, argsdir):
+    cp = ":".join("/cp/" + n for n in jars(libdir))
+    if not cp:
+        die(EX_PREREQ, "no libraries in " + libdir)
+    real_dir(argsdir)
+    for name, value in (("javac.args", cp), ("run.args", "/driver:" + cp)):
+        with open(os.path.join(argsdir, name), "x") as fh:
+            fh.write("-cp\n" + value + "\n")
+
+def digest(corpus):
+    real_dir(corpus)
+    out = {}
+    for rel in ("MANIFEST.tsv", "driver/CorpusDriver.java"):
+        p = os.path.join(corpus, rel)
+        regular(p)
+        out[rel] = sha256(p)
+    for rel in walk(os.path.join(corpus, "cases")):
+        out["cases/" + rel] = sha256(os.path.join(corpus, "cases", rel))
+    return out
+
+def load_json(p, cap=4 * 1024 * 1024):
+    regular(p)
+    try:
+        v = json.loads(read(p, cap).decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        die(EX_INTEGRITY, "%s: not valid JSON (%s)" % (p, e))
+    if not isinstance(v, dict):
+        die(EX_INTEGRITY, p + ": not a JSON object")
+    return v
+
+def provenance(tree, build_info, corpus, before, libdir, ref, ref_id, builder, builder_id, pin_args):
+    inputs = digest(corpus)
+    if inputs != load_json(before):
+        die(EX_INTEGRITY, "corpus inputs changed during the capture")
+    env_p = os.path.join(tree, "driver-env.json")
+    prov = {
+        "format": FORMAT,
+        "harness": "tak-parity v1 (capture-corpus)",
+        "captured_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "build_info": load_json(build_info),
+        "pins": pins(pin_args),
+        "images": {"reference": ref, "reference_id": ref_id, "builder": builder, "builder_id": builder_id},
+        "driver_environment": load_json(env_p),
+        "determinism": {"runs": 2, "identical": True},
+        "inputs": inputs,
+        "classpath": [{"name": n, "sha256": sha256(os.path.join(libdir, n))} for n in jars(libdir)],
+        "license": ("Inputs and driver: Apache-2.0 (TAK-RS). Outputs: machine output of the GPLv3 Java "
+                    "reference on those inputs, committed as Apache-2.0 test data; see corpus/README.md "
+                    "and POAM-2026-10-26-05."),
+    }
+    os.unlink(env_p)
+    with open(os.path.join(tree, "PROVENANCE.json"), "x") as fh:
+        json.dump(prov, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+
+def check_provenance(tree, corpus, pin_args):
+    p = load_json(os.path.join(tree, "PROVENANCE.json"))
+    for k in ("format", "captured_at_utc", "build_info", "pins", "images", "driver_environment",
+              "determinism", "inputs", "classpath"):
+        if k not in p:
+            die(EX_INTEGRITY, "PROVENANCE.json: field %r missing" % k)
+    if p["format"] != FORMAT:
+        die(EX_INTEGRITY, "PROVENANCE.json: format %r, expected %r" % (p["format"], FORMAT))
+    bi = p["build_info"]
+    if not isinstance(bi, dict) or not re.fullmatch(r"[0-9a-f]{40}", str(bi.get("src_commit", ""))):
+        die(EX_INTEGRITY, "PROVENANCE.json: build_info.src_commit missing or invalid")
+    if not isinstance(p["determinism"], dict) or p["determinism"].get("identical") is not True:
+        die(EX_INTEGRITY, "PROVENANCE.json: the capture was not shown to be deterministic")
+    want = pins(pin_args)
+    if p["pins"] != want:
+        diff = sorted(k for k in set(want) | set(p["pins"] if isinstance(p["pins"], dict) else {})
+                      if not isinstance(p["pins"], dict) or p["pins"].get(k) != want.get(k))
+        die(EX_INTEGRITY, "PROVENANCE.json: pins differ from the current pins.env: " + ", ".join(diff))
+    now = digest(corpus)
+    if p["inputs"] != now:
+        old = p["inputs"] if isinstance(p["inputs"], dict) else {}
+        diff = sorted(k for k in set(old) | set(now) if old.get(k) != now.get(k))
+        die(EX_INTEGRITY, "the capture was made from other inputs than the current corpus: "
+            + ", ".join(diff[:20]) + (" ..." if len(diff) > 20 else ""))
+
+def check_tree(d, mode):
+    files = walk(d)
+    fail = []
+    if "PROVENANCE.json" not in files:
+        fail.append("PROVENANCE.json missing")
+    if "results.tsv" not in files:
+        die(EX_INTEGRITY, d + ": results.tsv missing")
+    top_ok = {"PROVENANCE.json", "results.tsv"} | ({"DEVIATIONS.tsv"} if mode == "golden" else set())
+    outputs, protos, nums = set(), set(), set()
+    for f in files:
+        parts = f.split("/")
+        if len(parts) == 1:
+            if f not in top_ok:
+                fail.append("unexpected file " + f)
+        elif len(parts) == 2 and parts[0] in DIRS and re.fullmatch(ID + re.escape(DIRS[parts[0]]), parts[1]):
+            outputs.add(f)
+        elif len(parts) == 2 and parts[0] == "proto-inputs" and re.fullmatch(ID + r"\.pb\.hex", parts[1]):
+            protos.add(parts[1][:-len(".pb.hex")])
+        elif len(parts) == 2 and parts[0] == "numbers" and parts[1] in NUMBERS:
+            nums.add(parts[1])
+        else:
+            fail.append("unexpected path " + f)
+        if os.lstat(os.path.join(d, f)).st_size > MAX_FILE:
+            fail.append(f + ": larger than %d bytes" % MAX_FILE)
+    for n in sorted(NUMBERS - nums):
+        fail.append("numbers/" + n + " missing")
+    for f in sorted(outputs):
+        if f.endswith(".pb.hex") and not re.fullmatch(rb"[0-9a-f]*\n", read(os.path.join(d, f))):
+            fail.append(f + ": not lowercase hex plus one newline")
+    for f in sorted(protos):
+        if not re.fullmatch(rb"[0-9a-f]*\n", read(os.path.join(d, "proto-inputs", f + ".pb.hex"))):
+            fail.append("proto-inputs/" + f + ".pb.hex: not lowercase hex plus one newline")
+    try:
+        lines = read(os.path.join(d, "results.tsv")).decode("utf-8").split("\n")
+    except UnicodeDecodeError:
+        die(EX_INTEGRITY, "results.tsv: not UTF-8")
+    if lines[0] != "id\tdirection\toutcome\toutput\tdetail" or lines[-1] != "":
+        fail.append("results.tsv: bad header or missing final newline")
+    used, cases, pids = set(), set(), set()
+    for no, line in enumerate(lines[1:-1], 2):
+        f = line.split("\t")
+        if len(f) != 5 or not re.fullmatch(ID, f[0]) or f[1] not in DIRS:
+            fail.append("results.tsv:%d: malformed row" % no)
+            continue
+        if (f[0], f[1]) in cases:
+            fail.append("results.tsv:%d: duplicate case %s %s" % (no, f[0], f[1]))
+        cases.add((f[0], f[1]))
+        if f[1].startswith("p"):
+            pids.add(f[0])
+        want = f[1] + "/" + f[0] + DIRS[f[1]]
+        if f[2] == "ok" and f[3] == want and f[4] == "":
+            if want not in outputs:
+                fail.append("results.tsv:%d: %s missing" % (no, want))
+            used.add(want)
+        elif not (f[2] == "reject" and f[3] == "-" and f[4]):
+            fail.append("results.tsv:%d: outcome/output/detail inconsistent" % no)
+    if not cases:
+        fail.append("results.tsv: no cases")
+    for f in sorted(outputs - used):
+        fail.append(f + ": not referenced by results.tsv")
+    for i in sorted(protos - pids):
+        fail.append("proto-inputs/%s.pb.hex: no p2x/p2p case %s" % (i, i))
+    if fail:
+        for m in fail[:50]:
+            print("corpus: check-tree: " + m, file=sys.stderr)
+        die(EX_INTEGRITY, "%s: %d layout problem(s)" % (d, len(fail)))
+
+def compare(exp, act, skip):
+    e = [f for f in walk(exp) if f not in skip]
+    a = [f for f in walk(act) if f not in skip]
+    def label(f):
+        parts = f.split("/")
+        if len(parts) == 2 and parts[0] in DIRS:
+            return parts[0] + " " + parts[1][:-len(DIRS[parts[0]])]
+        return f
+    diffs = ["missing " + label(f) for f in sorted(set(e) - set(a))]
+    diffs += ["extra   " + label(f) for f in sorted(set(a) - set(e))]
+    for f in sorted(set(e) & set(a)):
+        if read(os.path.join(exp, f)) != read(os.path.join(act, f)):
+            diffs.append("differs " + label(f))
+    for m in diffs[:200]:
+        print("corpus: " + m)
+    if len(diffs) > 200:
+        print("corpus: ... %d more" % (len(diffs) - 200))
+    if diffs:
+        print("corpus: %d difference(s) between %s and %s" % (len(diffs), exp, act))
+        sys.exit(EX_DIFF)
+    print("corpus: identical (%d files)" % len(e))
+
+mode, args = sys.argv[1], sys.argv[2:]
+if mode == "extract":
+    extract(args[0], args[1], int(args[2]))
+elif mode == "find-class":
+    find_class(args[0], args[1])
+elif mode == "argfiles":
+    argfiles(args[0], args[1])
+elif mode == "digest":
+    d = digest(args[0])
+    if len(args) > 1:
+        with open(args[1], "x") as fh:
+            json.dump(d, fh, indent=2, sort_keys=True)
+    print("corpus: %d input files" % len(d), file=sys.stderr)
+elif mode == "provenance":
+    provenance(*args[:9], args[9:])
+elif mode == "check-provenance":
+    check_provenance(args[0], args[1], args[2:])
+elif mode == "check-tree":
+    check_tree(args[0], args[1])
+elif mode == "compare":
+    compare(args[0], args[1], set(args[2:]))
+else:
+    die(2, "internal: unknown mode " + mode)
+'
+
+corpus_py() {
+  require_tool python3
+  python3 -I -c "$CORPUS_PY" "$@"
+}
+
+# corpus_py with the loaded pins appended as KEY=VALUE arguments.
+corpus_py_pins() {
+  load_pins
+  corpus_py "$@" "JDK_BUILD_IMAGE=$JDK_BUILD_IMAGE" "JRE_RUN_IMAGE=$JRE_RUN_IMAGE" \
+    "POSTGIS_IMAGE=$POSTGIS_IMAGE" "GRADLE_VERSION=$GRADLE_VERSION" \
+    "GRADLE_DIST_SHA256=$GRADLE_DIST_SHA256" "GRADLE_WRAPPER_JAR_SHA256=$GRADLE_WRAPPER_JAR_SHA256"
 }
 
 # ---------------------------------------------------------------------------
@@ -723,6 +1123,148 @@ cmd_verify_junit() {
   verify_junit "$1" || die "$EX_FAIL" "JUnit verification failed for $1"
 }
 
+# capture-corpus (plan §1.4.1-1.4.2): run the Apache-2.0 corpus driver
+# against the jars of the built reference, twice, in the pinned JRE 17 image
+# with no network, a read-only root filesystem, no capabilities and the
+# invoking (non-root) uid; only a per-run output directory is writable.
+# Output is untrusted until reject_special and check-tree pass (SEC-003,
+# SEC-009). Writes <results>/<UTC>-corpus/ with PROVENANCE.json (SR-4).
+cmd_capture_corpus() {
+  local sha image war cw uid gid stamp out i rc ref_id builder_id special=0
+  load_pins
+  require_engine
+  require_tool python3
+  sha=$(src_sha)
+  image="tak-parity-java:$sha"
+  "$ENGINE_BIN" image inspect "$image" >/dev/null 2>&1 ||
+    die "$EX_PREREQ" "image $image not found; run 'harness.sh build-java image' first"
+  "$ENGINE_BIN" image inspect "$BUILDER_IMAGE" >/dev/null 2>&1 ||
+    die "$EX_PREREQ" "builder image $BUILDER_IMAGE not found; run 'harness.sh build-java' first"
+  war="$WORK_DIR/tester/takserver.war"
+  [[ -f "$war" ]] && [[ ! -L "$war" ]] || die "$EX_PREREQ" "no $war; run 'harness.sh build-java' first"
+  uid=$(id -u)
+  gid=$(id -g)
+  [[ "$uid" -ne 0 ]] || die "$EX_PREREQ" "refusing to capture as root; run the harness as an unprivileged user"
+  stamp=$(utc_stamp)
+  out="$RESULTS_DIR/$stamp-corpus"
+  [[ ! -e "$out" ]] || die "$EX_PREREQ" "$out already exists"
+
+  cw="$WORK_DIR/corpus"
+  if [[ -e "$cw" ]]; then
+    chmod -R u+rwX "$cw"
+    rm -rf "$cw"
+  fi
+  (umask 077 && mkdir -p "$cw/lib" "$cw/args" "$cw/src" "$cw/classes")
+  corpus_py digest "$CORPUS_DIR" "$cw/inputs.json" || die "$?" "corpus inputs under $CORPUS_DIR failed validation"
+  corpus_py extract "$war" "$cw/lib" "$MAX_WAR_ENTRY_BYTES" || die "$?" "cannot extract the reference libraries from $war"
+  local holder
+  holder=$(corpus_py find-class "$cw/lib" "$CORPUS_CLASS_PROBE") || die "$?" "reference classpath check failed"
+  log "reference classpath: $CORPUS_CLASS_PROBE in $holder"
+  corpus_py argfiles "$cw/lib" "$cw/args" || die "$?" "cannot write the classpath argument files"
+  cp "$CORPUS_DIR/driver/CorpusDriver.java" "$cw/src/CorpusDriver.java"
+
+  local -a userns sandbox
+  userns=()
+  if [[ "$(basename "$ENGINE_BIN")" = podman ]]; then
+    userns=(--userns=keep-id)
+  fi
+  sandbox=(--rm --network none --read-only --tmpfs "/tmp:rw,noexec,nosuid,nodev,size=256m"
+    --cap-drop ALL --security-opt no-new-privileges:true --user "$uid:$gid"
+    --memory 4g --pids-limit 512 --env HOME=/tmp --workdir /tmp)
+
+  log "compiling the corpus driver (javac --release 17, no network)"
+  CURRENT_CONTAINER="tak-parity-corpus-javac-$stamp-$$"
+  "$ENGINE_BIN" run --name "$CURRENT_CONTAINER" ${userns[@]+"${userns[@]}"} "${sandbox[@]}" \
+    --volume "$cw/src:/src:ro" --volume "$cw/lib:/cp:ro" --volume "$cw/args:/args:ro" \
+    --volume "$cw/classes:/classes" --entrypoint javac "$BUILDER_IMAGE" \
+    @/args/javac.args --release 17 -encoding UTF-8 -Xlint:all -d /classes /src/CorpusDriver.java ||
+    die "$EX_FAIL" "the corpus driver did not compile"
+  CURRENT_CONTAINER=""
+  reject_special "$cw/classes" || die "$EX_INTEGRITY" "compiler output contained symlinks or special files"
+  [[ -f "$cw/classes/CorpusDriver.class" ]] || die "$EX_FAIL" "javac produced no CorpusDriver.class"
+
+  for i in 1 2; do
+    (umask 077 && mkdir "$cw/run$i")
+    log "corpus run $i of 2 ($image, no network)"
+    CURRENT_CONTAINER="tak-parity-corpus-run$i-$stamp-$$"
+    set +e
+    "$ENGINE_BIN" run --name "$CURRENT_CONTAINER" ${userns[@]+"${userns[@]}"} "${sandbox[@]}" \
+      --volume "$cw/lib:/cp:ro" --volume "$cw/classes:/driver:ro" --volume "$cw/args:/args:ro" \
+      --volume "$CORPUS_DIR:/corpus:ro" --volume "$cw/run$i:/out" \
+      --entrypoint java "$image" -XX:-UsePerfData -Xmx2g @/args/run.args CorpusDriver /corpus /out
+    rc=$?
+    set -e
+    CURRENT_CONTAINER=""
+    [[ "$rc" -eq 0 ]] || die "$EX_FAIL" "corpus driver failed in run $i (exit $rc)"
+    # SEC-003/SEC-009: nothing on the host reads the output before this.
+    reject_special "$cw/run$i" || special=1
+  done
+  [[ "$special" -eq 0 ]] || die "$EX_INTEGRITY" "corpus output contained symlinks or special files (removed; see above)"
+  corpus_py compare "$cw/run1" "$cw/run2" ||
+    die "$EX_FAIL" "capture is not deterministic: run 1 and run 2 differ (see above)"
+
+  ref_id=$("$ENGINE_BIN" image inspect --format '{{.Id}}' "$image")
+  builder_id=$("$ENGINE_BIN" image inspect --format '{{.Id}}' "$BUILDER_IMAGE")
+  mkdir -p "$RESULTS_DIR"
+  mv "$cw/run1" "$out"
+  corpus_py_pins provenance "$out" "$WORK_DIR/build-info.json" "$CORPUS_DIR" "$cw/inputs.json" "$cw/lib" \
+    "$image" "$ref_id" "$BUILDER_IMAGE" "$builder_id" || die "$?" "cannot write PROVENANCE.json"
+  scrub_key_material "$out"
+  reject_special "$out" || die "$EX_INTEGRITY" "corpus output contained symlinks or special files: $out"
+  corpus_py check-tree "$out" capture || die "$?" "captured corpus failed the layout check: $out"
+  LAST_CORPUS=$out
+  log "capture-corpus: ok ($out; runs 1 and 2 identical)"
+}
+
+# verify-corpus [<dir>]: byte comparison of a captured tree with the
+# committed goldens, every file except PROVENANCE.json and DEVIATIONS.tsv;
+# no missing and no extra files. Without <dir>, the capture made earlier in
+# the same invocation.
+cmd_verify_corpus() {
+  local dir=$1 golden="$CORPUS_DIR/golden"
+  [[ -n "$dir" ]] || dir=$LAST_CORPUS
+  [[ -n "$dir" ]] || die "$EX_UNSUPPORTED" "verify-corpus needs <dir> or a preceding capture-corpus"
+  if [[ -L "$golden" ]]; then
+    die "$EX_INTEGRITY" "$golden is a symlink"
+  fi
+  [[ -d "$golden" ]] ||
+    die "$EX_PREREQ" "no committed goldens at $golden; import a capture first (harness.sh import-corpus <dir>)"
+  corpus_py check-tree "$dir" capture || die "$?" "captured corpus failed the layout check: $dir"
+  corpus_py check-tree "$golden" golden || die "$?" "committed goldens failed the layout check: $golden"
+  corpus_py compare "$golden" "$dir" PROVENANCE.json DEVIATIONS.tsv ||
+    die "$?" "corpus drift: the Java reference output differs from the committed goldens (cases above)"
+  log "verify-corpus: PASS ($dir)"
+}
+
+# import-corpus <dir>: replace golden/ with a validated capture. The capture
+# must have been made from the current inputs, driver and pins. An existing
+# golden/DEVIATIONS.tsv (user-approved rows) is kept.
+cmd_import_corpus() {
+  local dir=$1 golden="$CORPUS_DIR/golden" stage
+  load_pins
+  [[ -d "$dir" ]] && [[ ! -L "$dir" ]] || die "$EX_PREREQ" "import-corpus: $dir is not a directory"
+  corpus_py check-tree "$dir" capture || die "$?" "capture failed the layout check: $dir"
+  corpus_py_pins check-provenance "$dir" "$CORPUS_DIR" || die "$?" "capture provenance check failed: $dir"
+  if [[ -L "$golden" ]] || { [[ -e "$golden" ]] && [[ ! -d "$golden" ]]; }; then
+    die "$EX_INTEGRITY" "$golden is not a directory"
+  fi
+  stage=$(make_tmp)
+  cp -R "$dir" "$stage/golden"
+  if [[ -e "$golden/DEVIATIONS.tsv" ]]; then
+    [[ -f "$golden/DEVIATIONS.tsv" ]] && [[ ! -L "$golden/DEVIATIONS.tsv" ]] ||
+      die "$EX_INTEGRITY" "$golden/DEVIATIONS.tsv is not a regular file"
+    cp "$golden/DEVIATIONS.tsv" "$stage/golden/DEVIATIONS.tsv"
+  else
+    printf 'id\tdirection\tdeviation\tapproved_on\n' >"$stage/golden/DEVIATIONS.tsv"
+  fi
+  reject_special "$stage/golden" || die "$EX_INTEGRITY" "capture contained symlinks or special files"
+  corpus_py check-tree "$stage/golden" golden || die "$?" "staged goldens failed the layout check"
+  rm -rf "$golden"
+  cp -R "$stage/golden" "$golden"
+  corpus_py check-tree "$golden" golden || die "$?" "imported goldens failed the layout check: $golden"
+  log "import-corpus: ok ($golden replaced from $dir; review the diff before committing)"
+}
+
 cmd_list() {
   require_engine
   compose_env
@@ -797,6 +1339,93 @@ st_reject_as_cmd_test() {
   local special=0
   reject_special "$1" || special=1
   [ "$special" -eq 0 ]
+}
+
+# Selftest helpers for the golden corpus (WU6b). Synthetic wars for the
+# extractor: one good, one without the probe class, and one per rejection.
+st_make_wars() {
+  python3 -I -c '
+import io, os, stat, sys, warnings, zipfile
+d = sys.argv[1]
+probe = "tak/server/proto/StreamingProtoBufHelper.class"
+reg = stat.S_IFREG | 0o644
+def jar(names):
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w") as z:
+        for n in names:
+            z.writestr(n, b"x")
+    return b.getvalue()
+def war(name, entries):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        with zipfile.ZipFile(os.path.join(d, name), "w") as z:
+            for n, data, mode in entries:
+                i = zipfile.ZipInfo(n)
+                i.create_system = 3
+                i.external_attr = mode << 16
+                z.writestr(i, data)
+good = [("META-INF/MANIFEST.MF", b"Manifest-Version: 1.0\n", reg),
+        ("WEB-INF/classes/x.class", b"x", reg),
+        ("WEB-INF/lib/b-2.0.jar", jar(["b/B.class"]), reg),
+        ("WEB-INF/lib/a-1.0.jar", jar([probe]), reg)]
+war("good.war", good)
+war("noclass.war", good[:3])
+war("slip.war", good + [("WEB-INF/lib/../../evil.jar", b"x", reg)])
+war("abs.war", good + [("/tmp/evil.jar", b"x", reg)])
+war("link.war", good + [("WEB-INF/lib/l.jar", b"/etc/hosts", stat.S_IFLNK | 0o777)])
+war("dup.war", good + [("WEB-INF/lib/a-1.0.jar", jar([probe]), reg)])
+war("big.war", good + [("WEB-INF/lib/big.jar", b"x" * 4096, reg)])
+with open(os.path.join(d, "notzip.war"), "wb") as fh:
+    fh.write(b"not a zip")
+' "$1"
+}
+
+# Extract with a 2 KiB entry cap into a fresh <dest>.
+st_extract() {
+  mkdir -p "$2"
+  corpus_py extract "$1" "$2" 2048
+}
+
+st_dir_empty() {
+  [[ -d "$1" ]] && [[ -z "$(ls -A "$1")" ]]
+}
+
+st_argfiles() {
+  mkdir -p "$2"
+  corpus_py argfiles "$1" "$2" &&
+    [[ "$(sed -n 2p "$2/run.args")" = "/driver:/cp/a-1.0.jar:/cp/b-2.0.jar" ]] &&
+    [[ "$(sed -n 2p "$2/javac.args")" = "/cp/a-1.0.jar:/cp/b-2.0.jar" ]]
+}
+
+st_first_line_is() {
+  [[ "$(head -n 1 "$1")" = "$2" ]]
+}
+
+# A capture tree as capture-corpus writes it, from the fixture outputs and
+# the fixture build-info/driver environment. Usage: <fixtures> <corpus> <out> <work>
+st_corpus_capture() {
+  mkdir -p "$4/lib"
+  cp -R "$1/capture" "$3"
+  cp "$1/driver-env.json" "$3/driver-env.json"
+  corpus_py digest "$2" "$4/inputs.json"
+  corpus_py_pins provenance "$3" "$1/build-info.json" "$2" "$4/inputs.json" "$4/lib" \
+    tak-parity-java:selftest sha256:selftest "$BUILDER_IMAGE" sha256:selftest
+}
+
+# Edits PROVENANCE.json: <file> <key> [<json value>]; no value deletes it.
+st_edit_provenance() {
+  python3 -I -c 'import json, sys
+p = json.load(open(sys.argv[1]))
+if len(sys.argv) > 3:
+    p[sys.argv[2]] = json.loads(sys.argv[3])
+else:
+    del p[sys.argv[2]]
+json.dump(p, open(sys.argv[1], "w"), indent=2, sort_keys=True)' "$@"
+}
+
+# The harness against the selftest corpus root (ST_CORPUS) and pins.
+st_harness_corpus() {
+  env TAK_PARITY_CORPUS_DIR="$ST_CORPUS" TAK_PARITY_PINS="$PINS_FILE" bash "$SELF" "$@"
 }
 
 # Runs a harness function in a separate bash process that sources this
@@ -954,6 +1583,109 @@ open(sys.argv[1], "wb").write("<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<!DO
   st_expect 3 "--version-tag for a release not on the history fails" \
     st_lib - resolve_version_tag "$vt" "$vt_head" 9.9-RELEASE-1
 
+  # Golden corpus (WU6b): extractor, inputs, layout, verify and import.
+  local cfx="$FIXTURES_DIR/corpus" wars="$ST_TMP/wars" cap="$ST_TMP/cap" c
+  st_expect 0 "corpus driver carries the Apache-2.0 SPDX header" \
+    st_first_line_is "$PARITY_DIR/corpus/driver/CorpusDriver.java" "// SPDX-License-Identifier: Apache-2.0"
+  mkdir -p "$wars"
+  st_make_wars "$wars"
+  st_expect 0 "corpus extract: a well-formed war" st_lib - st_extract "$wars/good.war" "$ST_TMP/x-good"
+  st_expect 0 "corpus extract wrote the WEB-INF/lib jars" test -f "$ST_TMP/x-good/a-1.0.jar"
+  st_expect 1 "corpus extract wrote nothing else" test -e "$ST_TMP/x-good/x.class"
+  st_expect 0 "corpus find-class finds the probe class" \
+    st_lib - corpus_py find-class "$ST_TMP/x-good" "$CORPUS_CLASS_PROBE"
+  st_expect 0 "corpus argfiles: sorted classpath, driver first" st_lib - st_argfiles "$ST_TMP/x-good" "$ST_TMP/args"
+  st_expect 0 "corpus extract: a war without the probe class" st_lib - st_extract "$wars/noclass.war" "$ST_TMP/x-noclass"
+  st_expect 3 "corpus find-class: probe class not on the classpath" \
+    st_lib - corpus_py find-class "$ST_TMP/x-noclass" "$CORPUS_CLASS_PROBE"
+  for c in slip:"a ../ entry (zip-slip)" abs:"an absolute entry" link:"a symlink entry" \
+    dup:"a duplicate entry" big:"an entry over the size cap" notzip:"a file that is not a zip"; do
+    st_expect 4 "corpus extract rejects ${c#*:}" st_lib - st_extract "$wars/${c%%:*}.war" "$ST_TMP/x-${c%%:*}"
+    st_expect 0 "corpus extract wrote nothing for ${c%%:*}.war" st_dir_empty "$ST_TMP/x-${c%%:*}"
+  done
+
+  ST_CORPUS="$ST_TMP/corpus"
+  mkdir -p "$ST_CORPUS/driver"
+  cp -R "$cfx/inputs/." "$ST_CORPUS/"
+  cp "$PARITY_DIR/corpus/driver/CorpusDriver.java" "$ST_CORPUS/driver/"
+  st_expect 0 "corpus digest of the fixture inputs" st_lib - corpus_py digest "$ST_CORPUS"
+  cp -R "$ST_CORPUS" "$ST_TMP/corpus-link"
+  ln -s /etc/hosts "$ST_TMP/corpus-link/cases/xml/link.xml"
+  st_expect 4 "corpus inputs: a symlink under cases/ is rejected" st_lib - corpus_py digest "$ST_TMP/corpus-link"
+  mkdir -p "$ST_TMP/corpus-empty"
+  st_expect 3 "corpus inputs: no MANIFEST.tsv" st_lib - corpus_py digest "$ST_TMP/corpus-empty"
+
+  st_expect 0 "corpus provenance for a fixture capture" \
+    st_lib - st_corpus_capture "$cfx" "$ST_CORPUS" "$cap" "$ST_TMP/capwork"
+  st_expect 1 "corpus provenance consumed driver-env.json" test -e "$cap/driver-env.json"
+  st_expect 0 "corpus check-tree accepts the capture" st_lib - corpus_py check-tree "$cap" capture
+  st_expect 3 "verify-corpus without committed goldens" st_harness_corpus verify-corpus "$cap"
+  st_expect 0 "import-corpus of a valid capture" st_harness_corpus import-corpus "$cap"
+  st_expect 0 "import-corpus created an empty DEVIATIONS.tsv" \
+    st_first_line_is "$ST_CORPUS/golden/DEVIATIONS.tsv" "$(printf 'id\tdirection\tdeviation\tapproved_on')"
+  st_expect 0 "verify-corpus: capture equals the goldens" st_harness_corpus verify-corpus "$cap"
+
+  cp -R "$cap" "$ST_TMP/cap-drift"
+  printf ' ' >>"$ST_TMP/cap-drift/x2x/sa-basic.xml"
+  st_expect 1 "verify-corpus: one output byte differs" st_harness_corpus verify-corpus "$ST_TMP/cap-drift"
+  cp -R "$cap" "$ST_TMP/cap-missing"
+  rm "$ST_TMP/cap-missing/x2p/sa-basic.pb.hex"
+  sed 's#^sa-basic\tx2p\tok\tx2p/sa-basic.pb.hex\t$#sa-basic\tx2p\treject\t-\tnull#' \
+    "$cap/results.tsv" >"$ST_TMP/cap-missing/results.tsv"
+  st_expect 1 "verify-corpus: a golden case is missing (now reject)" st_harness_corpus verify-corpus "$ST_TMP/cap-missing"
+  cp -R "$cap" "$ST_TMP/cap-extra"
+  printf 'extra-1\tx2x\tok\tx2x/extra-1.xml\t\n' >>"$ST_TMP/cap-extra/results.tsv"
+  printf '<event/>' >"$ST_TMP/cap-extra/x2x/extra-1.xml"
+  st_expect 1 "verify-corpus: an extra case" st_harness_corpus verify-corpus "$ST_TMP/cap-extra"
+  mkdir -p "$ST_TMP/cmp-a" "$ST_TMP/cmp-b"
+  printf 'a' >"$ST_TMP/cmp-a/f1"
+  printf 'b' >"$ST_TMP/cmp-a/f2"
+  cp "$ST_TMP/cmp-a/f1" "$ST_TMP/cmp-b/f1"
+  st_expect 1 "corpus compare: a missing file" st_lib - corpus_py compare "$ST_TMP/cmp-a" "$ST_TMP/cmp-b"
+  st_expect 1 "corpus compare: an extra file" st_lib - corpus_py compare "$ST_TMP/cmp-b" "$ST_TMP/cmp-a"
+  st_expect 0 "corpus compare: identical run trees" st_lib - corpus_py compare "$cap" "$cap"
+  cp -R "$cap" "$ST_TMP/cap-link"
+  ln -s /etc/hosts "$ST_TMP/cap-link/x2x/link.xml"
+  st_expect 4 "verify-corpus: a symlink in the capture" st_harness_corpus verify-corpus "$ST_TMP/cap-link"
+  cp -R "$cap" "$ST_TMP/cap-junk"
+  : >"$ST_TMP/cap-junk/notes.txt"
+  st_expect 4 "verify-corpus: an unexpected file in the capture" st_harness_corpus verify-corpus "$ST_TMP/cap-junk"
+  cp -R "$cap" "$ST_TMP/cap-orphan"
+  printf '<event/>' >"$ST_TMP/cap-orphan/x2x/orphan.xml"
+  st_expect 4 "verify-corpus: an output not in results.tsv" st_harness_corpus verify-corpus "$ST_TMP/cap-orphan"
+  cp -R "$cap" "$ST_TMP/cap-dangling"
+  rm "$ST_TMP/cap-dangling/x2p/sa-basic.pb.hex"
+  st_expect 4 "verify-corpus: results.tsv names a missing output" st_harness_corpus verify-corpus "$ST_TMP/cap-dangling"
+  cp -R "$cap" "$ST_TMP/cap-hex"
+  printf '1200\n\n' >"$ST_TMP/cap-hex/x2p/sa-basic.pb.hex"
+  st_expect 4 "verify-corpus: malformed hex golden" st_harness_corpus verify-corpus "$ST_TMP/cap-hex"
+
+  sed 's/^JRE_RUN_IMAGE=\(.*\)@sha256:.*/JRE_RUN_IMAGE=\1@sha256:0000000000000000000000000000000000000000000000000000000000000000/' \
+    "$PINS_FILE" >"$ST_TMP/pins-other.env"
+  st_expect 4 "import-corpus: provenance pins differ from pins.env" \
+    env TAK_PARITY_CORPUS_DIR="$ST_CORPUS" TAK_PARITY_PINS="$ST_TMP/pins-other.env" bash "$SELF" import-corpus "$cap"
+  cp -R "$ST_CORPUS" "$ST_TMP/corpus-changed"
+  printf ' ' >>"$ST_TMP/corpus-changed/cases/xml/sa-basic.xml"
+  st_expect 4 "import-corpus: inputs changed since the capture" \
+    env TAK_PARITY_CORPUS_DIR="$ST_TMP/corpus-changed" TAK_PARITY_PINS="$PINS_FILE" bash "$SELF" import-corpus "$cap"
+  cp -R "$cap" "$ST_TMP/cap-nodet"
+  st_edit_provenance "$ST_TMP/cap-nodet/PROVENANCE.json" determinism
+  st_expect 4 "import-corpus: provenance field missing" st_harness_corpus import-corpus "$ST_TMP/cap-nodet"
+  cp -R "$cap" "$ST_TMP/cap-nondet"
+  st_edit_provenance "$ST_TMP/cap-nondet/PROVENANCE.json" determinism '{"runs": 2, "identical": false}'
+  st_expect 4 "import-corpus: capture not deterministic" st_harness_corpus import-corpus "$ST_TMP/cap-nondet"
+  printf 'sa-basic\tx2x\tDEV-03\t2026-10-27\n' >>"$ST_CORPUS/golden/DEVIATIONS.tsv"
+  st_expect 0 "import-corpus again over existing goldens" st_harness_corpus import-corpus "$cap"
+  st_expect 0 "import-corpus kept the DEVIATIONS.tsv rows" grep -q 'DEV-03' "$ST_CORPUS/golden/DEVIATIONS.tsv"
+  st_expect 0 "verify-corpus after re-import" st_harness_corpus verify-corpus "$cap"
+
+  st_expect 2 "verify-corpus without <dir> or capture-corpus" bash "$SELF" verify-corpus
+  st_expect 2 "verify-corpus followed by a command, no capture" bash "$SELF" verify-corpus selftest
+  st_expect 2 "import-corpus without <dir>" bash "$SELF" import-corpus
+  st_expect 2 "import-corpus followed by a command" bash "$SELF" import-corpus selftest
+  st_expect 3 "capture-corpus verify-corpus with a missing engine" \
+    env TAK_PARITY_ENGINE_BIN=tak-parity-no-such-engine bash "$SELF" capture-corpus verify-corpus
+
   printf 'selftest: %d passed, %d failed\n' "$ST_PASS" "$ST_FAIL"
   [ "$ST_FAIL" -eq 0 ] || die "$EX_FAIL" "selftest failed"
 }
@@ -972,6 +1704,17 @@ fi
 
 readonly US=$'\x1f'
 QUEUE=()
+HAVE_CAPTURE=0
+
+# True for a word that starts a command or an option (so a following
+# command is never taken as verify-corpus's optional <dir>).
+is_command_word() {
+  case "$1" in
+    preflight | build-java | image | up | test | verify-junit | list | logs | down | clean | selftest | \
+      capture-corpus | verify-corpus | import-corpus | -*) return 0 ;;
+  esac
+  return 1
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -1058,6 +1801,30 @@ while [ $# -gt 0 ]; do
       QUEUE+=("verify-junit${US}$1")
       shift
       ;;
+    capture-corpus)
+      QUEUE+=("$1")
+      HAVE_CAPTURE=1
+      shift
+      ;;
+    verify-corpus)
+      shift
+      vdir=""
+      if [[ $# -ge 1 ]] && ! is_command_word "$1"; then
+        vdir=$1
+        shift
+      fi
+      [[ -n "$vdir" ]] || [[ "$HAVE_CAPTURE" -eq 1 ]] ||
+        die "$EX_UNSUPPORTED" "verify-corpus needs <dir> or an earlier capture-corpus in the same chain"
+      QUEUE+=("verify-corpus${US}${vdir}")
+      ;;
+    import-corpus)
+      shift
+      if [[ $# -eq 0 ]] || is_command_word "$1"; then
+        die "$EX_UNSUPPORTED" "import-corpus needs a <dir>"
+      fi
+      QUEUE+=("import-corpus${US}$1")
+      shift
+      ;;
     *)
       die "$EX_UNSUPPORTED" "unknown command or option '$1' (see --help)"
       ;;
@@ -1097,6 +1864,9 @@ for entry in "${QUEUE[@]}"; do
     down) cmd_down ;;
     clean) cmd_clean ;;
     selftest) cmd_selftest ;;
+    capture-corpus) cmd_capture_corpus ;;
+    verify-corpus) cmd_verify_corpus "$arg" ;;
+    import-corpus) cmd_import_corpus "$arg" ;;
   esac
 done
 exit "$EX_OK"

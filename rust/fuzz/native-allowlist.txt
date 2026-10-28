@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Native-code allow-list for the EXCLUDED fuzz workspace rust/fuzz/
+# (development only, never shipped). Same format as
+# rust/scripts/native-allowlist.txt; read by `make fuzz-deny`, which runs
+# scripts/check-native-deps.sh on the fuzz graph with this file.
+# scripts/check-fuzz-policy.sh fails unless the only entry is libfuzzer-sys.
+#
+# Format: <crate> <class> <targets> # rationale (approved: <date>, <run>)
+#
+# libfuzzer-sys 0.4.13 declares no `links` key, so check-native-deps.sh
+# reports it as "allow-listed, not in graph"; the enforcing control is
+# fuzz/deny.toml (cc only under libfuzzer-sys, libfuzzer-sys in
+# allow-build-scripts). This entry is the record of the exception and keeps
+# the check failing if a future release adds a `links` key for another
+# target. The targets are the fuzzing hosts (CI: x86_64 Linux; developers:
+# aarch64 Linux and macOS), not shipping targets.
+
+# POAM: POAM-2026-10-27-01 - development-only libFuzzer native-code exception.
+libfuzzer-sys native x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,aarch64-apple-darwin  # compiles and links LLVM libFuzzer (C++) into fuzz binaries only; development-only exception (plan Q2; approved: 2026-10-27, 20261027-180458-phase1-protocol-config)

@@ -17,7 +17,8 @@ updated to point at them.
 | Integration | `cargo test -p tak-integration-tests --test <name>` | `cargo test -p tak-integration-tests` | When service behaviour changed (needs Postgres+PostGIS) |
 | Parity | `cargo test -p tak-parity --test <name>` | full parity suite against a reference Java TAK Server | `port` mode; any wire/API change |
 | Supply chain | — | `cargo deny check` + `cargo audit` | When `Cargo.toml`/`Cargo.lock` changed |
-| Fuzz smoke | `cargo fuzz run <target> -- -max_total_time=60` | all targets, 5 min each | When a parser changed (CoT XML, protobuf framing, multipart, JWT, X.509 input) |
+| Fuzz smoke | `make fuzz-smoke` (`cargo fuzz run <target> -- -max_total_time=60` in `rust/fuzz/`, pinned nightly) | all targets, 5 min each | When a parser changed (CoT XML, protobuf framing, multipart, JWT, X.509 input) |
+| Golden corpus | `make test` (runs `tak-cot/tests/golden.rs` against `rust/parity/corpus/golden/`); CI: `harness.sh capture-corpus verify-corpus` in `rust-parity.yml` | 0 mismatches outside approved deviations | When tak-cot, tak-proto or the corpus changed |
 | No `unsafe` | `grep -rn "unsafe" rust/crates rust/services rust/web` | every hit has `// SAFETY:`; `#![forbid(unsafe_code)]` on crates that need none | Yes |
 | Compliance annotations | — | count of `COMPLIANCE MAPPING:` should not drop | Yes for code changes |
 | Markdown | — | `make markdownlint` | When docs changed |

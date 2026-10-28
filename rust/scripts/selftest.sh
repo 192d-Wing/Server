@@ -199,6 +199,50 @@ rm -f "$PO/notes.toml" "$PO/docs/compliance/POAM.md"
 expect 1 "missing POAM.md fails" env RUST_ROOT="$PO" REPO_ROOT="$PO" bash "$S/check-poam-ids.sh"
 
 # ---------------------------------------------------------------------------
+echo "== check-poam-markers (NIST-010)"
+PM="$T/poammark"
+pm_reset() { rm -rf "$PM"; mkdir -p "$PM/rust/crates/a/src" "$PM/rust/docs" "$PM/.github/workflows"; }
+pm() { env RUST_ROOT="$PM/rust" REPO_ROOT="$PM" bash "$S/check-poam-markers.sh"; }
+# pm_case <exit> <description> <file under $PM> <line>
+pm_case() { pm_reset; printf '%s\n' "$4" >"$PM/$3"; expect "$1" "$2" pm; }
+pm_reset
+expect 0 "no markers passes" pm
+pm_case 1 "bare // marker in .rs -> FAIL" rust/crates/a/src/lib.rs "// $P: the bounds are per element"
+pm_case 0 "// marker with an ID passes" rust/crates/a/src/lib.rs "// $P: $POAM_REAL - fixture"
+pm_case 0 "# marker with an ID and no space passes" rust/deny.toml "# $P:$POAM_REAL"
+pm_case 1 "bare /// doc-comment marker -> FAIL" rust/crates/a/src/lib.rs "/// $P: later"
+pm_case 1 "bare /* marker -> FAIL" rust/crates/a/src/lib.rs "/* $P: later */"
+pm_case 1 "bare * continuation marker -> FAIL" rust/crates/a/src/lib.rs " * $P: later"
+pm_case 1 "marker whose ID is not the first token -> FAIL" rust/crates/a/src/lib.rs "// $P: see $POAM_REAL"
+pm_case 1 "marker with a malformed ID (3-digit sequence) -> FAIL" rust/crates/a/src/lib.rs "// $P: ${POAM_REAL}1"
+pm_case 1 "trailing # marker on a TOML value -> FAIL" rust/deny.toml "x = 1 # $P: later"
+pm_case 1 "bare marker in Makefile -> FAIL" rust/Makefile "# $P: later"
+pm_case 1 "bare marker in a rust-*.yml workflow -> FAIL" .github/workflows/rust-x.yml "# $P: later"
+pm_case 0 "bare marker under docs/ is out of scope" rust/docs/x.toml "# $P: later"
+pm_case 0 "marker text without a comment introducer is not a marker" rust/crates/a/src/lib.rs "let s = \"$P: x\";"
+pm_case 0 "commented-out example citing the placeholder passes" rust/deny.toml "#   # $P: $P-YYYY-MM-DD-NN - <disposition>"
+pm_case 1 "placeholder in a live marker -> FAIL" rust/deny.toml "# $P: $P-YYYY-MM-DD-NN - <disposition>"
+# Sequencing ratchet: while check-poam-markers is outside POLICY_CHECKS (it is
+# strict-only until WU10 assigns IDs to the bare markers in tak-cot), the real
+# tree must still fail it; once it passes, it must join POLICY_CHECKS.
+pm_seq() {
+  local pc
+  pc=$(awk '/^POLICY_CHECKS[[:space:]]*:=/ { g = 1 } g { print } g && !/\\$/ { exit }' "$root/Makefile")
+  case "$pc" in
+    *check-poam-markers*) bash "$S/check-poam-markers.sh" ;;
+    *) if bash "$S/check-poam-markers.sh" >/dev/null 2>&1; then
+         echo "real tree passes check-poam-markers: add it to POLICY_CHECKS in rust/Makefile (WU10)"; return 1
+       fi ;;
+  esac
+}
+expect 0 "check-poam-markers is in POLICY_CHECKS, or the real tree still has bare markers" pm_seq
+pm_strict() { # the check-annotations-strict recipe calls the script
+  awk '/^check-annotations-strict:/ { r = 1; next } r && !/^\t/ { exit } r' "$root/Makefile" |
+    grep -qE 'scripts/check-poam-markers\.sh'
+}
+expect 0 "check-annotations-strict runs check-poam-markers" pm_strict
+
+# ---------------------------------------------------------------------------
 echo "== check-advisory-sync"
 AS="$T/adv"; mkdir -p "$AS/.cargo"
 write_deny() { printf '[advisories]\nversion = 2\nignore = [\n%s]\n\n[licenses]\nallow = []\n' "$1" >"$AS/deny.toml"; }
@@ -206,7 +250,7 @@ write_audit() { printf '[advisories]\nignore = [\n%s]\n\n[yanked]\nenabled = tru
 write_deny "    { id = \"$ADV1\", reason = \"fixture\" },
 "
 write_audit "    # fixture rationale
-    # POAM: $POAM_REAL - fixture
+    # $P: $POAM_REAL - fixture
     \"$ADV1\",
 "
 expect 0 "identical lists with POAM lines pass" env RUST_ROOT="$AS" bash "$S/check-advisory-sync.sh"
@@ -243,6 +287,7 @@ echo '' >"$N/web/src/lib.rs"
 web_manifest() {
   printf '[package]\nname = "web"\nversion = "0.1.0"\nedition = "2021"\n' >"$N/web/Cargo.toml"
   [ "$1" = dep ] && printf '\n[dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
+  [[ "$1" = devdep ]] && printf '\n[dev-dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
   (cd "$N" && cargo generate-lockfile --offline -q)
 }
 nd() { env RUST_ROOT="$N" NATIVE_ALLOWLIST="$T/allow.txt" WASM_ROOTS=web bash "$S/check-native-deps.sh"; }
@@ -255,6 +300,9 @@ printf 'fakesys native x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu # fixt
 expect 0 "linux-only entry, not reachable from wasm roots, passes" nd
 web_manifest dep
 expect 1 "linux-only entry reached from a wasm root fails" nd
+web_manifest devdep
+expect 1 "linux-only entry reached from a wasm root by a dev edge fails (links rule keeps the full graph)" nd
+web_manifest dep
 printf 'fakesys nativ all # bad class\n' >"$T/allow.txt"
 expect 1 "malformed allow-list class fails" nd
 printf 'fakesys native all\naws-lc-rs marker all # never on wasm32\n' >"$T/allow.txt"
@@ -269,6 +317,9 @@ for f in "$N2/web/a/src/lib.rs" "$N2/web/b/src/lib.rs" "$N2/sha2/src/lib.rs"; do
 web_a() {
   printf '[package]\nname = "a"\nversion = "0.1.0"\nedition = "2021"\n' >"$N2/web/a/Cargo.toml"
   [ "$1" = crypto ] && printf '\n[dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = devcrypto ]] && printf '\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = buildcrypto ]] && printf '\n[build-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = transcrypto ]] && printf '\n[dependencies]\nb = { path = "../b" }\n' >>"$N2/web/a/Cargo.toml"
   (cd "$N2" && cargo generate-lockfile --offline -q)
 }
 nd2() { env RUST_ROOT="$N2" NATIVE_ALLOWLIST="$T/allow.txt" NATIVE_TARGETS=wasm32-unknown-unknown WASM_ROOTS="$1" bash "$S/check-native-deps.sh"; }
@@ -278,6 +329,17 @@ expect 0 "every web/ member in WASM_ROOTS passes" nd2 "a b"
 expect 1 "web/ member missing from WASM_ROOTS fails" nd2 "a"
 web_a crypto
 expect 1 "crypto crate (sha2) in the wasm32 closure fails" nd2 "a b"
+echo "== WU2: wasm32 crypto rule judges the shipped (normal-edge) closure"
+web_a devcrypto
+expect 0 "dev-only crypto crate (sha2) of a wasm32 root passes" nd2 "a b"
+web_a buildcrypto
+expect 0 "build-only crypto crate (sha2) of a wasm32 root passes" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nsha2 = { path = "../../sha2" }\n' >"$N2/web/b/Cargo.toml"
+web_a transcrypto
+expect 1 "crypto crate reached by a chain of normal edges fails" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >"$N2/web/b/Cargo.toml"
+expect 0 "crypto crate only behind a dev edge of a normal dependency passes" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n' >"$N2/web/b/Cargo.toml"
 web_a nodep
 
 # ---------------------------------------------------------------------------
@@ -1143,6 +1205,215 @@ if [ -f "$real_ci" ]; then
 else
   failed=$((failed + 1)); echo "FAIL  real rust-ci.yml not found at $real_ci"
 fi
+
+# ---------------------------------------------------------------------------
+echo "== check-fuzz-policy (Phase 1 WU9; plan 8.6)"
+# Fixture: the REAL rust/deny.toml and rust/fuzz/{deny.toml, Cargo.toml,
+# native-allowlist.txt, rust-toolchain.toml} in a throwaway main workspace,
+# so the cases also prove the committed files pass.
+FP="$T/fuzzpol"
+fp_reset() {
+  rm -rf "$FP"; mkdir -p "$FP/a/src" "$FP/fuzz"
+  cat >"$FP/Cargo.toml" <<'EOF'
+[workspace]
+resolver = "3"
+members = ["a"]
+exclude = ["fuzz"]
+EOF
+  printf '[package]\nname = "a"\nversion = "0.1.0"\nedition = "2021"\n' >"$FP/a/Cargo.toml"
+  echo '' >"$FP/a/src/lib.rs"
+  printf '# fixture\nversion = 4\n\n[[package]]\nname = "a"\nversion = "0.1.0"\n' >"$FP/Cargo.lock"
+  cp "$root/deny.toml" "$FP/deny.toml"
+  for f in deny.toml Cargo.toml native-allowlist.txt rust-toolchain.toml; do
+    cp "$root/fuzz/$f" "$FP/fuzz/$f"
+  done
+  cp -R "$root/fuzz/fuzz_targets" "$FP/fuzz/fuzz_targets"
+  printf '# fixture\nversion = 4\n' >"$FP/fuzz/Cargo.lock"
+  mkdir -p "$FP/scripts" "$FP/repo/.github/workflows"
+  cp "$root/scripts/fuzz-seeds.sh" "$FP/scripts/fuzz-seeds.sh"
+  cp "$root/scripts/ci-changes.sh" "$FP/scripts/ci-changes.sh"
+  cp "$root/../.github/workflows/rust-fuzz.yml" "$FP/repo/.github/workflows/rust-fuzz.yml"
+}
+cfp() { env RUST_ROOT="$FP" REPO_ROOT="$FP/repo" CARGO_NET_OFFLINE=true bash "$S/check-fuzz-policy.sh"; }
+# fp_perl <file> <perl -0 substitution>: edit a fixture file in place.
+# A mutation that matches nothing would leave the fixture unchanged and make the
+# case pass or fail for the wrong reason, so an unchanged file aborts the run.
+fp_perl() {
+  local before
+  before=$(cksum <"$FP/$1")
+  perl -0pi -e "$2" "$FP/$1"
+  if [[ "$(cksum <"$FP/$1")" = "$before" ]]; then
+    echo "selftest: fp_perl mutation matched nothing in $1: $2" >&2
+    exit 1
+  fi
+}
+if [[ -d "$root/fuzz" ]]; then
+  fp_reset
+  expect 0 "real fuzz/ files in a conforming workspace pass" cfp
+  expect 0 "real rust/ tree passes" env RUST_ROOT="$root" bash "$S/check-fuzz-policy.sh"
+
+  fp_reset; rm -rf "$FP/fuzz"
+  expect 1 "F1 fuzz/ missing -> FAIL" cfp
+  fp_reset; rm "$FP/fuzz/Cargo.lock"
+  expect 1 "F1 fuzz/Cargo.lock missing -> FAIL" cfp
+  fp_reset; rm "$FP/fuzz/deny.toml"
+  expect 1 "F1 fuzz/deny.toml missing -> FAIL" cfp
+
+  fp_reset; fp_perl fuzz/Cargo.toml 's/^\[workspace\]\nmembers = \["\."\]\n//m'
+  expect 1 "F2 fuzz/Cargo.toml without its own [workspace] -> FAIL" cfp
+
+  fp_reset; fp_perl Cargo.toml 's/^exclude = \["fuzz"\]\n//m'
+  expect 1 "F3 main workspace without exclude = [\"fuzz\"] -> FAIL" cfp
+  fp_reset; fp_perl Cargo.toml 's/^exclude = \["fuzz"\]/exclude = ["other"]/m'
+  expect 1 "F3 exclude lists another directory only -> FAIL" cfp
+  fp_reset; mkdir -p "$FP/fuzz/inner/src"
+  printf '[package]\nname = "inner"\nversion = "0.1.0"\nedition = "2021"\n' >"$FP/fuzz/inner/Cargo.toml"
+  echo '' >"$FP/fuzz/inner/src/lib.rs"
+  fp_perl Cargo.toml 's/members = \["a"\]/members = ["a", "fuzz\/inner"]/'
+  expect 1 "F3 main-workspace member under fuzz/ -> FAIL" cfp
+
+  fp_reset; printf '\n[dependencies]\nlibfuzzer-sys = "0.4"\n' >>"$FP/a/Cargo.toml"
+  expect 1 "F4 member with a libfuzzer-sys dependency -> FAIL" cfp
+  fp_reset; printf '\n[dev-dependencies]\nlibfuzzer-sys = "0.4"\n' >>"$FP/a/Cargo.toml"
+  expect 1 "F4 member with a libfuzzer-sys dev-dependency -> FAIL" cfp
+  fp_reset; printf '\n[target.x86_64-unknown-linux-gnu.dependencies]\nlf = { package = "libfuzzer-sys", version = "0.4" }\n' >>"$FP/a/Cargo.toml"
+  expect 1 "F4 renamed, target-specific libfuzzer-sys dependency -> FAIL" cfp
+  fp_reset; printf '\n[[package]]\nname = "libfuzzer-sys"\nversion = "0.4.13"\n' >>"$FP/Cargo.lock"
+  expect 1 "F4 libfuzzer-sys in rust/Cargo.lock -> FAIL" cfp
+
+  fp_reset; fp_perl fuzz/deny.toml 's/^yanked = "deny"$/yanked = "warn"/m'
+  expect 1 "F5 shared line changed outside a delta block -> FAIL" cfp
+  fp_reset; fp_perl deny.toml 's/^(    \{ crate = "vcpkg".*\n)/$1    { crate = "fixture-sys", reason = "fixture" },\n/m'
+  expect 1 "F5 new ban in rust/deny.toml not copied to fuzz/deny.toml -> FAIL" cfp
+  fp_reset; fp_perl deny.toml 's/^(    \{ crate = "vcpkg".*\n)/$1    { crate = "fixture-sys", reason = "fixture" },\n/m'
+  fp_perl fuzz/deny.toml 's/^(    \{ crate = "vcpkg".*\n)/$1    { crate = "fixture-sys", reason = "fixture" },\n/m'
+  expect 0 "F5 the same new ban in both files passes" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^ *# >>> FUZZ-DELTA replaces=0: libFuzzer licence.*?# <<< FUZZ-DELTA\n//ms'
+  expect 1 "F5 missing NCSA delta block -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^ *# >>> FUZZ-DELTA replaces=0: libfuzzer-sys build script.*?# <<< FUZZ-DELTA\n//ms'
+  expect 1 "F5 missing allow-build-scripts delta block -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/ *# >>> FUZZ-DELTA replaces=1: libfuzzer-sys may wrap cc.*?# <<< FUZZ-DELTA\n/    { crate = "cc", wrappers = ["aws-lc-fips-sys", "aws-lc-sys", "cmake"], reason = "C compilation only for AWS-LC" },\n/ms'
+  expect 1 "F5 missing cc delta block (main cc line kept) -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/"cmake", "libfuzzer-sys"\]/"cmake", "libfuzzer-sys", "evil"]/'
+  expect 1 "F5 cc delta with an extra wrapper -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/\["aws-lc-fips-sys", "aws-lc-sys", "cmake", "libfuzzer-sys"\]/["libfuzzer-sys"]/'
+  expect 1 "F5 cc delta that drops the main wrappers -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^(    "libfuzzer-sys", .*\n)/$1    "evil-sys",\n/m'
+  expect 1 "F5 extra crate inside a delta block -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/\{ allow = \["NCSA"\], crate = "libfuzzer-sys" \}/{ allow = ["GPL-3.0-only"], crate = "libfuzzer-sys" }/'
+  expect 1 "F5 different licence in the exception block -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^yanked = "deny"\n/# >>> FUZZ-DELTA replaces=1: fixture\nyanked = "warn"\n# <<< FUZZ-DELTA\n/m'
+  expect 1 "F5 delta block that replaces a policy line -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^unmaintained = "all"\n/# >>> FUZZ-DELTA replaces=1: fixture\n# dropped\n# <<< FUZZ-DELTA\n/m'
+  expect 1 "F5 delta block that deletes a policy line -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^(    "libfuzzer-sys", .*\n)/$1    { allow = ["NCSA"], crate = "libfuzzer-sys" },\n/m'
+  expect 1 "F5 NCSA exception in the wrong array -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/^(    # >>> FUZZ-DELTA replaces=0: libfuzzer-sys build script.*\n(?:.*\n)*?)    # <<< FUZZ-DELTA\n/$1/m'
+  expect 1 "F5 unterminated delta block -> FAIL" cfp
+  fp_reset; fp_perl fuzz/deny.toml 's/# >>> FUZZ-DELTA replaces=0: libfuzzer-sys build/# >>> FUZZ-DELTA replace=0: libfuzzer-sys build/'
+  expect 1 "F5 malformed start marker -> FAIL" cfp
+  fp_reset; printf '\n[sources.extra]\nx = 1\n' >>"$FP/fuzz/deny.toml"
+  expect 1 "F5 extra lines after the shared policy -> FAIL" cfp
+  fp_reset; printf '# FUZZ-DELTA\n' >>"$FP/deny.toml"; printf '# FUZZ-DELTA\n' >>"$FP/fuzz/deny.toml"
+  expect 1 "F5 FUZZ-DELTA marker in rust/deny.toml -> FAIL" cfp
+
+  fp_reset; printf 'cc native all # fixture\n' >>"$FP/fuzz/native-allowlist.txt"
+  expect 1 "F6 allow-list with a second entry -> FAIL" cfp
+  fp_reset; fp_perl fuzz/native-allowlist.txt 's/^libfuzzer-sys /honggfuzz /m'
+  expect 1 "F6 allow-list naming another crate -> FAIL" cfp
+
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^channel = ".*"$/channel = "nightly"/m'
+  expect 1 "F7 floating nightly -> FAIL" cfp
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^channel = ".*"$/channel = "1.99.1"/m'
+  expect 1 "F7 stable channel -> FAIL" cfp
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^channel = ".*"$/channel = "nightly-2026-13-01"/m'
+  expect 1 "F7 impossible date -> FAIL" cfp
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^channel = ".*"$/channel = "nightly-2026-10-23-aarch64-apple-darwin"/m'
+  expect 1 "F7 host-suffixed channel -> FAIL" cfp
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^(channel = ".*"\n)/$1channel = "nightly"\n/m'
+  expect 1 "F7 two channel keys -> FAIL" cfp
+  fp_reset; printf 'path = "/opt/toolchain"\n' >>"$FP/fuzz/rust-toolchain.toml"
+  expect 1 "F7 path override -> FAIL" cfp
+  fp_reset; fp_perl fuzz/rust-toolchain.toml 's/^channel = ".*"$/channel = "nightly-2027-01-31"/m'
+  expect 0 "F7 another dated nightly passes" cfp
+
+  fp_reset; printf '\n[[bin]]\nname = "extra"\npath = "fuzz_targets/extra.rs"\n' >>"$FP/fuzz/Cargo.toml"
+  cp "$FP/fuzz/fuzz_targets/javafmt.rs" "$FP/fuzz/fuzz_targets/extra.rs"
+  expect 1 "F8 new [[bin]] target missing from the workflow matrix and seeds -> FAIL" cfp
+  fp_perl repo/.github/workflows/rust-fuzz.yml 's/^(          - javafmt\n)/$1          - extra\n/m'
+  fp_perl scripts/fuzz-seeds.sh 's/^(targets=".*) javafmt"$/$1 javafmt extra"/m'
+  expect 0 "F8 new target listed in Cargo.toml, matrix and seeds passes" cfp
+  rm "$FP/fuzz/fuzz_targets/extra.rs"
+  expect 1 "F8 [[bin]] without fuzz_targets/<name>.rs -> FAIL" cfp
+  fp_reset; fp_perl repo/.github/workflows/rust-fuzz.yml 's/^          - stream_frame\n//m'
+  expect 1 "F8 matrix missing a target -> FAIL" cfp
+  fp_reset; fp_perl scripts/fuzz-seeds.sh 's/^(targets=".*) javafmt"$/$1"/m'
+  expect 1 "F8 fuzz-seeds.sh missing a target -> FAIL" cfp
+  fp_reset; rm "$FP/repo/.github/workflows/rust-fuzz.yml"
+  expect 1 "F8 rust-fuzz.yml missing -> FAIL" cfp
+
+  # F9 (REL-005): rust_inputs prefixes must trigger rust-fuzz.yml on PRs.
+  fp_reset; fp_perl repo/.github/workflows/rust-fuzz.yml 's/^      - "src\/takserver-protobuf\/\*\*"\n//m'
+  expect 1 "F9 rust_inputs prefix missing from pull_request.paths -> FAIL" cfp
+  fp_reset; fp_perl repo/.github/workflows/rust-fuzz.yml 's/^      - "src\/takserver-protobuf\/\*\*"$/      # - "src\/takserver-protobuf\/**"/m'
+  expect 1 "F9 prefix only in a comment -> FAIL" cfp
+  fp_reset; fp_perl repo/.github/workflows/rust-fuzz.yml 's/^      - "src\/takserver-protobuf\/\*\*"\n//m'
+  fp_perl repo/.github/workflows/rust-fuzz.yml 's/^(  workflow_dispatch:\n)/  push:\n    paths:\n      - "src\/takserver-protobuf\/**"\n$1/m'
+  expect 1 "F9 prefix under push.paths only, not pull_request -> FAIL" cfp
+  fp_reset; fp_perl repo/.github/workflows/rust-fuzz.yml "s/^      - \"src\\/takserver-protobuf\\/\\*\\*\"\$/      - 'src\\/takserver-protobuf\\/**' # quoted/m"
+  expect 0 "F9 single-quoted entry with a trailing comment passes" cfp
+  fp_reset; fp_perl scripts/ci-changes.sh "s/^rust_inputs='\\^src\\/takserver-protobuf\\/'/rust_inputs='^src\\/takserver-protobuf\\/|^utils\\/fixture\\/'/m"
+  expect 1 "F9 new rust_inputs prefix not in pull_request.paths -> FAIL" cfp
+  fp_perl repo/.github/workflows/rust-fuzz.yml 's/^(      - "src\/takserver-protobuf\/\*\*"\n)/$1      - "utils\/fixture\/**"\n/m'
+  expect 0 "F9 new prefix listed in pull_request.paths passes" cfp
+  fp_reset; fp_perl scripts/ci-changes.sh "s/^rust_inputs='\\^src\\/takserver-protobuf\\/'/rust_inputs='^src\\/(a|b)\\/'/m"
+  expect 1 "F9 non-literal rust_inputs alternative -> FAIL (unverifiable)" cfp
+  fp_reset; fp_perl scripts/ci-changes.sh "s/^rust_inputs=.*\\n//m"
+  expect 1 "F9 ci-changes.sh without rust_inputs -> FAIL" cfp
+  fp_reset; rm "$FP/scripts/ci-changes.sh"
+  expect 1 "F9 ci-changes.sh missing -> FAIL" cfp
+else
+  failed=$((failed + 1)); echo "FAIL  rust/fuzz/ not found (check-fuzz-policy cases need the real files)"
+fi
+
+# ---------------------------------------------------------------------------
+echo "== fuzz-seeds (QA-003: per-target, concurrent-safe)"
+FS="$T/fuzzseeds"; mkdir -p "$FS/cases/xml" "$FS/cases/proto" "$FS/cases/numbers"
+printf '<event/>' >"$FS/cases/xml/a.xml"
+printf '0a00\n' >"$FS/cases/proto/a.pb.hex"
+printf '1.0\n2.5\n' >"$FS/cases/numbers/n.txt"
+fs() { env CORPUS_CASES="$FS/cases" bash "$S/fuzz-seeds.sh" "$FS/out" "$@"; }
+fs_all() { # every target dir exists and is non-empty; no staging or lock left
+  local t
+  for t in cot_parse cot_to_proto proto_decode proto_to_cot proto_roundtrip stream_frame javafmt; do
+    [[ -n "$(find "$FS/out/$t" -type f 2>/dev/null | head -n 1)" ]] || { echo "no seeds for $t"; return 1; }
+  done
+  [[ -z "$(find "$FS/out" -maxdepth 1 -name '.*' ! -name . ! -path "$FS/out")" ]] || { echo "leftover:"; ls -a "$FS/out"; return 1; }
+}
+expect 0 "fuzz-seeds without --only builds every target" fs
+expect 0 "every target seeded, no staging/lock left" fs_all
+touch "$FS/out/cot_parse/marker" "$FS/out/javafmt/marker"
+expect 0 "fuzz-seeds --only javafmt" fs --only javafmt
+expect 0 "--only javafmt replaced javafmt/" test ! -e "$FS/out/javafmt/marker"
+expect 0 "--only javafmt left cot_parse/ untouched" test -e "$FS/out/cot_parse/marker"
+expect 2 "--only with an empty target -> usage error" fs --only ""
+expect 2 "--only with an unknown target -> usage error" fs --only nope
+expect 2 "--only with two names in one argument -> usage error" fs --only "cot_parse javafmt"
+expect 2 "--only without a target -> usage error" fs --only
+fs_par() { # two targets at once, five times; both complete, cot_parse marker kept
+  local i p1 p2 r=0
+  for i in 1 2 3 4 5; do
+    fs --only proto_decode >/dev/null & p1=$!
+    fs --only stream_frame >/dev/null & p2=$!
+    wait "$p1" || r=1; wait "$p2" || r=1
+  done
+  [[ "$r" -eq 0 ]] && fs_all && [[ -e "$FS/out/cot_parse/marker" ]]
+}
+expect 0 "concurrent --only runs for different targets do not interfere" fs_par
+mkdir "$FS/out/.lock.javafmt"
+fs_held() { env CORPUS_CASES="$FS/cases" bash "$S/fuzz-seeds.sh" "$FS/out" --only cot_parse; }
+expect 0 "a lock held on another target does not block --only cot_parse" fs_held
+rmdir "$FS/out/.lock.javafmt"
 
 # ---------------------------------------------------------------------------
 echo

@@ -1,0 +1,174 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAK-RS coverage-guided fuzzing (cargo-fuzz / libFuzzer) of the tak-cot and
+# tak-proto parsers and conversions, in the EXCLUDED rust/fuzz/ workspace
+# (own Cargo.lock, deny.toml, native allow-list and pinned dated nightly).
+# libFuzzer is C++ compiled by libfuzzer-sys: a development-only native-code
+# exception (Phase 1 plan Q2), never part of the product graph
+# (rust/scripts/check-fuzz-policy.sh, run by `make policy` in rust-ci.yml).
+# POAM: POAM-2026-10-27-01 - development-only libFuzzer native-code exception.
+#
+# NEVER a required check, and it defines no job named after the required
+# check (rust-ci.yml owns that name; rust/scripts/check-workflows.sh enforces
+# it). Runs nightly, on dispatch, and on PRs touching tak-cot, tak-proto, the
+# .proto schemas tak-proto compiles in place (src/takserver-protobuf, the
+# `rust_inputs` entry in rust/scripts/ci-changes.sh; NIST-009; every
+# rust_inputs prefix must be listed under pull_request.paths, enforced by
+# check-fuzz-policy.sh F9), the fuzz workspace, its seeds or this file.
+# Per-target run time (plan 1.8):
+# pull_request 60 s, schedule 600 s, workflow_dispatch the `max_total_time`
+# input (default 300 s, the WU9 gate evidence; validated as an integer in
+# 30..3600 and passed only through env). Targets run under AddressSanitizer
+# with debug assertions, -timeout=1, -rss_limit_mb=2048 and max_len 65536;
+# a crash, timeout or OOM fails the job and its inputs are uploaded. Matrix
+# jobs share nothing on the runner; locally, `make fuzz-run` for different
+# targets may run concurrently (per-target seeds, corpus and artifacts).
+# No caches (nothing executable is restored
+# from a cache), no secrets, read-only token.
+#
+# Toolchain: rust/fuzz/rust-toolchain.toml selects the pinned nightly when
+# cargo runs in rust/fuzz (rustup auto-install); nothing here overrides it.
+# cargo-fuzz is built from crates.io (checksum-verified) with its own
+# lockfile (--locked); taiki-e/install-action at the pinned SHA has no
+# cargo-fuzz manifest.
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: SA-11 (Developer Testing and Evaluation), SA-11(8) (Dynamic
+#   Code Analysis), SR-3 (Supply Chain Controls and Processes), CM-2
+#   (Baseline Configuration)
+
+name: rust-fuzz
+
+on:
+  schedule:
+    # Nightly, off the hour (UTC).
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      max_total_time:
+        description: Seconds per target (integer, 30..3600)
+        type: string
+        required: false
+        default: "300"
+  pull_request:
+    paths:
+      - "rust/crates/tak-cot/**"
+      - "rust/crates/tak-proto/**"
+      # Read in place by rust/crates/tak-proto/build.rs (CM-3(2)).
+      - "src/takserver-protobuf/**"
+      - "rust/fuzz/**"
+      - "rust/parity/corpus/cases/**"
+      - "rust/scripts/fuzz-seeds.sh"
+      - "rust/scripts/check-fuzz-policy.sh"
+      - ".github/workflows/rust-fuzz.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-fuzz-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTUP_AUTO_INSTALL: "1"
+  CARGO_FUZZ_VERSION: "0.13.2"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: rust
+
+jobs:
+  # Policy, deny, audit and native-code allow-list of the fuzz graph.
+  fuzz-deny:
+    name: fuzz-deny
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Toolchains (rust-toolchain.toml, fuzz/rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          want=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' rust-toolchain.toml)
+          rustc --version | grep -F "rustc $want "
+          fwant=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"(nightly-[0-9]{4}-[0-9]{2}-[0-9]{2})".*/\1/p' fuzz/rust-toolchain.toml)
+          [ -n "$fwant" ] || { echo "::error::fuzz/rust-toolchain.toml has no dated nightly channel"; exit 1; }
+          (cd fuzz && rustc --version && rustup show active-toolchain | grep -E "^$fwant-")
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+        with:
+          tool: cargo-deny@0.20.2,cargo-audit@0.22.2
+          fallback: none
+      - name: Fuzz policy, cargo deny, cargo audit, native-code allow-list
+        run: make fuzz-deny
+
+  fuzz:
+    name: fuzz
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep equal to the [[bin]] targets in rust/fuzz/Cargo.toml.
+        target:
+          - cot_parse
+          - cot_to_proto
+          - proto_decode
+          - proto_to_cot
+          - proto_roundtrip
+          - stream_frame
+          - javafmt
+    env:
+      FUZZ_TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fuzz toolchain (fuzz/rust-toolchain.toml)
+        run: |
+          set -euo pipefail
+          fwant=$(sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"(nightly-[0-9]{4}-[0-9]{2}-[0-9]{2})".*/\1/p' fuzz/rust-toolchain.toml)
+          [ -n "$fwant" ] || { echo "::error::fuzz/rust-toolchain.toml has no dated nightly channel"; exit 1; }
+          cd fuzz
+          rustc --version
+          cargo --version
+          rustup show active-toolchain | grep -E "^$fwant-"
+      - name: Install cargo-fuzz (crates.io, --locked)
+        run: |
+          set -euo pipefail
+          cargo install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked
+          cargo fuzz --version | grep -F "cargo-fuzz $CARGO_FUZZ_VERSION"
+      # Run time by event; the dispatch input is validated before use and
+      # reaches the shell only through env (never interpolated into run:).
+      - name: Run time for this event
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MAX_TOTAL_TIME: ${{ inputs.max_total_time }}
+        run: |
+          set -euo pipefail
+          case "$EVENT_NAME" in
+            pull_request) t=60 ;;
+            schedule) t=600 ;;
+            workflow_dispatch)
+              t=${INPUT_MAX_TOTAL_TIME:-300}
+              if [[ ! "$t" =~ ^[0-9]{1,4}$ ]] || (( 10#$t < 30 || 10#$t > 3600 )); then
+                echo "::error::max_total_time must be an integer in 30..3600"
+                exit 2
+              fi
+              t=$((10#$t))
+              ;;
+            *) echo "::error::unexpected event"; exit 2 ;;
+          esac
+          echo "FUZZ_MAX_TOTAL_TIME=$t" >>"$GITHUB_ENV"
+          echo "max_total_time: $t s per target"
+      - name: Fuzz the target
+        run: make fuzz-run
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: rust/fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore
+          retention-days: 30

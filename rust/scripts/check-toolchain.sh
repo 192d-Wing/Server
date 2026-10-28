@@ -7,7 +7,9 @@
 #   - .github/workflows/rust-*.yml never override the pinned toolchain: no
 #     dtolnay/rust-toolchain, actions-rust-lang/setup-rust-toolchain,
 #     `toolchain:` input, `cargo +<toolchain>`, or `rustup default/override`.
-#     (A future fuzz nightly job is an explicit, planned exception.)
+#     rust-fuzz.yml needs no exception: it runs cargo in rust/fuzz/, where
+#     rustup selects the dated nightly pinned in fuzz/rust-toolchain.toml
+#     (checked by scripts/check-fuzz-policy.sh F7).
 #
 # COMPLIANCE MAPPING:
 # - NIST 800-53: CM-2 (Baseline Configuration), CM-6 (Configuration Settings),

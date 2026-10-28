@@ -10,8 +10,9 @@
 # native server crates use these calls legitimately.
 #
 # Crates outside rust/web that also build for wasm32 carry their own copy of
-# this file (crates/tak-api-types/clippy.toml, guarded by
-# crates/tak-api-types/tests/clippy_config.rs).
+# this file, each guarded by the crate's tests/clippy_config.rs:
+# crates/tak-api-types/clippy.toml, crates/tak-proto/clippy.toml and
+# crates/tak-cot/clippy.toml. Copy every setting change into all three.
 #
 # The workspace denies unwrap/expect/panic/dbg/print in production code
 # (Cargo.toml [workspace.lints.clippy]); tests may use them.

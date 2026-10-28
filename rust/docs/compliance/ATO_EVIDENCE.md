@@ -1,11 +1,11 @@
 # Authority to Operate (ATO) Evidence Guide
 
-**Document Version:** 0.4
-**Date:** 2026-10-27
-**TAK-RS Version:** 0.0.1 (Phase 0, unreleased)
+**Document Version:** 0.7
+**Date:** 2026-10-28
+**TAK-RS Version:** 0.0.1 (Phase 1a, unreleased)
 **Java Reference:** TAK Server `5.7-RELEASE-14` (`../src`)
-**Status:** Phase 0 build run. Local evidence recorded (QA Rounds 1 and 2), the CM-2 pin inventory filled in, and the first CI evidence recorded (PR 7, 2026-10-27). No nightly run yet.
-**Run:** `20261026-210255-phase0-foundations`
+**Status:** Phase 1a build run, before its gate. Phase 1a local QA evidence (2026-10-28) and fix-round results recorded; fuzz pins added to the inventory. No CI run exists for Phase 1a (GitHub Actions disabled); the golden corpus has not been captured, so no corpus provenance record exists. No nightly run yet.
+**Run:** `20261027-180458-phase1-protocol-config`
 
 ## Document Control
 
@@ -23,7 +23,9 @@
 ### Scope
 
 Phase 0: development environment only. Evidence describes the developer
-process, CI and supply chain. There is no TAK-RS runtime (TOE) yet.
+process, CI and supply chain. Phase 1a adds evidence for the first TOE
+library components (`tak-proto`, `tak-cot`; no network wiring until Phase 3)
+and for the development-only fuzz workspace.
 
 ### Vocabulary
 
@@ -45,7 +47,9 @@ control is met; status is in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md).
 | SBOM (CycloneDX JSON, `rust-sbom`) | `sbom` job (non-blocking, POAM-2026-10-26-01) | Actions artifact; first: `rust-sbom` from run 40539495255 (13544 bytes, 2 files) | 90 days |
 | Parity results (JUnit XML, TAKCL and server logs, `build-info.json`; keystores and keys excluded) | `rust-parity.yml` (WU8) | Actions artifact `parity-results-<run_id>-<attempt>` (regular files only; symlinks and special files rejected); first: `parity-results-40539495328-1` (76550 bytes) | 90 days (the first expires 2027-01-25) |
 | Nightly supply-chain results | `rust-supply-chain.yml` (WU5) | GitHub Actions run history (no scheduled run yet) | GitHub default log retention |
-| Workflow run record (`plan.md`, `impl-notes.md`, `qa-report.md`, `findings-*.md`, `gate.md`, `wu0-applied.md`) | `/tak-rs-workflow` | `.agent-runs/<run>/` (not committed; ignored by the root `.gitignore`) | Until copied to the evidence store |
+| Workflow run record (`plan.md`, `impl-notes.md`, `qa-report.md`, `findings-*.md`, `gate.md`, `wu0-applied.md`) | `/tak-rs-workflow` | `.agent-runs/<run>/` (not committed; ignored by the root `.gitignore`); Phase 1a: `.agent-runs/20261027-180458-phase1-protocol-config/`, including `parity-map.md`, `decisions.md`, QA logs (`qa-gate-logs/`, `qa-fuzz-logs/`) and the QA-001 reproducer (`qa-repro/`) | Until copied to the evidence store |
+| Fuzz results (libFuzzer output; crash, timeout and OOM inputs) | `rust-fuzz.yml` (Phase 1a WU9); locally `make fuzz-run` | Actions artifact on failure (no run yet: GitHub Actions disabled); locally `rust/fuzz/artifacts/` (gitignored), empty after the Phase 1a QA runs | Actions artifact retention when it runs; local until cleaned |
+| Golden corpus (goldens, `PROVENANCE.json`, `DEVIATIONS.tsv`) | `rust-parity.yml` capture, then `harness.sh import-corpus` (Phase 1a WU6b, WU7) | `rust/parity/corpus/golden/` (does not exist yet: WU7 NOT RUN); capture artifact `parity-corpus-<run>` | git history once committed |
 | Compliance documents | compliance-scribe | `rust/docs/compliance/` (this directory) | git history |
 
 The long-term evidence store is **TBD**. AU-11 retention of developer evidence
@@ -66,9 +70,9 @@ the reviewer that raised them.
 
 | Control | Evidence | Status |
 |---------|----------|--------|
-| CM-3 | Per-change record in `.agent-runs/<run>/`: `plan.md`, `findings-*.md`, fix rounds, `gate.md` (PASS, PASS WITH POA&M or FAIL) | Planned. The Phase 0 run has a plan, a QA report (Rounds 0, 1 and 2), reports from three reviewers plus their re-verification reports, and three fix rounds (fix round 3 not QA-verified); it has not reached its gate |
+| CM-3 | Per-change record in `.agent-runs/<run>/`: `plan.md`, `findings-*.md`, fix rounds, `gate.md` (PASS, PASS WITH POA&M or FAIL) | Planned. The Phase 0 run has a plan, a QA report (Rounds 0, 1 and 2), reports from three reviewers plus their re-verification reports, and three fix rounds (fix round 3 not QA-verified). The Phase 1a run has a plan, a parity map (revision 4), the user's decisions (`decisions.md`: plan questions 2026-10-27; the gate's deviation decisions DEV-01c mesh part, DEV-01d, DEV-05 and DEV-07, 2026-10-28), one QA report, reports from four reviewers with two re-verification rounds, and two fix rounds (not QA re-verified); it has not reached its gate, and nothing after `04774cc0` is committed |
 | CM-4 | `plan.md` impact sections (interfaces, threat sketch, compliance pre-map) | Planned |
-| SA-11 | `qa-report.md` lists every gate command with its result; gates not run are NOT RUN ([quality-gates.md](../../../.claude/skills/tak-rs-workflow/references/quality-gates.md)) | Two local records (QA Rounds 1 and 2) and one CI record (PR 7, 2026-10-27) in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3. SA-11 is Partially Implemented in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) |
+| SA-11 | `qa-report.md` lists every gate command with its result; gates not run are NOT RUN ([quality-gates.md](../../../.claude/skills/tak-rs-workflow/references/quality-gates.md)) | Phase 0: two local records (QA Rounds 1 and 2) and one CI record (PR 7, 2026-10-27). Phase 1a: one local QA record (2026-10-28, overall FAIL for the gate because WU7 and WU8 are NOT RUN) and one record of the fix rounds' own runs, in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3. SA-11 is Partially Implemented in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md) |
 
 The workflow is a developer-side aid. Agent reviews are SA-11 evidence, not an
 independent CA-2 assessment, and they do not replace human change approval
@@ -84,7 +88,9 @@ independent CA-2 assessment, and they do not replace human change approval
 | Advisory-ignore sync | `make check-advisory-sync` | Every Rust-relevant PR and nightly | Local QA Round 1 PASS (2 IDs, identical, each with a POA&M). PR CI: PASS in run 40539495255 (same result) |
 | Supply-chain negative tests | Plan §8.3 scratch checks, recorded in `qa-report.md` | Build run | Round 1: `allow-build-scripts` negative rejects (exit 2, `build-script-not-allowed`). The other §8.3 negatives were run by the release-engineer in WU3 scratch copies (impl notes, not re-run by QA); the FIPS-graph row of that table is not evidence (QA-004, [FIPS_COMPLIANCE.md](FIPS_COMPLIANCE.md) §Known issues). Round 2: POAM-09 detection (SA-22): with the two ignores removed in scratch copies, `cargo deny … check advisories` and `cargo audit --deny warnings` each exit 1 on exactly RUSTSEC-2024-0370 and RUSTSEC-2025-0141; controls with the unmodified files exit 0 ([TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, QA Round 2) |
 | SBOM | `make sbom` | Every Rust-relevant PR (non-blocking) | Locally NOT RUN (cargo-cyclonedx not installed). PR CI: job succeeded in run 40539495255 and uploaded `rust-sbom` (2 `.cdx.json` files). Still best-effort, not gating, not signed (POAM-2026-10-26-01) |
-| Dependabot repository settings | `gh api repos/192d-Wing/Server/vulnerability-alerts`; `gh api repos/192d-Wing/Server/automated-security-fixes` | At each phase gate | Read 2026-10-26: alerts on (HTTP 204); security updates `{"enabled":true,"paused":true}`, so **paused** (POAM-2026-10-26-10) |
+| Dependabot repository settings | `gh api repos/192d-Wing/Server/vulnerability-alerts`; `gh api repos/192d-Wing/Server/automated-security-fixes` | At each phase gate | Read 2026-10-26: alerts on (HTTP 204); security updates `{"enabled":true,"paused":true}`, so **paused** (POAM-2026-10-26-10). Not re-read for Phase 1a at this revision |
+| Phase 1a graph | `make deny`, `make audit`, `make check-native-deps` on the Phase 1a workspace | Build run | Phase 1a QA, 2026-10-28, local: `make deny` all four sections ok; `make audit` 143 crates, 1380 advisories, no findings (with the two POAM-2026-10-26-09 ignores); `check-native-deps` ok on the wasm32 closure including `tak-proto` and `tak-cot`. `allow-build-scripts` grew from 15 to 20 crates (WU2). No CI run |
+| Fuzz workspace supply chain | `make fuzz-deny` (cargo-deny with `fuzz/deny.toml`, cargo audit on `fuzz/Cargo.lock`, native allow-list); `check-fuzz-policy` in `make policy` | Every change to `rust/fuzz/` (local) | Phase 1a QA, 2026-10-28, local: PASS. The libFuzzer native-code exception is open POA&M POAM-2026-10-27-01. `cargo-fuzz` itself is installed with `--locked` from crates.io; its own graph is not checked by cargo-deny |
 
 ### Pin inventory (CM-2)
 
@@ -111,15 +117,19 @@ inventory is re-checked at the gate.
 | cargo-cyclonedx | 0.5.9 | `rust-ci.yml` `sbom` | same; run 40539495255 verified the checksum and logged `cargo-cyclonedx-cyclonedx 0.5.9` |
 | actionlint | 1.7.12, `actionlint_1.7.12_linux_amd64.tar.gz` SHA-256 `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8` | `rust-ci.yml` `workflow-lint` (`ACTIONLINT_VERSION`, `ACTIONLINT_SHA256`, `sha256sum --check --strict`) | The release `actionlint_1.7.12_checksums.txt` gives the same value (re-fetched 2026-10-26). install-action has no actionlint manifest, so Dependabot does not update this pin; review it at each install-action bump (WU5 REL-009). Run 40539495255: `actionlint_1.7.12_linux_amd64.tar.gz: OK` |
 | markdownlint-cli2 | 0.24.0 | [Makefile](../../Makefile) `MARKDOWNLINT_CLI2_VERSION`; bundled by `DavidAnson/markdownlint-cli2-action` v25.0.0 in CI | npm integrity `sha512-c5hU2MDoTlS230MLzdNlkIyxImXq5acxGKz4nYz4aDhH/2BgFtpsA7iK9/OoTHMgZ4FuR0wedTQA31K6Lp9I/Q==` (release-engineer, `npm view`); `make markdownlint` PASS (QA Round 1) |
+| Fuzz toolchain (Phase 1a) | `nightly-2026-10-23` (a dated nightly, never a floating `nightly`) | [fuzz/rust-toolchain.toml](../../fuzz/rust-toolchain.toml) line 15 (`channel`); selected by rustup whenever cargo runs in `rust/fuzz/` | Phase 1a QA, 2026-10-28: `rustc 1.101.0-nightly (7189d39d9)` used for every fuzz gate. Development only, outside the TOE (POAM-2026-10-27-01) |
+| cargo-fuzz (Phase 1a) | 0.13.2 | [rust-fuzz.yml](../../../.github/workflows/rust-fuzz.yml) line 73 (`CARGO_FUZZ_VERSION`), installed with `cargo install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked` and checked with `cargo fuzz --version` (lines 139–140); [Makefile](../../Makefile) comment (line 158) | Phase 1a QA, 2026-10-28: cargo-fuzz 0.13.2 locally. taiki-e/install-action at the pinned SHA has no cargo-fuzz manifest, so this pin is not updated by Dependabot; review it by hand |
+| libfuzzer-sys (Phase 1a) | 0.4.13 | [fuzz/Cargo.lock](../../fuzz/Cargo.lock) line 177 (requirement `"0.4"` in [fuzz/Cargo.toml](../../fuzz/Cargo.toml) line 36) | Phase 1a QA, 2026-10-28: `make fuzz-deny` PASS. Licence `(MIT OR Apache-2.0) AND NCSA`, NCSA allowed for this crate only in `fuzz/deny.toml` |
+| Schema compiler (Phase 1a, pure Rust) | `protox` 0.10.0, `prost-build` 0.14.4, `prost` 0.14.4; no `protoc` binary | [Cargo.lock](../../Cargo.lock) lines 821, 770, 760 | Built in every Phase 1a QA `make` gate; the schemas are read in place and digest-checked (SA-10(1)) |
 
 **GitHub Actions** (each pinned to the full commit SHA with a version comment)
 
 | Action | Tag | Tag type | Commit SHA | Used in |
 |--------|-----|----------|------------|---------|
-| `actions/checkout` | v7.0.1 | lightweight | `3d3c42e5aac5ba805825da76410c181273ba90b1` | `rust-ci.yml`, `rust-supply-chain.yml`, `rust-parity.yml` |
+| `actions/checkout` | v7.0.1 | lightweight | `3d3c42e5aac5ba805825da76410c181273ba90b1` | `rust-ci.yml`, `rust-supply-chain.yml`, `rust-parity.yml`, `rust-fuzz.yml` (Phase 1a) |
 | `Swatinem/rust-cache` | v2.9.3 | annotated (tag object `2201cc584a476d1b508be977bbe4b7d1c7a52e9c`) | `d1527c8f67ef9af357290475d4af4b0fab8f12e0` | `rust-ci.yml` |
-| `taiki-e/install-action` | v2.87.31 | lightweight | `1e29709c0ec63babbe8f266397a465f29a825f91` | `rust-ci.yml`, `rust-supply-chain.yml` |
-| `actions/upload-artifact` | v7.0.2 | lightweight | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | `rust-ci.yml` (`sbom`), `rust-parity.yml` |
+| `taiki-e/install-action` | v2.87.31 | lightweight | `1e29709c0ec63babbe8f266397a465f29a825f91` | `rust-ci.yml`, `rust-supply-chain.yml`, `rust-fuzz.yml` (Phase 1a) |
+| `actions/upload-artifact` | v7.0.2 | lightweight | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | `rust-ci.yml` (`sbom`), `rust-parity.yml`, `rust-fuzz.yml` (Phase 1a) |
 | `actions/cache/restore`, `actions/cache/save` | v6.1.0 | lightweight | `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` | `rust-parity.yml` |
 | `DavidAnson/markdownlint-cli2-action` | v25.0.0 | annotated (tag object `913db5cf77ef624b914090bad9e1615f7f6e099d`) | `696eb3f2509270d7b882d2aa68347bc676e7af34` | `rust-ci.yml` |
 | `gradle/actions/wrapper-validation` | v6.4.0 | annotated (tag object `b9bee63ef481cc545e4517ec730544a4d8b1dfa0`) | `3f5f9adaf7d9fecd50b5935e54106014257a94e6` | `rust-parity.yml` |
@@ -174,7 +184,9 @@ round 2 is still changing them; the gate record carries their hashes.
 | Item | Value |
 |------|-------|
 | Java reference | `5.7-RELEASE-14`, commit recorded per run in `build-info.json` |
-| Normalisation rules | None yet (nothing compared in Phase 0) |
+| Normalisation rules | None: exact bytes in every direction (X2P, P2X, X2X, P2P), with matching ok/reject outcomes; see [PROTOCOL_PARITY.md](PROTOCOL_PARITY.md) §Normalisation rules. A target until the golden test passes |
+| Golden corpus (Phase 1a) | Inputs: 715 manifest rows, 471 case IDs ([parity/corpus/MANIFEST.tsv](../../parity/corpus/MANIFEST.tsv)), synthetic, Apache-2.0. Capture (WU7) and golden test (WU8): **NOT RUN**, because GitHub Actions is disabled for the repository; no run URL, no goldens, no `PROVENANCE.json` and no `DEVIATIONS.tsv` exist. The Phase 1a exit criterion (byte-equivalence with the Java reference) is not met |
+| Corpus provenance record | None yet. When the capture runs, `harness.sh capture-corpus` writes `PROVENANCE.json` with the reference build info, the pins, the reference and builder image IDs, the driver environment, a two-run determinism check, the inputs, the SHA-256 of every classpath jar and a licence statement; goldens enter only through `harness.sh import-corpus`, which rejects links and special files and checks the record. The capture reuses the unverified Java build (POAM-2026-10-26-02); the goldens and the driver are in the scope of POAM-2026-10-26-05 |
 | First result | PASS, 2026-10-27, [rust-parity 40539495328](https://github.com/192d-Wing/Server/actions/runs/40539495328) (PR 7, head `ce9caf79`): TAKCL `StartupTests` against Java, `verify-junit: PASS: files=1 tests=1 executed=1 failures=0 errors=0 skipped=0`; artifact `parity-results-40539495328-1`. This is a Java baseline only; nothing was compared with TAK-RS (POAM-2026-10-26-06) |
 | Local harness evidence | `parity/harness.sh selftest` 39 passed, 0 failed; integrity negative exits 4; exit-code contract PASS (QA Round 1, [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3). QA Round 2: harness selftest 44 passed, 0 failed; `reject_special` fault cases reject (SEC-009). CI (run 40539495328): selftest 44 passed, 0 failed; `wrapper verified: Gradle 8.10.2` |
 | Dockerfile lint | None. hadolint is in no workflow and has never run; the two Dockerfiles in [parity/docker/](../../parity/docker/) are not linted (gap; see [TEST_EVIDENCE.md](TEST_EVIDENCE.md) §3, PR 7 CI record) |
@@ -191,9 +203,10 @@ Feature and suite status: [PROTOCOL_PARITY.md](PROTOCOL_PARITY.md).
 | Every workspace member is Apache-2.0 | `cargo metadata --no-deps --format-version 1` licence list; `check-manifests.sh` | QA Round 1 PASS (licence set exactly `Apache-2.0`; 2 members) |
 | SPDX headers on every `.rs` and `.sh` file | `check-annotations.sh` rule (c), in `make policy` | QA Round 1 PASS |
 | No copyleft in the dependency graph | `cargo deny check licenses`; `cargo metadata --locked` licence grep for GPL, AGPL, MPL | QA Round 1 PASS (`licenses ok`; grep finds nothing) |
-| Provenance rule | [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance | Written; not yet exercised by a port |
-| Reviewer provenance checklist answers | `findings-*.md` per `port` run | None yet (no port in Phase 0) |
-| Legal review | POAM-2026-10-26-05 | Open |
+| Provenance rule | [CONTRIBUTING.md](../../CONTRIBUTING.md) §Provenance | Written; first exercised in Phase 1a: schemas read in place from `src/`, not copied; parity map `Derived from` per row |
+| Reviewer provenance checklist answers | `findings-*.md` per `port` run | Phase 1a: the tak-protocol-reviewer found no Java comments, identifiers or structure carried over (D11) |
+| `src/` untouched | `git status --porcelain src/` | Phase 1a QA, 2026-10-28: no output |
+| Legal review | POAM-2026-10-26-05 | Open; widened in Phase 1a (decision Q9) to the build-time schema read, the goldens and the corpus driver |
 
 ## 7. OSCAL
 
@@ -207,6 +220,9 @@ in CI. Reasons are in [NIST_800-53_MAPPING.md](NIST_800-53_MAPPING.md)
 
 | Date | Version | Change | Run |
 |------|---------|--------|-----|
+| 2026-10-28 | 0.7 | Phase 1a gate decisions. §3 CM-3 row: `decisions.md` now also records the user's 2026-10-28 approval of DEV-01c (mesh part), DEV-01d, DEV-05 and DEV-07 (PROTO-001 option (b)). Status stays Planned; no evidence or status changed otherwise | `20261027-180458-phase1-protocol-config` (gate decisions) |
+| 2026-10-28 | 0.6 | Phase 1a WU10 follow-up (pre-gate). Pin inventory, cargo-fuzz row: line numbers re-verified with `grep -n` after the orchestrator's POA&M marker edits (one header line added to `rust-fuzz.yml`; `POLICY_CHECKS` extended in the `Makefile`): `CARGO_FUZZ_VERSION` line 73 (was 72), install and version check lines 139–140 (were 138–139), `Makefile` comment line 158 (was 160). No evidence or status changed | `20261027-180458-phase1-protocol-config` (WU10 follow-up) |
+| 2026-10-28 | 0.5 | Phase 1a (WU10, pre-gate). Scope: TOE library components and the fuzz workspace. §2: Phase 1a run record, fuzz results and golden-corpus rows. §3: CM-3 and SA-11 rows cite the Phase 1a run (one QA record, two fix rounds not QA re-verified, nothing committed after `04774cc0`). §4: Phase 1a graph and fuzz-workspace supply-chain rows; pin inventory adds the fuzz toolchain `nightly-2026-10-23`, cargo-fuzz 0.13.2, libfuzzer-sys 0.4.13 (REL-004) and the pure-Rust schema compiler, and `rust-fuzz.yml` to the checkout, install-action and upload-artifact rows (each checked with `grep -n`). §5: normalisation rules exact bytes (a target); golden corpus NOT RUN; no corpus provenance record yet. §6: provenance rule first exercised, reviewer provenance answer, `src/` untouched, POAM-2026-10-26-05 widened. No CI evidence (GitHub Actions disabled) | `20261027-180458-phase1-protocol-config` (Phase 5, WU10) |
 | 2026-10-27 | 0.4 | PR 7 CI evidence: §2 first CI run record, `rust-sbom` and `parity-results-40539495328-1` artifacts; §3 SA-11 row cites the CI record; §4 PR-CI results for `make audit`, `make deny`, `check-native-deps`, `check-advisory-sync` and the SBOM job (nightly still NOT RUN; the advisory passes still depend on the open POAM-2026-10-26-09); pin inventory: zizmor, shellcheck, cargo-cyclonedx and actionlint checksums verified in CI; §5 first parity result PASS (Java baseline only) and a Dockerfile-lint gap row (hadolint in no workflow) | `20261026-210255-phase0-foundations` (PR 7 CI) |
 | 2026-10-27 | 0.3 | Fix round 3 (docs): QA Round 2 added as evidence (§3 workflow row, §4 POAM-09 detection negatives for SA-22, §5 harness selftest 44/0); QA Round 2 pin re-check noted in the pin inventory; container-policy deviation now wholly under POAM-2026-10-26-03, still not accepted (NIST-021) | `20261026-210255-phase0-foundations` (fix round 3) |
 | 2026-10-26 | 0.2 | WU10 (pre-gate): CM-2 pin inventory (toolchain, tools, 7 actions with tag and commit SHA, 3 image digests, Gradle checksums, OSCAL catalog and MODERATE profile SHA-256 from release tag `v1.6.0`, licence file hashes), each checked against the repository; supply-chain and licence tables filled from QA Round 1; Dependabot settings row (POAM-2026-10-26-10); parity container-policy deviation recorded, not accepted. CI-only items stay NOT RUN | `20261026-210255-phase0-foundations` (WU10) |

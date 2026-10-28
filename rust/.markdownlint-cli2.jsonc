@@ -26,7 +26,8 @@
     "ARCHITECTURE.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
-    "parity/**/*.md"
+    "parity/**/*.md",
+    "fuzz/*.md"
   ],
   "ignores": [
     "target/**",

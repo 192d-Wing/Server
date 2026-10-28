@@ -1,0 +1,4 @@
+# selftest fixture
+bits	set	note
+3ff0000000000000	curated	1.0
+8000000000000000	curated	-0.0

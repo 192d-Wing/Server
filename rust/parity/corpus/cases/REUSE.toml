@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licence and provenance of the golden-corpus inputs (plan 1.4.4).
+# Every file under this directory is a synthetic test input written by TAK-RS
+# contributors for the parity corpus. Nothing here is copied from src/ (the
+# GPLv3 Java reference) or from any TAK test resource, and nothing comes from a
+# fielded system: callsigns, UIDs, device names and coordinates are invented;
+# IP addresses are from the RFC 5737 documentation range 198.51.100.0/24.
+# XML and .pb.hex inputs carry no per-file header because their bytes are the
+# test input; .txtpb inputs and the .tsv tables carry an SPDX comment line.
+version = 1
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "TAK-RS contributors"
+SPDX-License-Identifier = "Apache-2.0"

@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# TAK-RS coverage-guided fuzzing (cargo-fuzz / libFuzzer). A SEPARATE Cargo
+# workspace, excluded from rust/Cargo.toml (`exclude = ["fuzz"]`), with its
+# own Cargo.lock, deny.toml, native-code allow-list and pinned nightly
+# toolchain (rust-toolchain.toml). libfuzzer-sys compiles LLVM libFuzzer
+# (C++) with `cc`: a development-only native-code exception approved as
+# Phase 1 plan Q2, confined to this directory. Nothing here is shipped, and
+# libfuzzer-sys/cc never enter the product graph, its Cargo.lock or the SBOM
+# (enforced by scripts/check-fuzz-policy.sh in `make policy`).
+# POAM: POAM-2026-10-27-01 - development-only libFuzzer native-code exception.
+#
+# COMPLIANCE MAPPING:
+# - NIST 800-53: SA-11(8) (Dynamic Code Analysis), SR-3 (Supply Chain
+#   Controls and Processes), CM-7 (Least Functionality), SA-15 (Development
+#   Process, Standards, and Tools)
+#
+# Targets are run with `make fuzz-smoke` / `make fuzz-run FUZZ_TARGET=<name>`
+# from rust/ (see README.md).
+
+[package]
+name = "tak-rs-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "cargo-fuzz targets for tak-cot and tak-proto (development only, never shipped)"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Its own workspace root: never a member of rust/Cargo.toml.
+[workspace]
+members = ["."]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+tak-cot = { path = "../crates/tak-cot" }
+tak-proto = { path = "../crates/tak-proto" }
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[[bin]]
+name = "cot_parse"
+path = "fuzz_targets/cot_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cot_to_proto"
+path = "fuzz_targets/cot_to_proto.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "proto_decode"
+path = "fuzz_targets/proto_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "proto_to_cot"
+path = "fuzz_targets/proto_to_cot.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "proto_roundtrip"
+path = "fuzz_targets/proto_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "stream_frame"
+path = "fuzz_targets/stream_frame.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "javafmt"
+path = "fuzz_targets/javafmt.rs"
+test = false
+doc = false
+bench = false

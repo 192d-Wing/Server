@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<event version="2.0" uid="SYN-WIN-0003" type="a-f-G-U-C-I" how="h-g-i-g-o"
+       time="2026-10-27T12:00:02Z" start="2026-10-27T12:00:02Z" stale="2026-10-27T12:01:32Z">
+  <point lat="-44.000001" lon="-139.999999" hae="0" ce="10" le="10" />
+  <detail>
+    <contact callsign="SYN-DELTA" endpoint="*:-1:stcp" />
+    <__group name="Green" role="Sniper" />
+    <takv device="SYN-DESKTOP" platform="SYN-WIN" os="Microsoft Windows 10 Pro" version="0.0.2-syn" />
+    <status battery="100" />
+  </detail>
+</event>
