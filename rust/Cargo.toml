@@ -13,7 +13,17 @@
 
 [workspace]
 resolver = "3"
-members = ["crates/tak-api-types", "web/components"]
+members = [
+  "crates/tak-api-types",
+  "crates/tak-cot",
+  "crates/tak-proto",
+  "web/components",
+]
+# rust/fuzz is a separate cargo-fuzz workspace with its own Cargo.lock,
+# deny.toml and native-code allow-list (libFuzzer is C++: a development-only
+# exception, Phase 1 plan Q2). Excluding it keeps libfuzzer-sys and cc out of
+# this graph, the SBOM, and the workspace-wide make targets.
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.0.1"
@@ -26,6 +36,25 @@ repository = "https://github.com/192d-Wing/Server"
 
 [workspace.dependencies]
 tak-api-types = { path = "crates/tak-api-types" }
+tak-cot = { path = "crates/tak-cot" }
+tak-proto = { path = "crates/tak-proto" }
+
+# Protocol and CoT (Phase 1). Every entry disables default features so a
+# member cannot pull them in by accident; members opt in to what they use.
+prost = { version = "0.14", default-features = false }
+# Build-time only (tak-proto/build.rs). `format` (prettyplease/syn) is off:
+# the generated code is never read by humans or committed.
+prost-build = { version = "0.14", default-features = false }
+# Pure-Rust protobuf compiler, so no `protoc` binary enters the build. 0.10 is
+# the release line that depends on prost/prost-types 0.14 (crates.io index,
+# verified 2026-10-27).
+protox = { version = "0.10", default-features = false }
+quick-xml = { version = "0.42", default-features = false }
+ryu = { version = "1", default-features = false }
+thiserror = { version = "2", default-features = false }
+# Test-only. No `fork`/`timeout` (they spawn processes and pull in more deps).
+proptest = { version = "1", default-features = false, features = ["std"] }
+
 # Yew 0.23.x, client-side rendering only (no SSR, no hydration).
 yew = { version = "0.23", default-features = false, features = ["csr"] }
 

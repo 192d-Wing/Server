@@ -40,7 +40,11 @@ added or renamed.
 | `rust/scripts/**`, `rust/.cargo/**`, `rust/LICENSE`, `rust/NOTICE` | `release-engineer` |
 | `rust/parity/docker/**`, `rust/parity/compose.yaml` | `release-engineer`, `qa-engineer` |
 | `rust/CONTRIBUTING.md` | `compliance-scribe` |
-| `rust/fuzz/**`, `rust/tests/**`, `rust/parity/**`, `rust/benches/**` only | `qa-engineer` only (+ scribe if TEST_EVIDENCE changes) |
+| `rust/fuzz/Cargo.toml`, `rust/fuzz/Cargo.lock`, `rust/fuzz/rust-toolchain.toml`, `rust/fuzz/deny.toml`, `rust/fuzz/native-allowlist.txt`, `.github/workflows/rust-fuzz.yml` (owner: release-engineer; development-only native exception POAM-2026-10-27-01) | `release-engineer`, `security-reviewer` |
+| `rust/fuzz/fuzz_targets/**` (owner: rust-coder) | `qa-engineer` |
+| `rust/parity/corpus/cases/**`, `rust/parity/corpus/MANIFEST.tsv` (owner: qa-engineer) | `qa-engineer`, `tak-protocol-reviewer` |
+| `rust/parity/corpus/driver/**`, `rust/parity/corpus/golden/**` (owner: release-engineer; goldens are imported from CI captures only) | `release-engineer`, `tak-protocol-reviewer` |
+| `rust/tests/**`, `rust/parity/**` (other), `rust/benches/**` only | `qa-engineer` only (+ scribe if TEST_EVIDENCE changes) |
 
 ## Mode overrides
 

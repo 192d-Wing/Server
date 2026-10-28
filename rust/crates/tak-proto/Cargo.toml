@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "tak-proto"
+description = "TAK Protocol v1 message types, bounded decoding and stream/mesh framing for TAK-RS"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+# The schemas are read in place from src/takserver-protobuf by build.rs
+# (plan section 1.2); nothing from src/ is packaged.
+build = "build.rs"
+
+[dependencies]
+prost = { workspace = true, features = ["std", "derive"] }
+thiserror.workspace = true
+
+[build-dependencies]
+prost-build.workspace = true
+protox.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true
