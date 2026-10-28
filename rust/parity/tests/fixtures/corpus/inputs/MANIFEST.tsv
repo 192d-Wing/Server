@@ -1,0 +1,13 @@
+# Selftest fixture for harness.sh (synthetic; not the golden corpus). Same format as corpus/MANIFEST.tsv.
+id	direction	input	creation_ms	submission_ms	purpose
+sa-basic	x2p	cases/xml/sa-basic.xml	1761588298123	1761588298200	layout: ok case
+sa-basic	x2x	cases/xml/sa-basic.xml	-	-	layout: second direction of the same input
+doctype	x2p	cases/xml/doctype.xml	1	-	layout: reject row
+pb-text	p2x	cases/proto/pb-text.txtpb	-	-	layout: text-format input
+pb-text	p2p	cases/proto/pb-text.txtpb	5	-	layout: text-format input
+pb-bad	p2x	cases/proto/pb-bad.pb.hex	-	-	layout: hex input, reject
+numbers-doubles	dbl-fmt	cases/numbers/doubles.tsv	-	-	table
+numbers-double-strings	dbl-parse	cases/numbers/double-strings.txt	-	-	table
+numbers-int-strings	int-parse	cases/numbers/int-strings.txt	-	-	table
+numbers-times-ms	time-fmt	cases/numbers/times-ms.txt	-	-	table
+numbers-time-strings	time-parse	cases/numbers/time-strings.txt	-	-	table

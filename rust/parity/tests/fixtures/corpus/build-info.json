@@ -1,0 +1,15 @@
+{
+  "built_at_utc": "2026-10-27T00:00:00Z",
+  "engine": "selftest",
+  "git_describe": "5.7-RELEASE-14-0-gselftest",
+  "gradle_dist_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "gradle_version": "0.0",
+  "gradle_wrapper_jar_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "harness": "tak-parity v0",
+  "jdk_build_image": "selftest",
+  "jre_run_image": "selftest",
+  "pins_file": "selftest",
+  "pins_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "postgis_image": "selftest",
+  "src_commit": "0000000000000000000000000000000000000000"
+}

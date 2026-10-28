@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Synthetic TAK-RS parity input (rust/parity/corpus/cases/REUSE.toml).
+cotEvent {
+  type: "a-f-G-U-C"
+  uid: "SYN-UID-0301"
+  sendTime: 18446744073709551615
+  startTime: 1793102400000
+  staleTime: 1793102700000
+  how: "m-g"
+  lat: -45.123456
+  lon: -140.654321
+  hae: 12.5
+  ce: 9.9
+  le: 9999999.0
+  detail {
+  }
+}

@@ -1,13 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# TAK-RS parity harness v0: build the Java reference server from src/ in a
-# throwaway clone, run a TAKCL suite (default StartupTests) against it with
-# PostgreSQL/PostGIS, and upload the JUnit results.
+# TAK-RS parity harness: build the Java reference server from src/ in a
+# throwaway clone, capture the golden corpus (CoT XML <-> TAK Protocol v1
+# conversion by the reference, run twice, no network) and verify it against
+# rust/parity/corpus/golden/, run a TAKCL suite (default StartupTests)
+# against it with PostgreSQL/PostGIS, and upload the results. The corpus
+# capture is also uploaded on its own (parity-corpus-<run>) as the input to
+# `harness.sh import-corpus` (plan Phase 1a, WU6b/WU7).
 #
 # NEVER a required check, and it defines no job named after the required
 # check (rust-ci.yml owns that name; rust/scripts/check-workflows.sh enforces
 # it). Not triggered by src/** changes, so upstream merges never start a Java
-# build; the nightly run picks those up after they land on main.
+# build; the nightly run picks those up after they land on main (corpus drift
+# from an upstream change shows there). PRs touching the corpus, the harness,
+# tak-cot or tak-proto run it, so a conversion change is re-checked against a
+# fresh capture.
 #
 # Trust: the Java build downloads Gradle plugins, Maven and npm artifacts
 # that are not hash-verified (POAM-2026-10-26-02). Mitigations here: no
@@ -42,17 +49,26 @@ on:
         type: string
         required: true
         default: StartupTests
+      verify_corpus:
+        description: Compare the capture with the committed goldens (false only for the first capture, before golden/ exists)
+        type: boolean
+        required: false
+        default: true
   schedule:
     # Nightly, off the hour (UTC).
     - cron: "41 5 * * *"
   pull_request:
     paths:
       - "rust/parity/**"
+      - "rust/crates/tak-cot/**"
+      - "rust/crates/tak-proto/**"
       - ".github/workflows/rust-parity.yml"
   push:
     branches: [main]
     paths:
       - "rust/parity/**"
+      - "rust/crates/tak-cot/**"
+      - "rust/crates/tak-proto/**"
       - ".github/workflows/rust-parity.yml"
 
 permissions:
@@ -144,9 +160,30 @@ jobs:
           rm -rf "$gh/init.d" "$gh/gradle.properties" "$gh/wrapper/dists"
 
       - name: Build the Java reference (preflight, build-java, image)
+        id: build
         run: rust/parity/harness.sh --results "$RESULTS_DIR" --version-tag auto preflight build-java image
 
+      # Golden corpus (plan 1.4): the Apache-2.0 driver runs against the
+      # reference jars twice (no network, read-only rootfs, no capabilities)
+      # and must produce identical trees; then the tree is compared with the
+      # committed goldens. Drift fails the job. verify_corpus=false (dispatch
+      # only) skips the comparison for the first capture.
+      - name: Capture and verify the golden corpus
+        env:
+          VERIFY_CORPUS: ${{ inputs.verify_corpus }}
+        run: |
+          set -euo pipefail
+          cmds=(capture-corpus)
+          if [ "$VERIFY_CORPUS" != false ]; then
+            cmds+=(verify-corpus)
+          else
+            echo "::warning::verify_corpus=false: capture only, not compared with golden/"
+          fi
+          rust/parity/harness.sh --results "$RESULTS_DIR" "${cmds[@]}"
+
+      # Runs even when the corpus step failed, so both signals are reported.
       - name: Run TAKCL suite against Java
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: rust/parity/harness.sh --results "$RESULTS_DIR" up test "$TEST_ID"
 
       - name: Save compose logs
@@ -211,5 +248,15 @@ jobs:
             !${{ env.RESULTS_DIR }}/**/*.pfx
             !${{ env.RESULTS_DIR }}/**/*.key
             !${{ env.RESULTS_DIR }}/**/*.pem
+          if-no-files-found: warn
+          retention-days: 90
+
+      # The corpus capture alone, for `harness.sh import-corpus` (WU7). Same
+      # gate as above: only a fully listed and cleaned tree is uploaded.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.strip.outputs.clean == 'true'
+        with:
+          name: parity-corpus-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RESULTS_DIR }}/*-corpus
           if-no-files-found: warn
           retention-days: 90

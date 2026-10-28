@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<event version="2.0" uid="SYN-IOS-0004" type="a-f-G-E-V-C" how="m-g" time="2026-10-27T12:00:03.9Z" start="2026-10-27T12:00:03.9Z" stale="2026-10-27T12:02:03.9Z"><point lat="-46" lon="-141" hae="-12.75" ce="4.5" le="2"/><detail><contact callsign="SYN-ECHO" endpoint="198.51.100.7:4242:tcp"/><__group name="Yellow" role="RTO"/><status battery="5"/><track speed="12.5" course="359.99"/><precisionlocation geopointsrc="USER" altsrc="???"/></detail></event>

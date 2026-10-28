@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<!-- syn prolog comment -->
+<?syn-pi prolog data?>
+<event version="2.0" uid="SYN-UID-0001" type="a-f-G-U-C" how="m-g" time="2026-10-27T12:00:00.000Z" start="2026-10-27T12:00:00.000Z" stale="2026-10-27T12:05:00.000Z"><point lat="-45.123456" lon="-140.654321" hae="12.5" ce="9.9" le="9999999.0"/><detail><uid Droid="SYN-ALPHA"/><remarks>synthetic remarks</remarks></detail></event>

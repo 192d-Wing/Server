@@ -1,0 +1,7 @@
+id	direction	outcome	output	detail
+sa-basic	x2p	ok	x2p/sa-basic.pb.hex	
+sa-basic	x2x	ok	x2x/sa-basic.xml	
+doctype	x2p	reject	-	org.dom4j.DocumentException
+pb-text	p2x	ok	p2x/pb-text.xml	
+pb-text	p2p	ok	p2p/pb-text.pb.hex	
+pb-bad	p2x	reject	-	com.google.protobuf.InvalidProtocolBufferException

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Corpus inputs and goldens are compared byte for byte: no end-of-line
+# conversion, no text normalisation, no diff filters (plan 1.4.3). Some XML
+# inputs contain CR bytes on purpose.
+* -text
