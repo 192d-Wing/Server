@@ -13,16 +13,28 @@
 # - Linux targets: the whole workspace (all members; normal, build and dev
 #   edges).
 # - wasm32-unknown-unknown: only the closure of the crates built for wasm32
-#   (WASM_ROOTS), so native-only crates elsewhere in the workspace do not count
-#   but any path from a web crate to native code does.
-# Build dependencies count, because build scripts run on the build host.
+#   (WASM_ROOTS; normal, build and dev edges), so native-only crates elsewhere
+#   in the workspace do not count but any path from a web crate to native code
+#   does.
+# Build dependencies count for the native-code (`links`) rule, because build
+# scripts run on the build host; dev dependencies count because `make test`
+# builds them. Both rules below use these full graphs except the wasm32
+# crypto-name rule.
 #
 # Also enforced here:
 # - every workspace member whose manifest is under web/ must be in WASM_ROOTS
 #   (WEB-001), so a new web crate cannot skip the wasm32 graph;
-# - the wasm32 closure must not contain any cryptographic or TLS crate by name
-#   (WEB-004; list in crypto_re below). Crypto belongs to the native FIPS
-#   module only (D5, SC-13); RustCrypto crates have no `links` key.
+# - the wasm32 SHIPPED closure must not contain any cryptographic or TLS crate
+#   by name (WEB-004; list in crypto_re below). Crypto belongs to the native
+#   FIPS module only (D5, SC-13); RustCrypto crates have no `links` key.
+#   "Shipped" = what can end up in a wasm artifact: the closure of WASM_ROOTS
+#   over NORMAL edges only (`cargo tree -e normal`), so a dev-only crate (for
+#   example proptest's ChaCha RNG, chacha20, in tests) or a build-host-only
+#   crate does not trip the rule, while a crypto crate reachable through any
+#   chain of normal dependencies still fails. Proc-macro crates and their
+#   normal deps are included (over-approximation: they run on the host, not
+#   in the artifact; a crypto crate there still fails, which is intended).
+#   Dev/build crypto crates remain subject to deny.toml and the `links` rule.
 #
 # HEURISTIC: the `links` key is how Cargo declares native linking, but a build
 # script can emit `cargo:rustc-link-lib` without it, and a crate can ship a
@@ -43,7 +55,7 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 root=${RUST_ROOT:-$(cd "$here/.." && pwd)}
 allowlist=${NATIVE_ALLOWLIST:-$here/native-allowlist.txt}
 targets=${NATIVE_TARGETS:-"x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu wasm32-unknown-unknown"}
-wasm_roots=${WASM_ROOTS:-"tak-api-types tak-web-components"}
+wasm_roots=${WASM_ROOTS:-"tak-api-types tak-web-components tak-proto tak-cot"}  # keep equal to Makefile WASM_CRATES
 all_targets="x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,wasm32-unknown-unknown"
 # Crate names never allowed in the wasm32 closure (anchored ERE on the name).
 crypto_re='^(tak-crypto|tak-auth|aws-lc-.*|rustls.*|ring|openssl.*|boring.*|sha1|sha2|sha3|hmac|aes.*|chacha20.*|rsa|p256|p384|p521|ecdsa|ed25519.*|x25519.*|blowfish|bcrypt|pbkdf2|hkdf|digest|md-5|md5|argon2|scrypt|curve25519-.*|libsodium.*|sodiumoxide)$'
@@ -81,9 +93,12 @@ allowed() {
 # dependencies named only through weak features (e.g. rustls-webpki
 # `ring?/alloc` makes `ring` appear although it is never built). metadata is
 # used only for `links` and the workspace member list.
-reachable() { # <target> <tree args...>
-  local t=$1; shift
-  (cd "$root" && cargo tree --locked --all-features --target "$t" -e normal,build,dev \
+# <edges> is a cargo tree edge list: normal,build,dev (full graph) or normal
+# (shipped closure). An argument, not an environment variable, so a caller's
+# environment cannot narrow the full graph.
+reachable() { # <edges> <target> <tree args...>
+  local e=$1 t=$2; shift 2
+  (cd "$root" && cargo tree --locked --all-features --target "$t" -e "$e" \
       --prefix none --format '{p}' "$@") |
     awk 'NF >= 2 && $2 ~ /^v[0-9]/ { v = $2; sub(/^v/, "", v); print $1, v }' | sort -u
 }
@@ -124,19 +139,22 @@ for t in $targets; do
   esac
   links=$(printf '%s' "$meta" | jq -r '.packages[] | select(.links != null) | "\(.name) \(.version) \(.links)"' | sort -u)
   if [ "$mode" = all ]; then
-    pkgs=$(reachable "$t" --workspace) || { echo "check-native-deps: cargo tree failed for $t" >&2; exit 2; }
+    pkgs=$(reachable normal,build,dev "$t" --workspace) || { echo "check-native-deps: cargo tree failed for $t" >&2; exit 2; }
   else
     pargs=""
     for r in $wasm_roots; do pargs="$pargs -p $r"; done
     # shellcheck disable=SC2086 # word splitting of -p args is intended
-    pkgs=$(reachable "$t" $pargs) || { echo "check-native-deps: cargo tree failed for $t" >&2; exit 2; }
+    pkgs=$(reachable normal,build,dev "$t" $pargs) || { echo "check-native-deps: cargo tree failed for $t" >&2; exit 2; }
+    # Shipped closure for the crypto-name rule: normal edges only.
+    # shellcheck disable=SC2086 # word splitting of -p args is intended
+    shipped=$(reachable normal "$t" $pargs) || { echo "check-native-deps: cargo tree failed for $t" >&2; exit 2; }
   fi
   if [ "$mode" = closure ]; then
-    crypto=$(printf '%s\n' "$pkgs" | awk -v re="$crypto_re" 'NF >= 2 && $1 ~ re { print $1 " " $2 }')
+    crypto=$(printf '%s\n' "$shipped" | awk -v re="$crypto_re" 'NF >= 2 && $1 ~ re { print $1 " " $2 }')
     if [ -n "$crypto" ]; then
       while read -r name version; do
-        echo "  FAIL  $name $version is a crypto/TLS crate in the wasm32 graph (D5: crypto only in the native FIPS module)"
-        (cd "$root" && cargo tree --locked --all-features -i "$name@$version" -e normal,build --target "$t" 2>&1 || true) | sed 's/^/          /'
+        echo "  FAIL  $name $version is a crypto/TLS crate in the shipped wasm32 closure (normal edges; D5: crypto only in the native FIPS module)"
+        (cd "$root" && cargo tree --locked --all-features -i "$name@$version" -e normal --target "$t" 2>&1 || true) | sed 's/^/          /'
       done <<EOF
 $crypto
 EOF

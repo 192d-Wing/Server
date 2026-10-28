@@ -19,8 +19,11 @@
 # EXCEPTIONS inside the allow-list (SEC-008): paths under src/ or utils/ that
 # the Rust build READS. They give rust=true. Current list (`rust_inputs`
 # below, an awk ERE):
-#   ^src/takserver-protobuf/   .proto schemas for tak-proto's build.rs
-#                              (ROADMAP Phase 1)
+#   ^src/takserver-protobuf/   .proto schemas, read in place at build time
+#                              by rust/crates/tak-proto/build.rs (SCHEMA_DIR
+#                              = ../../../src/takserver-protobuf/src/main/proto;
+#                              Phase 1a, POAM-2026-10-26-05). A schema change
+#                              therefore runs the Rust jobs.
 # COUPLING: whenever a file under rust/ starts to read from src/ or utils/
 # (a parent-relative path in build.rs, a Cargo `path =`, include_bytes!, a
 # script) or a symlink under rust/ points there, the target directory MUST be

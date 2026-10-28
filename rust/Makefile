@@ -13,8 +13,10 @@ SHELL := bash
 .DEFAULT_GOAL := help
 
 # Crates built for wasm32-unknown-unknown. check-native-deps.sh uses the same
-# list as the roots of its wasm32 graph.
-WASM_CRATES := tak-api-types tak-web-components
+# list as the roots of its wasm32 graph (and as its default WASM_ROOTS).
+# tak-proto and tak-cot build for wasm32 so the web UI can use their types
+# (Phase 1 plan §2.A WU2).
+WASM_CRATES := tak-api-types tak-web-components tak-proto tak-cot
 WASM_PKGS := $(addprefix -p ,$(WASM_CRATES))
 WASM_TARGET := wasm32-unknown-unknown
 
@@ -22,13 +24,21 @@ WASM_TARGET := wasm32-unknown-unknown
 MARKDOWNLINT_CLI2_VERSION := 0.24.0
 
 POLICY_CHECKS := check-unsafe check-manifests check-annotations check-poam-ids \
-	check-toolchain check-workflows check-src-coupling
+	check-toolchain check-workflows check-src-coupling check-fuzz-policy
+
+# Coverage-guided fuzzing lives in the excluded rust/fuzz/ workspace (own
+# lockfile, deny.toml, native allow-list and pinned nightly; plan §1.8,
+# the development-only native-code exception approved as plan Q2). Never part
+# of the product graph.
+FUZZ_DIR := fuzz
+FUZZ_MAX_TOTAL_TIME ?= 60
 
 .PHONY: help fmt fmt-check build build-wasm clippy clippy-wasm test test-doc doc \
 	deny audit supply-chain policy policy-selftest markdownlint sbom ci \
 	check-unsafe check-manifests check-annotations check-annotations-strict check-poam-ids \
 	check-advisory-sync check-native-deps check-toolchain check-workflows \
-	check-src-coupling parity-build-java parity-test
+	check-src-coupling check-fuzz-policy fuzz-smoke fuzz-deny \
+	parity-build-java parity-test parity-capture-corpus
 
 help: ## List targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -99,6 +109,15 @@ check-workflows: ## Static policy for workflows (parsed YAML; needs ruby)
 check-src-coupling: ## rust/ reads from src/ or utils/ only where ci-changes.sh knows
 	scripts/check-src-coupling.sh
 
+check-fuzz-policy: ## fuzz/deny.toml differs from deny.toml only in its delta block
+	@if [ ! -d $(FUZZ_DIR) ]; then \
+		echo "check-fuzz-policy: skip ($(FUZZ_DIR)/ absent; Phase 1 WU9 adds it)"; \
+	elif [ ! -x scripts/check-fuzz-policy.sh ]; then \
+		echo "check-fuzz-policy: FAIL $(FUZZ_DIR)/ exists but scripts/check-fuzz-policy.sh is missing" >&2; exit 1; \
+	else \
+		scripts/check-fuzz-policy.sh; \
+	fi
+
 policy: $(POLICY_CHECKS) ## All policy checks (supply-chain ones run in supply-chain)
 
 policy-selftest: ## Self-tests for check-*.sh and ci-*.sh
@@ -117,3 +136,28 @@ parity-build-java: ## Build the Java reference image (needs Docker/Podman)
 
 parity-test: ## Run TAKCL StartupTests against the Java reference
 	parity/harness.sh up test StartupTests down
+
+parity-capture-corpus: ## Capture the golden corpus from the Java reference and verify it (needs Docker/Podman)
+	parity/harness.sh build-java image capture-corpus verify-corpus
+
+# The fuzz targets need cargo-fuzz and the nightly pinned in
+# fuzz/rust-toolchain.toml (run from rust/; cd fuzz picks up that pin). They
+# pass as no-ops while fuzz/ is absent; WU9 makes them real.
+fuzz-smoke: ## Each fuzz target for FUZZ_MAX_TOTAL_TIME s (needs cargo-fuzz + pinned nightly)
+	@if [ ! -d $(FUZZ_DIR) ]; then \
+		echo "fuzz-smoke: skip ($(FUZZ_DIR)/ absent; Phase 1 WU9 adds it)"; \
+	else \
+		cd $(FUZZ_DIR) && targets=$$(cargo fuzz list) && [ -n "$$targets" ] || { echo "fuzz-smoke: no fuzz targets" >&2; exit 1; }; \
+		for t in $$targets; do \
+			echo "== fuzz $$t ($(FUZZ_MAX_TOTAL_TIME) s)"; \
+			cargo fuzz run "$$t" -- -max_total_time=$(FUZZ_MAX_TOTAL_TIME) -rss_limit_mb=2048 -timeout=1; \
+		done; \
+	fi
+
+fuzz-deny: ## cargo-deny and cargo-audit for the fuzz workspace
+	@if [ ! -d $(FUZZ_DIR) ]; then \
+		echo "fuzz-deny: skip ($(FUZZ_DIR)/ absent; Phase 1 WU9 adds it)"; \
+	else \
+		cargo deny --manifest-path $(FUZZ_DIR)/Cargo.toml --locked check && \
+		cargo audit -f $(FUZZ_DIR)/Cargo.lock --deny warnings; \
+	fi

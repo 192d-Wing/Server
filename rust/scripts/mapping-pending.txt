@@ -9,3 +9,5 @@
 #
 # Format: <ID>  # where it is cited; finding
 
+SC-5      # tak-proto/src/{lib.rs,framing.rs}, tak-cot/src/lib.rs (Phase 1a WU1; tak-cot limits WU3/WU5); no block yet, compliance-scribe adds it in Phase 1 WU10 (plan §7.1, §7.3)
+SI-10(3)  # tak-cot xml parser and conversion (Phase 1a WU3/WU5); no block yet, compliance-scribe adds it in Phase 1 WU10 (plan §7.1, §7.3)

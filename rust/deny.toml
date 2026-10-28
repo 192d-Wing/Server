@@ -185,21 +185,29 @@ bypass = []
 # Layer three (b): only these crates may have a build script (build.rs runs
 # on the build host and can emit `cargo:rustc-link-lib` without a `links`
 # key, so check-native-deps.sh would not see it; SEC-007). Today's graph,
-# all targets, --all-features (cargo metadata, 2026-10-26). Adding a crate
-# here needs a rationale in the PR (what the build script does). The
-# AWS-LC -sys/toolchain crates are added with Phase 2 tak-crypto.
+# all targets, --all-features (cargo metadata; Phase 0 2026-10-26, Phase 1a
+# 2026-10-27: anyhow, getrandom, num-traits, rustix, tak-proto added, each
+# build.rs read; none has a `links` key, a `cc` build-dep or a link
+# directive). Adding a crate here needs a rationale in the PR (what the build
+# script does). The AWS-LC -sys/toolchain crates are added with Phase 2
+# tak-crypto.
 allow-build-scripts = [
+    "anyhow",                # rustc probe (compiles a Rust test file) and cfg only; via prost-derive/prost-build (build/proc-macro)
+    "getrandom",             # cfg probe only; proptest -> rand 0.10, dev-only
     "libc",                  # rustc version/cfg probes only
+    "num-traits",            # autocfg rustc probes, cfg only; proptest, dev-only
     "prettyplease",          # check-cfg and VERSION only (links marker)
     "proc-macro-error",      # rustc version probe (POAM-2026-10-26-09)
     "proc-macro-error-attr", # rustc version probe (POAM-2026-10-26-09)
     "proc-macro2",           # rustc feature probe
     "quote",                 # rustc version probe
+    "rustix",                # rustc probes (asm/feature) and cfg only; prost-build -> tempfile, build-host only
     "rustversion",           # rustc version probe
     "serde",                 # rustc version probe
     "serde_core",            # rustc version probe
     "serde_json",            # cfg probes only
     "syn",                   # rustc version probe
+    "tak-proto",             # first-party: compiles the in-place .proto schemas with protox + prost-build (pure Rust, no protoc); POAM-2026-10-26-05
     "thiserror",             # rustc feature probe (both versions)
     "wasm-bindgen",          # cfg probes and one wasm `rustc-link-arg` export; no native library
     "wasm-bindgen-shared",   # schema version (links marker)

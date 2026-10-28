@@ -243,6 +243,7 @@ echo '' >"$N/web/src/lib.rs"
 web_manifest() {
   printf '[package]\nname = "web"\nversion = "0.1.0"\nedition = "2021"\n' >"$N/web/Cargo.toml"
   [ "$1" = dep ] && printf '\n[dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
+  [ "$1" = devdep ] && printf '\n[dev-dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
   (cd "$N" && cargo generate-lockfile --offline -q)
 }
 nd() { env RUST_ROOT="$N" NATIVE_ALLOWLIST="$T/allow.txt" WASM_ROOTS=web bash "$S/check-native-deps.sh"; }
@@ -255,6 +256,9 @@ printf 'fakesys native x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu # fixt
 expect 0 "linux-only entry, not reachable from wasm roots, passes" nd
 web_manifest dep
 expect 1 "linux-only entry reached from a wasm root fails" nd
+web_manifest devdep
+expect 1 "linux-only entry reached from a wasm root by a dev edge fails (links rule keeps the full graph)" nd
+web_manifest dep
 printf 'fakesys nativ all # bad class\n' >"$T/allow.txt"
 expect 1 "malformed allow-list class fails" nd
 printf 'fakesys native all\naws-lc-rs marker all # never on wasm32\n' >"$T/allow.txt"
@@ -269,6 +273,9 @@ for f in "$N2/web/a/src/lib.rs" "$N2/web/b/src/lib.rs" "$N2/sha2/src/lib.rs"; do
 web_a() {
   printf '[package]\nname = "a"\nversion = "0.1.0"\nedition = "2021"\n' >"$N2/web/a/Cargo.toml"
   [ "$1" = crypto ] && printf '\n[dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [ "$1" = devcrypto ] && printf '\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [ "$1" = buildcrypto ] && printf '\n[build-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [ "$1" = transcrypto ] && printf '\n[dependencies]\nb = { path = "../b" }\n' >>"$N2/web/a/Cargo.toml"
   (cd "$N2" && cargo generate-lockfile --offline -q)
 }
 nd2() { env RUST_ROOT="$N2" NATIVE_ALLOWLIST="$T/allow.txt" NATIVE_TARGETS=wasm32-unknown-unknown WASM_ROOTS="$1" bash "$S/check-native-deps.sh"; }
@@ -278,6 +285,17 @@ expect 0 "every web/ member in WASM_ROOTS passes" nd2 "a b"
 expect 1 "web/ member missing from WASM_ROOTS fails" nd2 "a"
 web_a crypto
 expect 1 "crypto crate (sha2) in the wasm32 closure fails" nd2 "a b"
+echo "== WU2: wasm32 crypto rule judges the shipped (normal-edge) closure"
+web_a devcrypto
+expect 0 "dev-only crypto crate (sha2) of a wasm32 root passes" nd2 "a b"
+web_a buildcrypto
+expect 0 "build-only crypto crate (sha2) of a wasm32 root passes" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nsha2 = { path = "../../sha2" }\n' >"$N2/web/b/Cargo.toml"
+web_a transcrypto
+expect 1 "crypto crate reached by a chain of normal edges fails" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >"$N2/web/b/Cargo.toml"
+expect 0 "crypto crate only behind a dev edge of a normal dependency passes" nd2 "a b"
+printf '[package]\nname = "b"\nversion = "0.1.0"\nedition = "2021"\n' >"$N2/web/b/Cargo.toml"
 web_a nodep
 
 # ---------------------------------------------------------------------------

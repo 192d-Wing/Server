@@ -27,6 +27,14 @@
 # string joins) is not seen; review and the tak-proto build.rs header are the
 # backstop.
 #
+# Known reference (Phase 1a): rust/crates/tak-proto/build.rs reads the .proto
+# schemas in place through its literal SCHEMA_DIR
+# `../../../src/takserver-protobuf/src/main/proto` (joined to
+# CARGO_MANIFEST_DIR at build time). Rule (r) sees the literal and judges it
+# against the `^src/takserver-protobuf/` entry in ci-changes.sh `rust_inputs`.
+# If that build script ever builds the path from pieces instead, keep a
+# literal of the full path in its header so this check still sees it.
+#
 # COMPLIANCE MAPPING:
 # - NIST 800-53: CM-3 (Configuration Change Control), SA-11 (Developer
 #   Testing and Evaluation)
