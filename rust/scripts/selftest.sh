@@ -287,7 +287,7 @@ echo '' >"$N/web/src/lib.rs"
 web_manifest() {
   printf '[package]\nname = "web"\nversion = "0.1.0"\nedition = "2021"\n' >"$N/web/Cargo.toml"
   [ "$1" = dep ] && printf '\n[dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
-  [ "$1" = devdep ] && printf '\n[dev-dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
+  [[ "$1" = devdep ]] && printf '\n[dev-dependencies]\nfakesys = { path = "../fakesys" }\n' >>"$N/web/Cargo.toml"
   (cd "$N" && cargo generate-lockfile --offline -q)
 }
 nd() { env RUST_ROOT="$N" NATIVE_ALLOWLIST="$T/allow.txt" WASM_ROOTS=web bash "$S/check-native-deps.sh"; }
@@ -317,9 +317,9 @@ for f in "$N2/web/a/src/lib.rs" "$N2/web/b/src/lib.rs" "$N2/sha2/src/lib.rs"; do
 web_a() {
   printf '[package]\nname = "a"\nversion = "0.1.0"\nedition = "2021"\n' >"$N2/web/a/Cargo.toml"
   [ "$1" = crypto ] && printf '\n[dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
-  [ "$1" = devcrypto ] && printf '\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
-  [ "$1" = buildcrypto ] && printf '\n[build-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
-  [ "$1" = transcrypto ] && printf '\n[dependencies]\nb = { path = "../b" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = devcrypto ]] && printf '\n[dev-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = buildcrypto ]] && printf '\n[build-dependencies]\nsha2 = { path = "../../sha2" }\n' >>"$N2/web/a/Cargo.toml"
+  [[ "$1" = transcrypto ]] && printf '\n[dependencies]\nb = { path = "../b" }\n' >>"$N2/web/a/Cargo.toml"
   (cd "$N2" && cargo generate-lockfile --offline -q)
 }
 nd2() { env RUST_ROOT="$N2" NATIVE_ALLOWLIST="$T/allow.txt" NATIVE_TARGETS=wasm32-unknown-unknown WASM_ROOTS="$1" bash "$S/check-native-deps.sh"; }
@@ -1242,12 +1242,12 @@ fp_perl() {
   local before
   before=$(cksum <"$FP/$1")
   perl -0pi -e "$2" "$FP/$1"
-  if [ "$(cksum <"$FP/$1")" = "$before" ]; then
+  if [[ "$(cksum <"$FP/$1")" = "$before" ]]; then
     echo "selftest: fp_perl mutation matched nothing in $1: $2" >&2
     exit 1
   fi
 }
-if [ -d "$root/fuzz" ]; then
+if [[ -d "$root/fuzz" ]]; then
   fp_reset
   expect 0 "real fuzz/ files in a conforming workspace pass" cfp
   expect 0 "real rust/ tree passes" env RUST_ROOT="$root" bash "$S/check-fuzz-policy.sh"
@@ -1386,9 +1386,9 @@ fs() { env CORPUS_CASES="$FS/cases" bash "$S/fuzz-seeds.sh" "$FS/out" "$@"; }
 fs_all() { # every target dir exists and is non-empty; no staging or lock left
   local t
   for t in cot_parse cot_to_proto proto_decode proto_to_cot proto_roundtrip stream_frame javafmt; do
-    [ -n "$(find "$FS/out/$t" -type f 2>/dev/null | head -n 1)" ] || { echo "no seeds for $t"; return 1; }
+    [[ -n "$(find "$FS/out/$t" -type f 2>/dev/null | head -n 1)" ]] || { echo "no seeds for $t"; return 1; }
   done
-  [ -z "$(find "$FS/out" -maxdepth 1 -name '.*' ! -name . ! -path "$FS/out")" ] || { echo "leftover:"; ls -a "$FS/out"; return 1; }
+  [[ -z "$(find "$FS/out" -maxdepth 1 -name '.*' ! -name . ! -path "$FS/out")" ]] || { echo "leftover:"; ls -a "$FS/out"; return 1; }
 }
 expect 0 "fuzz-seeds without --only builds every target" fs
 expect 0 "every target seeded, no staging/lock left" fs_all
@@ -1407,7 +1407,7 @@ fs_par() { # two targets at once, five times; both complete, cot_parse marker ke
     fs --only stream_frame >/dev/null & p2=$!
     wait "$p1" || r=1; wait "$p2" || r=1
   done
-  [ "$r" -eq 0 ] && fs_all && [ -e "$FS/out/cot_parse/marker" ]
+  [[ "$r" -eq 0 ]] && fs_all && [[ -e "$FS/out/cot_parse/marker" ]]
 }
 expect 0 "concurrent --only runs for different targets do not interfere" fs_par
 mkdir "$FS/out/.lock.javafmt"

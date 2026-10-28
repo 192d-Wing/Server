@@ -65,17 +65,17 @@ command -v jq >/dev/null 2>&1 || { echo "check-fuzz-policy: jq is required" >&2;
 command -v cargo >/dev/null 2>&1 || { echo "check-fuzz-policy: cargo is required" >&2; exit 2; }
 
 # ---- F1 ---------------------------------------------------------------------
-if [ ! -d "$fz" ]; then
+if [[ ! -d "$fz" ]]; then
   fail "F1 fuzz/ is missing (rust/Cargo.toml excludes it and the Makefile runs it)"
   exit 1
 fi
 for f in Cargo.toml Cargo.lock deny.toml native-allowlist.txt rust-toolchain.toml; do
-  [ -f "$fz/$f" ] || fail "F1 fuzz/$f is missing"
+  [[ -f "$fz/$f" ]] || fail "F1 fuzz/$f is missing"
 done
 for f in "$root/Cargo.toml" "$root/Cargo.lock" "$root/deny.toml"; do
-  [ -f "$f" ] || fail "F1 ${f#"$root"/} is missing"
+  [[ -f "$f" ]] || fail "F1 ${f#"$root"/} is missing"
 done
-[ "$status" -eq 0 ] || exit 1
+[[ "$status" -eq 0 ]] || exit 1
 
 # ---- F2 ---------------------------------------------------------------------
 grep -qE '^[[:space:]]*\[workspace\][[:space:]]*(#.*)?$' "$fz/Cargo.toml" ||
@@ -102,14 +102,14 @@ inside=$(printf '%s' "$meta" | jq -r '
   (.workspace_root + "/fuzz/") as $fz
   | [.workspace_members[] as $m | .packages[] | select(.id == $m)
      | select(.manifest_path | startswith($fz)) | .name] | .[]')
-[ -z "$inside" ] || fail "F3 main-workspace member(s) under fuzz/: $(echo "$inside" | tr '\n' ' ')"
+[[ -z "$inside" ]] || fail "F3 main-workspace member(s) under fuzz/: $(echo "$inside" | tr '\n' ' ')"
 
 # ---- F4 ---------------------------------------------------------------------
 dep=$(printf '%s' "$meta" | jq -r '
   [.workspace_members[] as $m | .packages[] | select(.id == $m)
    | .name as $n | .dependencies[] | select(.name == "libfuzzer-sys" or .rename == "libfuzzer-sys")
    | "\($n) (\(.kind // "normal"))"] | unique | .[]')
-[ -z "$dep" ] || fail "F4 main-workspace crate(s) depend on libfuzzer-sys: $(echo "$dep" | tr '\n' ' ')"
+[[ -z "$dep" ]] || fail "F4 main-workspace crate(s) depend on libfuzzer-sys: $(echo "$dep" | tr '\n' ' ')"
 if grep -qE '^name[[:space:]]*=[[:space:]]*"libfuzzer-sys"' "$root/Cargo.lock"; then
   fail "F4 rust/Cargo.lock contains libfuzzer-sys (it must stay in fuzz/Cargo.lock only)"
 fi
@@ -203,7 +203,7 @@ drift=$(awk -v mainf="$root/deny.toml" '
     if (!seen_cc) print "F5 fuzz/deny.toml: missing FUZZ-DELTA for the cc ban (libfuzzer-sys wrapper)"
     if (!seen_bs) print "F5 fuzz/deny.toml: missing FUZZ-DELTA for libfuzzer-sys in allow-build-scripts"
   }' "$fz/deny.toml")
-if [ -n "$drift" ]; then
+if [[ -n "$drift" ]]; then
   while IFS= read -r l; do fail "$l"; done <<EOF
 $drift
 EOF
@@ -211,7 +211,7 @@ fi
 
 # ---- F6 ---------------------------------------------------------------------
 entries=$(sed -e 's/#.*$//' "$fz/native-allowlist.txt" | awk 'NF > 0 { print $1 }')
-if [ "$entries" != "libfuzzer-sys" ]; then
+if [[ "$entries" != "libfuzzer-sys" ]]; then
   fail "F6 fuzz/native-allowlist.txt must name only libfuzzer-sys (got: $(printf '%s' "$entries" | tr '\n' ' '))"
 fi
 
@@ -223,7 +223,7 @@ tc=$(awk '
   intc { print }' "$tcf")
 nchan=$(printf '%s\n' "$tc" | grep -cE '^[[:space:]]*channel[[:space:]]*=' || true)
 chan=$(printf '%s\n' "$tc" | sed -n -E 's/^[[:space:]]*channel[[:space:]]*=[[:space:]]*"([^"]*)"[[:space:]]*(#.*)?$/\1/p')
-if [ "$nchan" -ne 1 ]; then
+if [[ "$nchan" -ne 1 ]]; then
   fail "F7 fuzz/rust-toolchain.toml needs exactly one channel under [toolchain] (found $nchan)"
 elif ! [[ "$chan" =~ ^nightly-[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$ ]]; then
   fail "F7 fuzz/rust-toolchain.toml channel must be a dated nightly-YYYY-MM-DD (got '${chan:-<unparsed>}')"
@@ -237,14 +237,14 @@ norm() { tr ' ' '\n' | sed '/^$/d' | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//';
 bins=$(awk '
   /^[[:space:]]*\[/ { s = $0; gsub(/[[:space:]]/, "", s); sub(/#.*/, "", s); inbin = (s == "[[bin]]"); next }
   inbin && /^[[:space:]]*name[[:space:]]*=/ { v = $0; sub(/^[^"]*"/, "", v); sub(/".*$/, "", v); print v }' "$fz/Cargo.toml" | norm)
-if [ -z "$bins" ]; then
+if [[ -z "$bins" ]]; then
   fail "F8 fuzz/Cargo.toml defines no [[bin]] fuzz targets"
 fi
 for b in $bins; do
-  [ -f "$fz/fuzz_targets/$b.rs" ] || fail "F8 fuzz target $b has no fuzz/fuzz_targets/$b.rs"
+  [[ -f "$fz/fuzz_targets/$b.rs" ]] || fail "F8 fuzz target $b has no fuzz/fuzz_targets/$b.rs"
 done
 wf="$repo/.github/workflows/rust-fuzz.yml"
-if [ ! -f "$wf" ]; then
+if [[ ! -f "$wf" ]]; then
   fail "F8 ${wf#"$repo"/} is missing"
 else
   # The block list under `target:` inside `matrix:` (one `- name` per line).
@@ -254,24 +254,24 @@ else
     grab && /^[[:space:]]*#/ { next }
     grab && /^[[:space:]]*-[[:space:]]+[A-Za-z0-9_]+[[:space:]]*$/ { v = $0; sub(/^[[:space:]]*-[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v); print v; next }
     grab { exit }' "$wf" | norm)
-  [ "$mx" = "$bins" ] || fail "F8 rust-fuzz.yml matrix targets [$mx] != fuzz/Cargo.toml [[bin]] [$bins]"
+  [[ "$mx" = "$bins" ]] || fail "F8 rust-fuzz.yml matrix targets [$mx] != fuzz/Cargo.toml [[bin]] [$bins]"
 fi
 seeds="$root/scripts/fuzz-seeds.sh"
-if [ ! -f "$seeds" ]; then
+if [[ ! -f "$seeds" ]]; then
   fail "F8 scripts/fuzz-seeds.sh is missing"
 else
   st=$(sed -n -E 's/^targets="([^"]*)"[[:space:]]*$/\1/p' "$seeds" | head -n 1 | norm)
-  [ "$st" = "$bins" ] || fail "F8 scripts/fuzz-seeds.sh targets [$st] != fuzz/Cargo.toml [[bin]] [$bins]"
+  [[ "$st" = "$bins" ]] || fail "F8 scripts/fuzz-seeds.sh targets [$st] != fuzz/Cargo.toml [[bin]] [$bins]"
 fi
 
 # ---- F9 ---------------------------------------------------------------------
 cc="$root/scripts/ci-changes.sh"
-if [ ! -f "$cc" ]; then
+if [[ ! -f "$cc" ]]; then
   fail "F9 scripts/ci-changes.sh is missing"
-elif [ -f "$wf" ]; then
+elif [[ -f "$wf" ]]; then
   nri=$(grep -cE "^rust_inputs='[^']*'[[:space:]]*$" "$cc" || true)
   ri=$(sed -n -E "s/^rust_inputs='([^']*)'[[:space:]]*$/\1/p" "$cc")
-  if [ "$nri" -ne 1 ] || [ -z "$ri" ]; then
+  if [[ "$nri" -ne 1 ]] || [[ -z "$ri" ]]; then
     fail "F9 scripts/ci-changes.sh needs exactly one non-empty rust_inputs='...' line (found $nri)"
   else
     # Block list under `pull_request:` -> `paths:` (quotes stripped).
@@ -302,5 +302,5 @@ elif [ -f "$wf" ]; then
   fi
 fi
 
-[ "$status" -eq 0 ] && echo "check-fuzz-policy: ok (fuzz/ excluded, no libfuzzer-sys in the product graph, deny.toml delta approved, toolchain $chan, targets: $bins, rust_inputs in rust-fuzz.yml PR paths)"
+[[ "$status" -eq 0 ]] && echo "check-fuzz-policy: ok (fuzz/ excluded, no libfuzzer-sys in the product graph, deny.toml delta approved, toolchain $chan, targets: $bins, rust_inputs in rust-fuzz.yml PR paths)"
 exit "$status"

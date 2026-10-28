@@ -55,16 +55,16 @@ files=$(
   list_files "$root"
   for w in "$repo"/.github/workflows/rust-*.yml "$repo"/.github/workflows/rust-*.yaml \
       "$repo"/.github/dependabot.yml; do
-    if [ -f "$w" ]; then printf '%s\n' "$w"; fi
+    if [[ -f "$w" ]]; then printf '%s\n' "$w"; fi
   done
 )
 
 n=0
 bad=0
 while IFS= read -r f; do
-  [ -n "$f" ] || continue
+  [[ -n "$f" ]] || continue
   while IFS= read -r hit; do
-    [ -n "$hit" ] || continue
+    [[ -n "$hit" ]] || continue
     n=$((n + 1))
     line=${hit#*:}
     if ! printf '%s\n' "$line" | grep -qE "$good_re|$example_re"; then
@@ -77,7 +77,7 @@ done <<EOF
 $files
 EOF
 
-if [ "$bad" -ne 0 ]; then
+if [[ "$bad" -ne 0 ]]; then
   echo "check-poam-markers: $bad of $n marker(s) lack an ID; add an entry to docs/compliance/POAM.md and cite its ID right after the marker"
   exit 1
 fi

@@ -1141,16 +1141,16 @@ cmd_capture_corpus() {
   "$ENGINE_BIN" image inspect "$BUILDER_IMAGE" >/dev/null 2>&1 ||
     die "$EX_PREREQ" "builder image $BUILDER_IMAGE not found; run 'harness.sh build-java' first"
   war="$WORK_DIR/tester/takserver.war"
-  [ -f "$war" ] && [ ! -L "$war" ] || die "$EX_PREREQ" "no $war; run 'harness.sh build-java' first"
+  [[ -f "$war" ]] && [[ ! -L "$war" ]] || die "$EX_PREREQ" "no $war; run 'harness.sh build-java' first"
   uid=$(id -u)
   gid=$(id -g)
-  [ "$uid" -ne 0 ] || die "$EX_PREREQ" "refusing to capture as root; run the harness as an unprivileged user"
+  [[ "$uid" -ne 0 ]] || die "$EX_PREREQ" "refusing to capture as root; run the harness as an unprivileged user"
   stamp=$(utc_stamp)
   out="$RESULTS_DIR/$stamp-corpus"
-  [ ! -e "$out" ] || die "$EX_PREREQ" "$out already exists"
+  [[ ! -e "$out" ]] || die "$EX_PREREQ" "$out already exists"
 
   cw="$WORK_DIR/corpus"
-  if [ -e "$cw" ]; then
+  if [[ -e "$cw" ]]; then
     chmod -R u+rwX "$cw"
     rm -rf "$cw"
   fi
@@ -1165,7 +1165,7 @@ cmd_capture_corpus() {
 
   local -a userns sandbox
   userns=()
-  if [ "$(basename "$ENGINE_BIN")" = podman ]; then
+  if [[ "$(basename "$ENGINE_BIN")" = podman ]]; then
     userns=(--userns=keep-id)
   fi
   sandbox=(--rm --network none --read-only --tmpfs "/tmp:rw,noexec,nosuid,nodev,size=256m"
@@ -1181,7 +1181,7 @@ cmd_capture_corpus() {
     die "$EX_FAIL" "the corpus driver did not compile"
   CURRENT_CONTAINER=""
   reject_special "$cw/classes" || die "$EX_INTEGRITY" "compiler output contained symlinks or special files"
-  [ -f "$cw/classes/CorpusDriver.class" ] || die "$EX_FAIL" "javac produced no CorpusDriver.class"
+  [[ -f "$cw/classes/CorpusDriver.class" ]] || die "$EX_FAIL" "javac produced no CorpusDriver.class"
 
   for i in 1 2; do
     (umask 077 && mkdir "$cw/run$i")
@@ -1195,11 +1195,11 @@ cmd_capture_corpus() {
     rc=$?
     set -e
     CURRENT_CONTAINER=""
-    [ "$rc" -eq 0 ] || die "$EX_FAIL" "corpus driver failed in run $i (exit $rc)"
+    [[ "$rc" -eq 0 ]] || die "$EX_FAIL" "corpus driver failed in run $i (exit $rc)"
     # SEC-003/SEC-009: nothing on the host reads the output before this.
     reject_special "$cw/run$i" || special=1
   done
-  [ "$special" -eq 0 ] || die "$EX_INTEGRITY" "corpus output contained symlinks or special files (removed; see above)"
+  [[ "$special" -eq 0 ]] || die "$EX_INTEGRITY" "corpus output contained symlinks or special files (removed; see above)"
   corpus_py compare "$cw/run1" "$cw/run2" ||
     die "$EX_FAIL" "capture is not deterministic: run 1 and run 2 differ (see above)"
 
@@ -1222,12 +1222,12 @@ cmd_capture_corpus() {
 # the same invocation.
 cmd_verify_corpus() {
   local dir=$1 golden="$CORPUS_DIR/golden"
-  [ -n "$dir" ] || dir=$LAST_CORPUS
-  [ -n "$dir" ] || die "$EX_UNSUPPORTED" "verify-corpus needs <dir> or a preceding capture-corpus"
-  if [ -L "$golden" ]; then
+  [[ -n "$dir" ]] || dir=$LAST_CORPUS
+  [[ -n "$dir" ]] || die "$EX_UNSUPPORTED" "verify-corpus needs <dir> or a preceding capture-corpus"
+  if [[ -L "$golden" ]]; then
     die "$EX_INTEGRITY" "$golden is a symlink"
   fi
-  [ -d "$golden" ] ||
+  [[ -d "$golden" ]] ||
     die "$EX_PREREQ" "no committed goldens at $golden; import a capture first (harness.sh import-corpus <dir>)"
   corpus_py check-tree "$dir" capture || die "$?" "captured corpus failed the layout check: $dir"
   corpus_py check-tree "$golden" golden || die "$?" "committed goldens failed the layout check: $golden"
@@ -1242,16 +1242,16 @@ cmd_verify_corpus() {
 cmd_import_corpus() {
   local dir=$1 golden="$CORPUS_DIR/golden" stage
   load_pins
-  [ -d "$dir" ] && [ ! -L "$dir" ] || die "$EX_PREREQ" "import-corpus: $dir is not a directory"
+  [[ -d "$dir" ]] && [[ ! -L "$dir" ]] || die "$EX_PREREQ" "import-corpus: $dir is not a directory"
   corpus_py check-tree "$dir" capture || die "$?" "capture failed the layout check: $dir"
   corpus_py_pins check-provenance "$dir" "$CORPUS_DIR" || die "$?" "capture provenance check failed: $dir"
-  if [ -L "$golden" ] || { [ -e "$golden" ] && [ ! -d "$golden" ]; }; then
+  if [[ -L "$golden" ]] || { [[ -e "$golden" ]] && [[ ! -d "$golden" ]]; }; then
     die "$EX_INTEGRITY" "$golden is not a directory"
   fi
   stage=$(make_tmp)
   cp -R "$dir" "$stage/golden"
-  if [ -e "$golden/DEVIATIONS.tsv" ]; then
-    [ -f "$golden/DEVIATIONS.tsv" ] && [ ! -L "$golden/DEVIATIONS.tsv" ] ||
+  if [[ -e "$golden/DEVIATIONS.tsv" ]]; then
+    [[ -f "$golden/DEVIATIONS.tsv" ]] && [[ ! -L "$golden/DEVIATIONS.tsv" ]] ||
       die "$EX_INTEGRITY" "$golden/DEVIATIONS.tsv is not a regular file"
     cp "$golden/DEVIATIONS.tsv" "$stage/golden/DEVIATIONS.tsv"
   else
@@ -1387,18 +1387,18 @@ st_extract() {
 }
 
 st_dir_empty() {
-  [ -d "$1" ] && [ -z "$(ls -A "$1")" ]
+  [[ -d "$1" ]] && [[ -z "$(ls -A "$1")" ]]
 }
 
 st_argfiles() {
   mkdir -p "$2"
   corpus_py argfiles "$1" "$2" &&
-    [ "$(sed -n 2p "$2/run.args")" = "/driver:/cp/a-1.0.jar:/cp/b-2.0.jar" ] &&
-    [ "$(sed -n 2p "$2/javac.args")" = "/cp/a-1.0.jar:/cp/b-2.0.jar" ]
+    [[ "$(sed -n 2p "$2/run.args")" = "/driver:/cp/a-1.0.jar:/cp/b-2.0.jar" ]] &&
+    [[ "$(sed -n 2p "$2/javac.args")" = "/cp/a-1.0.jar:/cp/b-2.0.jar" ]]
 }
 
 st_first_line_is() {
-  [ "$(head -n 1 "$1")" = "$2" ]
+  [[ "$(head -n 1 "$1")" = "$2" ]]
 }
 
 # A capture tree as capture-corpus writes it, from the fixture outputs and
@@ -1809,17 +1809,17 @@ while [ $# -gt 0 ]; do
     verify-corpus)
       shift
       vdir=""
-      if [ $# -ge 1 ] && ! is_command_word "$1"; then
+      if [[ $# -ge 1 ]] && ! is_command_word "$1"; then
         vdir=$1
         shift
       fi
-      [ -n "$vdir" ] || [ "$HAVE_CAPTURE" -eq 1 ] ||
+      [[ -n "$vdir" ]] || [[ "$HAVE_CAPTURE" -eq 1 ]] ||
         die "$EX_UNSUPPORTED" "verify-corpus needs <dir> or an earlier capture-corpus in the same chain"
       QUEUE+=("verify-corpus${US}${vdir}")
       ;;
     import-corpus)
       shift
-      if [ $# -eq 0 ] || is_command_word "$1"; then
+      if [[ $# -eq 0 ]] || is_command_word "$1"; then
         die "$EX_UNSUPPORTED" "import-corpus needs a <dir>"
       fi
       QUEUE+=("import-corpus${US}$1")

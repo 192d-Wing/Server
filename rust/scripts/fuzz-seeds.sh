@@ -47,9 +47,9 @@ usage() { echo "usage: fuzz-seeds.sh <out-dir> [--only <target>]" >&2; exit 2; }
 targets="cot_parse cot_to_proto proto_decode proto_to_cot proto_roundtrip stream_frame javafmt"
 case "$#" in
   1) out=$1; want=$targets ;;
-  3) [ "$2" = "--only" ] || usage
+  3) [[ "$2" = "--only" ]] || usage
      out=$1; want=$3
-     [ -n "$want" ] || { echo "fuzz-seeds: --only needs a target name (set FUZZ_TARGET); one of: $targets" >&2; exit 2; }
+     [[ -n "$want" ]] || { echo "fuzz-seeds: --only needs a target name (set FUZZ_TARGET); one of: $targets" >&2; exit 2; }
      [[ "$want" =~ ^[a-z0-9_]+$ ]] || { echo "fuzz-seeds: bad target name; one of: $targets" >&2; exit 2; }
      case " $targets " in
        *" $want "*) ;;
@@ -57,10 +57,10 @@ case "$#" in
      esac ;;
   *) usage ;;
 esac
-[ -n "$out" ] || usage
+[[ -n "$out" ]] || usage
 [[ "$max" =~ ^[1-9][0-9]{0,8}$ ]] || { echo "fuzz-seeds: FUZZ_SEED_MAX_BYTES must be a positive integer (got '$max')" >&2; exit 2; }
 for d in xml proto numbers; do
-  [ -d "$cases/$d" ] || { echo "fuzz-seeds: missing $cases/$d" >&2; exit 2; }
+  [[ -d "$cases/$d" ]] || { echo "fuzz-seeds: missing $cases/$d" >&2; exit 2; }
 done
 command -v perl >/dev/null 2>&1 || { echo "fuzz-seeds: perl is required" >&2; exit 2; }
 
@@ -69,7 +69,7 @@ mkdir -p "$out"
 stage=$(mktemp -d "$out/.staging.XXXXXX")
 held=""
 cleanup() {
-  [ -z "$held" ] || rmdir "$held" 2>/dev/null || true
+  [[ -z "$held" ]] || rmdir "$held" 2>/dev/null || true
   rm -rf "$stage"
 }
 trap cleanup EXIT
@@ -79,7 +79,7 @@ lock() {
   local l="$out/.lock.$1" i=0
   until mkdir "$l" 2>/dev/null; do
     i=$((i + 1))
-    [ "$i" -le 300 ] || { echo "fuzz-seeds: $l held for 30 s; remove it if no fuzz-seeds is running" >&2; exit 2; }
+    [[ "$i" -le 300 ]] || { echo "fuzz-seeds: $l held for 30 s; remove it if no fuzz-seeds is running" >&2; exit 2; }
     sleep 0.1
   done
   held=$l
@@ -94,7 +94,7 @@ size_of() { wc -c <"$1" | tr -d ' '; }
 small() { # <file>: true if within the cap, else counts and reports a skip
   local n
   n=$(size_of "$1")
-  if [ "$n" -gt "$max" ]; then
+  if [[ "$n" -gt "$max" ]]; then
     skipped=$((skipped + 1))
     echo "fuzz-seeds: skip ${1#"$cases"/} ($n bytes > $max)"
     return 1
@@ -145,13 +145,13 @@ for t in $targets; do
   n=$(find "$stage/$t" -type f | wc -l | tr -d ' ')
   lock "$t"
   old=""
-  if [ -e "$out/$t" ]; then
+  if [[ -e "$out/$t" ]]; then
     old="$stage/$t.old"
     mv "$out/$t" "$old"
   fi
   mv "$stage/$t" "$out/$t"
   unlock
-  [ -z "$old" ] || rm -rf "$old"
+  [[ -z "$old" ]] || rm -rf "$old"
   echo "fuzz-seeds: $t $n seed(s)"
 done
 echo "fuzz-seeds: $skipped input(s) over $max bytes skipped"
